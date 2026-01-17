@@ -1,0 +1,72 @@
+
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { Award, Zap, ArrowRight, Check, Star, History, TrendingUp, Diamond } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { clsx } from 'clsx';
+import PlanPurchaseModal from '../../components/plans/PlanPurchaseModal';
+
+const PLAN_DATA = [
+  { id: 'basic', name: 'BASIC PLAN', price: 500, daily: 50, validity: 30, features: ['2 Tasks/Day', 'Standard Support'], color: 'bg-slate-400', icon: Star },
+  { id: 'standard', name: 'STANDARD PLAN', price: 1000, daily: 100, validity: 30, features: ['3 Tasks/Day', 'Fast Support'], color: 'bg-emerald-500', icon: Zap },
+  { id: 'gold', name: 'GOLD ELITE PLAN', price: 1500, daily: 150, validity: 30, features: ['5 Tasks/Day', 'Priority Support'], color: 'bg-indigo-500', icon: Award, recommended: true },
+  { id: 'diamond', name: 'DIAMOND PLAN', price: 5000, daily: 650, validity: 30, features: ['Unlimited Tasks', 'No Withdrawal Fee'], color: 'bg-sky-500', icon: Diamond }
+];
+
+const PlanCard = ({ plan, onSubscribe }: any) => {
+  const Icon = plan.icon;
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className={clsx(
+        "w-full bg-white rounded-[24px] p-4 flex flex-col border relative transition-all active:scale-[0.98]",
+        plan.recommended ? "border-indigo-500 ring-4 ring-indigo-50" : "border-slate-100 shadow-sm"
+      )}>
+      {plan.recommended && <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[7px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-lg">Most Popular</div>}
+      <div className="flex items-center gap-3 mb-4">
+        <div className={clsx("w-9 h-9 rounded-xl flex items-center justify-center text-white", plan.color)}><Icon size={16} /></div>
+        <div className="overflow-hidden">
+          <h3 className="font-bold text-slate-900 text-xs tracking-tight leading-none mb-0.5">{plan.name}</h3>
+          <p className="text-[7px] text-slate-400 font-bold uppercase tracking-widest">{plan.validity} DAYS VALID</p>
+        </div>
+      </div>
+      <div className="mb-4">
+        <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Plan Price</p>
+        <h4 className="text-xl font-black text-slate-900 tracking-tighter">Rs {plan.price.toLocaleString()}</h4>
+      </div>
+      <div className="bg-green-50 p-2 rounded-xl border border-green-100 flex justify-between items-center mb-4">
+        <span className="text-[7px] font-bold text-green-700 uppercase">Daily Earning:</span>
+        <span className="text-xs font-black text-green-600">Rs. {plan.daily}/Day</span>
+      </div>
+      <div className="space-y-1.5 mb-5 flex-grow">
+        {plan.features.map((f: string, i: number) => (
+          <div key={i} className="flex items-center gap-1.5">
+            <Check size={8} className="text-indigo-600 shrink-0" />
+            <span className="text-[9px] font-bold text-slate-500">{f}</span>
+          </div>
+        ))}
+      </div>
+      <button onClick={() => onSubscribe(plan)} className="w-full h-10 bg-slate-900 text-white rounded-xl font-bold text-[9px] uppercase tracking-widest shadow-lg flex items-center justify-center gap-2">Buy Plan <ArrowRight size={12} /></button>
+    </motion.div>
+  );
+};
+
+const Plans = () => {
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  return (
+    <div className="max-w-md mx-auto px-4 pb-24 space-y-6">
+      <div className="flex flex-col items-center pt-6">
+        <div className="inline-flex items-center gap-2 bg-indigo-50 px-3 py-1.5 rounded-full text-indigo-600 text-[8px] font-bold uppercase tracking-widest mb-2 border border-indigo-100">
+          <TrendingUp size={10} /> Investment Plans
+        </div>
+        <h1 className="text-2xl font-black text-slate-900 tracking-tighter uppercase leading-none text-center">Membership <span className="text-indigo-600 italic">Plans</span></h1>
+        <Link to="/user/plans/history" className="text-sky-500 font-bold uppercase text-[8px] tracking-widest mt-4 flex items-center gap-1.5">
+          <History size={10} /> Purchase History
+        </Link>
+      </div>
+      <div className="grid grid-cols-1 gap-4">
+        {PLAN_DATA.map((plan) => <PlanCard key={plan.id} plan={plan} onSubscribe={setSelectedPlan} />)}
+      </div>
+      <PlanPurchaseModal isOpen={!!selectedPlan} onClose={() => setSelectedPlan(null)} plan={selectedPlan || {}} />
+    </div>
+  );
+};
+export default Plans;
