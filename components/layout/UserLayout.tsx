@@ -11,7 +11,7 @@ export const UserLayout = () => {
   const location = useLocation();
   const { user } = useAuth();
 
-  // Auto-close sidebar on mobile when route changes
+  // Auto-close sidebar on mobile when route changes (extra safety)
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [location.pathname]);
@@ -32,7 +32,7 @@ export const UserLayout = () => {
       </AnimatePresence>
 
       {/* 2. SIDEBAR NAVIGATION */}
-      <Sidebar isOpen={isSidebarOpen} />
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
       {/* 3. MAIN CONTENT AREA */}
       <div className="flex-grow flex flex-col min-w-0 lg:ml-64 transition-all">

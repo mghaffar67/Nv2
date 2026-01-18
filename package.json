@@ -1,34 +1,31 @@
+
 {
   "name": "noor-official-v3",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "version": "3.0.0",
+  "description": "Premium Pakistani Earning Platform",
+  "main": "backend_core/server.ts",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "npm install && vite build && cd backend_core && npm install",
+    "start": "NODE_ENV=production ts-node backend_core/server.ts",
+    "dev": "concurrently \"ts-node-dev backend_core/server.ts\" \"vite\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "react": "19.0.0",
-    "react-dom": "19.0.0",
-    "react-router-dom": "7.1.5",
-    "lucide-react": "0.474.0",
-    "framer-motion": "11.18.2",
-    "recharts": "2.15.0",
-    "react-is": "19.0.0",
-    "clsx": "2.1.1",
-    "tailwind-merge": "2.5.2",
-    "canvas-confetti": "1.9.3",
-    "express": "^5.2.1",
+    "express": "^4.18.2",
     "cors": "^2.8.5",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.0",
     "path": "^0.12.7",
-    "vite": "^7.3.1",
-    "@vitejs/plugin-react": "^5.1.2"
+    "framer-motion": "^11.18.2",
+    "lucide-react": "^0.474.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.5"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "concurrently": "^8.2.0",
+    "ts-node-dev": "^2.0.0",
+    "vite": "^7.3.1",
+    "@vitejs/plugin-react": "^5.1.2"
   }
 }

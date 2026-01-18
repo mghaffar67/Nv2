@@ -40,6 +40,7 @@ import MyTeam from './pages/user/MyTeam';
 import Wallet from './pages/user/Wallet';
 import Transactions from './pages/user/finance/Transactions';
 import Settings from './pages/user/Settings';
+import Profile from './pages/user/Profile';
 
 const App: React.FC = () => (
   <HashRouter>
@@ -69,6 +70,7 @@ const App: React.FC = () => (
               <Route path="plans" element={<Plans />} />
               <Route path="plans/history" element={<PlanHistory />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="profile" element={<Profile />} />
             </Route>
 
             <Route path="/admin" element={
@@ -87,6 +89,7 @@ const App: React.FC = () => (
                  <Route index element={<Navigate to="general" replace />} />
                  <Route path="general" element={<GlobalSettings />} />
                  <Route path="modules" element={<ModulesSEO />} />
+                 <Route index element={<Navigate to="general" replace />} />
                  <Route path="seo" element={<SEOManager />} />
                  <Route path="hero" element={<HeroSection />} />
                  <Route path="appearance" element={<WebAppearance />} />

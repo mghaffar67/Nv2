@@ -8,7 +8,8 @@ import workRoutes from '../backend_core/plugins/work/routes';
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+// Fix: Added 'as any' cast to express.json() to resolve middleware type mismatch
+app.use(express.json({ limit: '10mb' }) as any);
 
 // Initialize Modular Plugins
 // Fix: Mount modular routers on their respective API paths

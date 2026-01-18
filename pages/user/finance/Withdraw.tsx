@@ -2,23 +2,18 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Wallet, 
-  ArrowRight, 
-  ShieldCheck, 
-  Info, 
-  CheckCircle2,
-  AlertCircle,
-  Smartphone,
-  Banknote,
-  Loader2,
-  TrendingDown
+  Wallet, ArrowRight, ShieldCheck, Info, 
+  CheckCircle2, Smartphone, Banknote, Loader2,
+  User, CreditCard, Zap, AlertTriangle, ChevronLeft
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { api } from '../../../utils/api';
 
 const Withdraw = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   
@@ -34,25 +29,19 @@ const Withdraw = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (Number(form.amount) > (user?.balance || 0)) return alert("Insufficient balance!");
-    if (Number(form.amount) < 500) return alert("Minimum withdrawal is PKR 500.");
+    if (Number(form.amount) > (user?.balance || 0)) return alert("Liquidity Violation: Insufficient Ledger Balance.");
+    if (Number(form.amount) < 500) return alert("System Constraint: Minimum payout is PKR 500.");
 
     setLoading(true);
     try {
-      // Fixed: Now calling modular backend route
-      const res = await api.post('/finance/withdraw', { 
+      await api.post('/finance/withdraw', { 
         userId: user?.id, 
         ...form,
         amount: Number(form.amount) 
       });
-      
-      // Sync local user session with new balance
-      const updatedUser = { ...user, balance: (user?.balance || 0) - Number(form.amount) };
-      localStorage.setItem('noor_user', JSON.stringify(updatedUser));
-      
       setSuccess(true);
     } catch (err: any) {
-      alert(err.message || "Request failed");
+      alert(err.message || "Withdrawal rejection from core.");
     } finally {
       setLoading(false);
     }
@@ -60,95 +49,113 @@ const Withdraw = () => {
 
   if (success) {
     return (
-      <div className="max-w-md mx-auto py-20 px-4 text-center">
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white p-10 rounded-[44px] shadow-2xl border border-slate-50">
-          <div className="w-20 h-20 bg-indigo-50 text-indigo-500 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner"><CheckCircle2 size={44} /></div>
-          <h2 className="text-2xl font-black text-slate-900 mb-4 uppercase tracking-tighter italic">Queue Locked</h2>
-          <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest leading-relaxed mb-10">Your payout request of Rs. {form.amount} is registered. Funds will arrive in your {form.gateway} node within 24 hours.</p>
-          <button onClick={() => window.location.reload()} className="w-full bg-slate-900 text-white h-16 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl">Audit Ledger</button>
+      <div className="max-w-md mx-auto py-12 px-4 text-center animate-fade-in">
+        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white p-12 rounded-[50px] shadow-2xl border border-indigo-50">
+          <div className="w-24 h-24 bg-indigo-600 text-white rounded-[35px] flex items-center justify-center mx-auto mb-8 shadow-xl shadow-indigo-200">
+            <Zap size={52} fill="currentColor" />
+          </div>
+          <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tighter uppercase italic leading-none">Payout Locked</h2>
+          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest leading-relaxed mb-10">Liquidity deducted from node. Automated transfer completes within 24 hours.</p>
+          <button onClick={() => navigate('/user/history')} className="w-full bg-slate-900 text-white h-16 rounded-[24px] font-black text-xs uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all">Audit History</button>
         </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto space-y-4 pb-24 px-1 animate-fade-in">
-      {/* 1. BALANCE OVERVIEW */}
-      <div className="bg-slate-900 p-8 rounded-[36px] text-white relative overflow-hidden shadow-2xl mx-1">
-        <div className="absolute top-0 right-0 p-8 opacity-5 scale-150 rotate-12"><Wallet size={100} /></div>
-        <div className="relative z-10">
-           <p className="text-sky-400 text-[9px] font-black uppercase tracking-[0.2em] mb-2 italic">Available Liquidity</p>
-           <h2 className="text-5xl font-black tracking-tighter leading-none mb-1">Rs. {(user?.balance || 0).toLocaleString()}</h2>
-           <div className="flex items-center gap-2 text-slate-500 text-[8px] font-bold uppercase tracking-widest mt-4">
-              <ShieldCheck size={12} className="text-green-500" /> Secure Protocol v3.2
+    <div className="max-w-md mx-auto space-y-8 pb-32 px-1 animate-fade-in">
+      
+      {/* 1. BALANCE HEADER */}
+      <div className="text-center pt-4">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-4 italic">Available Portfolio Balance</p>
+        <h2 className="text-6xl font-black tracking-tighter text-slate-900 leading-none">
+          <span className="text-2xl mr-2 italic text-indigo-500 font-black">Rs</span>
+          {(user?.balance || 0).toLocaleString()}
+        </h2>
+      </div>
+
+      {/* 2. HUGE CENTERED AMOUNT INPUT - REDESIGN FOCUS */}
+      <div className="px-4">
+         <div className="bg-white p-12 rounded-[44px] border border-slate-100 shadow-sm text-center">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 italic">Enter Disbursal Amount</p>
+            <div className="relative inline-block w-full">
+               <input 
+                 type="number" 
+                 placeholder="000" 
+                 required
+                 value={form.amount} 
+                 onChange={e => setForm({...form, amount: e.target.value})}
+                 className="w-full text-center font-black text-7xl md:text-8xl text-slate-900 bg-transparent outline-none placeholder:text-slate-100 tracking-tighter border-b-4 border-slate-50 focus:border-indigo-600 transition-all pb-6"
+               />
+            </div>
+            {Number(form.amount) >= 500 && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-8 flex items-center justify-center gap-2">
+                <span className="px-5 py-2.5 bg-indigo-50 text-indigo-600 rounded-full text-[11px] font-black uppercase tracking-widest border border-indigo-100 shadow-sm">
+                  Settlement: Rs. {netAmount.toLocaleString()}
+                </span>
+              </motion.div>
+            )}
+         </div>
+      </div>
+
+      {/* 3. ACCOUNT DETAILS */}
+      <form onSubmit={handleSubmit} className="space-y-4 px-2">
+        <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm space-y-6">
+           <div className="flex gap-2 p-1.5 bg-slate-100 rounded-[24px]">
+              {['EasyPaisa', 'JazzCash'].map(opt => (
+                <button 
+                  key={opt} type="button"
+                  onClick={() => setForm({...form, gateway: opt})}
+                  className={clsx(
+                    "flex-1 py-4 rounded-[20px] text-[10px] font-black uppercase tracking-widest transition-all",
+                    form.gateway === opt ? "bg-white text-slate-900 shadow-md" : "text-slate-400"
+                  )}
+                >
+                  {opt}
+                </button>
+              ))}
+           </div>
+
+           <div className="space-y-4">
+              <div className="relative group">
+                 <User size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors" />
+                 <input 
+                   type="text" placeholder="Account Holder Title" required
+                   value={form.accountTitle} onChange={e => setForm({...form, accountTitle: e.target.value})}
+                   className="w-full h-16 pl-16 pr-6 bg-slate-50 border border-slate-100 rounded-[28px] font-bold text-sm outline-none focus:bg-white transition-all"
+                 />
+              </div>
+              <div className="relative group">
+                 <CreditCard size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors" />
+                 <input 
+                   type="text" placeholder="Wallet Identity Number" required
+                   value={form.accountNumber} onChange={e => setForm({...form, accountNumber: e.target.value})}
+                   className="w-full h-16 pl-16 pr-6 bg-slate-50 border border-slate-100 rounded-[28px] font-mono text-sm font-black outline-none focus:bg-white transition-all"
+                 />
+              </div>
            </div>
         </div>
-      </div>
 
-      {/* 2. GATEWAY SELECT */}
-      <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm mx-1">
-         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4 ml-2 italic">Method Selection</p>
-         <div className="grid grid-cols-3 gap-2">
-            {['EasyPaisa', 'JazzCash', 'Bank Transfer'].map(opt => (
-              <button 
-                key={opt}
-                onClick={() => setForm({...form, gateway: opt})}
-                className={clsx(
-                  "py-3.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all",
-                  form.gateway === opt ? "bg-slate-900 border-slate-900 text-white shadow-lg" : "bg-slate-50 border-slate-50 text-slate-400 hover:border-slate-200"
-                )}
-              >
-                {opt === 'Bank Transfer' ? <Banknote size={14}/> : <Smartphone size={14}/>}
-                <span className="text-[7px] font-black uppercase whitespace-nowrap">{opt}</span>
-              </button>
-            ))}
-         </div>
-      </div>
+        {/* 4. WARNING ALERT */}
+        <div className="bg-amber-50 p-7 rounded-[40px] border border-amber-100 flex items-start gap-4 mx-1">
+           <AlertTriangle size={24} className="text-amber-500 shrink-0 mt-1" />
+           <div>
+              <h4 className="text-[11px] font-black text-amber-900 uppercase tracking-tight italic">Financial Protocol</h4>
+              <p className="text-[10px] font-bold text-amber-700 leading-relaxed uppercase tracking-wider mt-1.5">
+                Withdrawals are manually verified by risk nodes. Standard cycle completes within 24 hours. A 10% network service fee applies.
+              </p>
+           </div>
+        </div>
 
-      {/* 3. INPUT FORM */}
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-[36px] border border-slate-100 shadow-sm space-y-5 mx-1">
-         <div className="space-y-4">
-            <div className="space-y-2">
-               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-3">Account Title (Receiver)</label>
-               <input type="text" placeholder="Ali Ahmed" required value={form.accountTitle} onChange={e => setForm({...form, accountTitle: e.target.value})} className="w-full h-12 px-5 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs outline-none" />
-            </div>
-            <div className="space-y-2">
-               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-3">{form.gateway === 'Bank Transfer' ? 'IBAN / Account Number' : 'Mobile Number'}</label>
-               <input type="text" placeholder={form.gateway === 'Bank Transfer' ? 'PK00...' : '03xx-xxxxxxx'} required value={form.accountNumber} onChange={e => setForm({...form, accountNumber: e.target.value})} className="w-full h-12 px-5 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs outline-none" />
-            </div>
-            <div className="space-y-2 pt-2">
-               <div className="flex justify-between items-center mb-1 px-3">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest italic">Withdrawal Amount</label>
-                  <span className="text-[8px] font-black text-rose-500 uppercase">Min Rs. 500</span>
-               </div>
-               <div className="relative">
-                  <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 font-black text-xl italic">Rs</span>
-                  <input type="number" placeholder="500" required value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} className="w-full h-20 pl-16 pr-6 bg-slate-900 border border-slate-800 rounded-[28px] font-black text-3xl text-white outline-none focus:ring-8 focus:ring-indigo-50/10 transition-all placeholder:text-slate-800" />
-               </div>
-            </div>
-         </div>
-
-         {/* 4. FEE CALCULATOR */}
-         {Number(form.amount) >= 500 && (
-           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 space-y-2">
-              <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-indigo-400">
-                 <span>Maintenance Fee ({feePercent}%)</span>
-                 <span className="text-rose-500">- Rs. {(Number(form.amount) * 0.1).toFixed(0)}</span>
-              </div>
-              <div className="flex justify-between text-[11px] font-black uppercase tracking-widest text-indigo-900 pt-1 border-t border-indigo-200">
-                 <span>Settlement Value</span>
-                 <span className="text-green-600">Rs. {netAmount.toLocaleString()}</span>
-              </div>
-           </motion.div>
-         )}
-
-         <button 
-           type="submit" 
-           disabled={loading || (user?.balance || 0) < 500 || !form.amount}
-           className="w-full h-16 bg-indigo-600 text-white rounded-[24px] font-black text-[10px] uppercase tracking-[0.3em] shadow-xl shadow-indigo-100 flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 transition-all"
-         >
-            {loading ? <Loader2 size={20} className="animate-spin" /> : <>Request Payout <ArrowRight size={18} /></>}
-         </button>
+        <div className="pt-6">
+           <button 
+             type="submit" 
+             disabled={loading || (user?.balance || 0) < 500 || !form.amount}
+             className="w-full h-20 bg-slate-900 text-white rounded-[32px] font-black text-sm uppercase tracking-[0.4em] shadow-2xl flex items-center justify-center gap-4 active:scale-95 transition-all disabled:opacity-50"
+           >
+             {loading ? <Loader2 className="animate-spin" /> : <>Process Payout <ArrowRight size={24} /></>}
+           </button>
+        </div>
       </form>
     </div>
   );
