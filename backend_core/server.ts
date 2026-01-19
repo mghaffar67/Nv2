@@ -2,11 +2,17 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+// Fix: Added import to help define __dirname in an ES module environment
+import { fileURLToPath } from 'url';
 
 /**
  * Noor Official V3 - Purified Core Server
  * Architecture: Modular Plugin Protocol
  */
+
+// Fix: Define __filename and __dirname for ESM compatibility
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // 1. PLUGIN SOURCE OF TRUTH
 import authRoutes from './plugins/auth/routes';

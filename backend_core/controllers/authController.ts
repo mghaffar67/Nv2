@@ -1,4 +1,3 @@
-
 import { generateRefCode } from '../models/User';
 
 const getMockDB = () => {
@@ -60,9 +59,14 @@ export const authController = {
     
     if (user) {
       if (user.isBanned) return res.status(403).json({ message: 'Account Suspended.' });
+      
+      // SYNC: Update session storage on login
+      const sessionUser = { ...user, password: undefined };
+      localStorage.setItem('noor_user', JSON.stringify(sessionUser));
+      
       return res.status(200).json({
         token: `jwt-noor-${user.id}`,
-        user: { ...user, password: undefined }
+        user: sessionUser
       });
     }
     return res.status(401).json({ message: 'Invalid credentials.' });
@@ -102,10 +106,14 @@ export const authController = {
     db.push(newUser);
     saveToMockDB(db);
 
+    // SYNC: Update session storage on register
+    const sessionUser = { ...newUser, password: undefined };
+    localStorage.setItem('noor_user', JSON.stringify(sessionUser));
+
     return res.status(201).json({ 
       message: 'ID Created. Welcome to Noor Official!',
       token: `jwt-noor-${newUser.id}`,
-      user: { ...newUser, password: undefined }
+      user: sessionUser
     });
   }
 };
