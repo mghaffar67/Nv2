@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Save, Zap, Users, Search, Check, Clock, Calendar, Globe, UserCheck } from 'lucide-react';
@@ -31,22 +32,23 @@ const TaskFormModal = ({ isOpen, onClose, task, onUpdate }: TaskFormModalProps) 
 
   useEffect(() => {
     const fetchPartners = async () => {
-      // Direct call to get partner list
       const res = await new Promise<any>((resolve) => {
         adminController.getPartnerList({}, { status: () => ({ json: resolve }) });
       });
       setPartners(res || []);
     };
-    if (isOpen) fetchPartners();
     
-    if (task) {
-      setForm({ ...task, targetUsers: task.targetUsers || [] });
-    } else {
-      setForm({
-        title: '', mediaUrl: '', mediaType: 'link', reward: 25,
-        plan: 'BASIC', instruction: '', assignmentType: 'all', 
-        targetUsers: [], validityDays: 30, timeLimitSeconds: 600, status: 'active'
-      });
+    if (isOpen) {
+      fetchPartners();
+      if (task) {
+        setForm({ ...task, targetUsers: task.targetUsers || [] });
+      } else {
+        setForm({
+          title: '', mediaUrl: '', mediaType: 'link', reward: 25,
+          plan: 'BASIC', instruction: '', assignmentType: 'all', 
+          targetUsers: [], validityDays: 30, timeLimitSeconds: 600, status: 'active'
+        });
+      }
     }
   }, [task, isOpen]);
 
@@ -77,7 +79,7 @@ const TaskFormModal = ({ isOpen, onClose, task, onUpdate }: TaskFormModalProps) 
     
     if (task) {
       const idx = db.findIndex((t: any) => t.id === task.id);
-      db[idx] = newTask;
+      if (idx !== -1) db[idx] = newTask;
     } else {
       db.unshift(newTask);
     }
@@ -88,7 +90,7 @@ const TaskFormModal = ({ isOpen, onClose, task, onUpdate }: TaskFormModalProps) 
       onUpdate();
       onClose();
       setLoading(false);
-    }, 800);
+    }, 600);
   };
 
   return (
@@ -97,8 +99,8 @@ const TaskFormModal = ({ isOpen, onClose, task, onUpdate }: TaskFormModalProps) 
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-2">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" />
           
-          <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} className="relative w-full max-w-2xl bg-white rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[95vh] border border-slate-100">
-            <div className="bg-slate-900 p-6 text-white shrink-0 flex justify-between items-center">
+          <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} className="relative w-full max-w-2xl bg-white rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[95vh] border border-white">
+            <div className="bg-slate-950 p-6 text-white shrink-0 flex justify-between items-center">
                <div>
                   <h3 className="text-xl font-black uppercase italic tracking-tight">{task ? 'Modify Node' : 'Initialize Yield Node'}</h3>
                   <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Assignment Specification Node</p>
@@ -113,10 +115,10 @@ const TaskFormModal = ({ isOpen, onClose, task, onUpdate }: TaskFormModalProps) 
                     <input required value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="w-full h-12 px-5 bg-white border border-slate-200 rounded-2xl font-black text-slate-900 outline-none shadow-sm focus:ring-4 focus:ring-indigo-50" />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-3">Reward Yield (PKR)</label>
-                      <input type="number" required value={form.reward} onChange={e => setForm({...form, reward: Number(e.target.value)})} className="w-full h-12 px-5 bg-white border border-slate-200 rounded-2xl font-black text-slate-900 shadow-sm outline-none focus:ring-4 focus:ring-indigo-50" />
+                      <input type="number" required value={form.reward} onChange={e => setForm({...form, reward: Number(e.target.value)})} className="w-full h-12 px-5 bg-white border border-slate-200 rounded-2xl font-black text-slate-900 shadow-sm outline-none" />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-3">Authorization Tier</label>
@@ -129,7 +131,7 @@ const TaskFormModal = ({ isOpen, onClose, task, onUpdate }: TaskFormModalProps) 
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 p-5 bg-slate-50 rounded-[28px] border border-slate-100">
+                  <div className="grid grid-cols-2 gap-4 p-5 bg-slate-50 rounded-[28px] border border-slate-100">
                     <div className="space-y-1.5">
                       <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1"><Calendar size={10}/> Validity (Days)</label>
                       <input type="number" value={form.validityDays} onChange={e => setForm({...form, validityDays: Number(e.target.value)})} className="w-full h-10 px-4 bg-white border border-slate-200 rounded-xl font-bold text-xs" />
@@ -143,8 +145,8 @@ const TaskFormModal = ({ isOpen, onClose, task, onUpdate }: TaskFormModalProps) 
                   <div className="space-y-3">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-3">Distribution Logic</label>
                     <div className="flex bg-slate-100 p-1 rounded-2xl">
-                      <button type="button" onClick={() => setForm({...form, assignmentType: 'all'})} className={clsx("flex-1 py-3 rounded-xl text-[9px] font-black uppercase transition-all", form.assignmentType === 'all' ? "bg-slate-900 text-white shadow-lg" : "text-slate-500")}>Global Fleet</button>
-                      <button type="button" onClick={() => setForm({...form, assignmentType: 'specific'})} className={clsx("flex-1 py-3 rounded-xl text-[9px] font-black uppercase transition-all", form.assignmentType === 'specific' ? "bg-slate-900 text-white shadow-lg" : "text-slate-500")}>Target Nodes</button>
+                      <button type="button" onClick={() => setForm({...form, assignmentType: 'all'})} className={clsx("flex-1 py-3 rounded-xl text-[9px] font-black uppercase transition-all", form.assignmentType === 'all' ? "bg-white text-slate-950 shadow-md" : "text-slate-400")}>Global Fleet</button>
+                      <button type="button" onClick={() => setForm({...form, assignmentType: 'specific'})} className={clsx("flex-1 py-3 rounded-xl text-[9px] font-black uppercase transition-all", form.assignmentType === 'specific' ? "bg-white text-slate-950 shadow-md" : "text-slate-400")}>Target Nodes</button>
                     </div>
                     
                     {form.assignmentType === 'specific' && (

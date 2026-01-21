@@ -13,27 +13,41 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  // Fast-track: If storage exists but state is updating, don't show full page loader if possible
-  // This allows the app to feel snappy
-  const hasLocalToken = !!localStorage.getItem('noor_token');
+  // Redundant Check: Use localStorage if state is temporarily null
+  const token = localStorage.getItem('noor_token');
+  const cachedUserStr = localStorage.getItem('noor_user');
+  let cachedUser = null;
+  
+  if (cachedUserStr) {
+    try {
+      cachedUser = JSON.parse(cachedUserStr);
+    } catch (e) {
+      localStorage.clear();
+    }
+  }
 
-  if (loading && !hasLocalToken) {
+  const activeUser = user || cachedUser;
+  const isAuthenticated = !!token && !!activeUser;
+
+  // Show nothing or loader while checking initial auth
+  if (loading && !isAuthenticated) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white">
-        <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
-        <p className="mt-4 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 italic">Syncing Hub...</p>
+        <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
+        <p className="mt-4 text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">Authenticating Node...</p>
       </div>
     );
   }
 
-  if (!user && !hasLocalToken) {
+  if (!isAuthenticated) {
+    // Redirect to login but save the current location
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Final role verification
-  if (requiredRole && user && user.role !== requiredRole) {
-    const fallback = user.role === 'admin' ? '/admin/dashboard' : '/user/dashboard';
-    return <Navigate to={fallback} replace />;
+  // Role Validation
+  if (requiredRole && activeUser.role !== requiredRole) {
+    const fallbackPath = activeUser.role === 'admin' ? '/admin/dashboard' : '/user/dashboard';
+    return <Navigate to={fallbackPath} replace />;
   }
 
   return <>{children}</>;

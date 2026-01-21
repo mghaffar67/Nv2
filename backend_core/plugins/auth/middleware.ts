@@ -3,44 +3,47 @@ import { dbNode } from '../../utils/db';
 
 /**
  * Noor Official V3 - Auth Middleware
- * Validates JWT tokens and secures private routes.
+ * Robust session validation for instant data access.
  */
 export const authMiddleware = async (req: any, res: any, next: any) => {
   try {
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'Authorization required. Token missing.' });
+      return res.status(401).json({ message: 'Session expired. Please login again.' });
     }
 
     const token = authHeader.split(' ')[1];
     
-    if (!token.includes('jwt-noor-')) {
-      return res.status(403).json({ message: 'Invalid authentication signature.' });
+    // Quick validation of our custom token structure
+    if (!token.startsWith('jwt-noor-')) {
+      return res.status(403).json({ message: 'Session signature invalid.' });
     }
 
-    // Fix: Correctly extract user ID from composite token (jwt-noor-ID-timestamp)
-    // ID itself may contain hyphens (e.g., USR-ABCDEF)
-    const tokenParts = token.split('-');
-    if (tokenParts.length < 4) {
-       return res.status(403).json({ message: 'Malformed authentication packet.' });
+    // Extract ID: token format is jwt-noor-{userId}-{timestamp}
+    // We split by hyphens and take the middle segments
+    const parts = token.split('-');
+    if (parts.length < 3) {
+      return res.status(403).json({ message: 'Session packet corrupted.' });
     }
-    
-    // Extract everything between 'jwt-noor-' and the last part (timestamp)
-    const userId = tokenParts.slice(2, -1).join('-');
+
+    // Reconstruction of ID (handling IDs that might contain hyphens themselves)
+    const userId = parts.slice(2, parts.length - 1).join('-');
     const user = dbNode.findUserById(userId);
 
     if (!user) {
-      return res.status(404).json({ message: 'Identity not found in core registry.' });
+      return res.status(404).json({ message: 'User account not found.' });
     }
 
     if (user.isBanned) {
-      return res.status(403).json({ message: 'Access denied. Account is currently suspended.' });
+      return res.status(403).json({ message: 'This account has been suspended.' });
     }
 
+    // Attach user node to request for downstream usage
     req.user = user;
     next();
   } catch (error) {
-    res.status(500).json({ message: 'Internal Security Error' });
+    console.error('Middleware Error:', error);
+    res.status(500).json({ message: 'Internal validation error.' });
   }
 };

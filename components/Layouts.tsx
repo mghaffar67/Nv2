@@ -154,7 +154,13 @@ export const Navbar = () => (
       <div className="w-7 h-7 md:w-8 md:h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-black italic shadow-lg">N</div>
       <span className="font-black text-base md:text-lg tracking-tighter text-slate-800">Noor<span className="text-indigo-500">Official</span></span>
     </div>
-    <Link to="/login" className="bg-slate-900 text-white px-5 py-2 rounded-lg font-black text-[9px] md:text-xs uppercase tracking-widest transition-all active:scale-95">Login</Link>
+    <Link 
+      to="/login" 
+      className="bg-slate-950 text-white px-6 py-2.5 rounded-xl font-black text-[10px] md:text-xs uppercase tracking-widest transition-all hover:bg-indigo-600 hover:shadow-[0_10px_40px_-10px_rgba(99,102,241,0.5)] active:scale-95 flex items-center gap-2 group"
+    >
+      Login 
+      <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+    </Link>
   </nav>
 );
 

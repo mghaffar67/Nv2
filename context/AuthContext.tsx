@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../utils/api';
 
@@ -30,14 +30,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem('noor_user');
+  // STABLE SESSION RESTORATION
+  useLayoutEffect(() => {
     const token = localStorage.getItem('noor_token');
-    if (savedUser && token) {
+    const savedUser = localStorage.getItem('noor_user'); // Unified Key
+    
+    if (token && savedUser) {
       try {
-        setUser(JSON.parse(savedUser));
+        const parsed = JSON.parse(savedUser);
+        setUser(parsed);
       } catch (e) {
-        localStorage.clear();
+        console.error("Session corruption detected. Purging.");
+        localStorage.removeItem('noor_token');
+        localStorage.removeItem('noor_user');
       }
     }
     setLoading(false);
@@ -46,20 +51,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      const data = await api.post('/auth/login', { email, password });
+      const data = await api.post('/auth/login', { email: email.trim(), password });
+      
       if (data && data.token && data.user) {
+        // ATOMIC COMMIT
         localStorage.setItem('noor_token', data.token);
-        localStorage.setItem('noor_user', JSON.stringify(data.user));
+        localStorage.setItem('noor_user', JSON.stringify(data.user)); // Unified Key
+        
         setUser(data.user);
         
-        // Immediate redirect based on role
         const target = data.user.role === 'admin' ? '/admin/dashboard' : '/user/dashboard';
-        navigate(target, { replace: true });
+        
+        // Ensure browser has committed storage before moving
+        requestAnimationFrame(() => {
+          navigate(target, { replace: true });
+          setLoading(false);
+        });
       }
     } catch (error: any) {
-      throw new Error(error.message || 'Login failed.');
-    } finally {
       setLoading(false);
+      throw new Error(error.message || 'Login failed.');
     }
   };
 
@@ -67,16 +78,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       const data = await api.post('/auth/register', { name, email, phone, password, referralCode });
-      if (data && data.token) {
+      if (data && data.token && data.user) {
         localStorage.setItem('noor_token', data.token);
         localStorage.setItem('noor_user', JSON.stringify(data.user));
         setUser(data.user);
-        navigate('/user/dashboard', { replace: true });
+        requestAnimationFrame(() => {
+          navigate('/user/dashboard', { replace: true });
+          setLoading(false);
+        });
       }
     } catch (error: any) {
-      throw new Error(error.message || 'Registry failed.');
-    } finally {
       setLoading(false);
+      throw new Error(error.message || 'Identity creation failed.');
     }
   };
 
@@ -87,9 +100,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    localStorage.removeItem('noor_user');
-    localStorage.removeItem('noor_token');
     setUser(null);
+    localStorage.removeItem('noor_token');
+    localStorage.removeItem('noor_user');
     navigate('/login', { replace: true });
   };
 

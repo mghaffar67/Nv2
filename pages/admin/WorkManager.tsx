@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -37,6 +38,16 @@ const WorkManager = () => {
 
   useEffect(() => { fetchData(); }, []);
 
+  const openNewTaskModal = () => {
+    setSelectedTask(null);
+    setIsTaskModalOpen(true);
+  };
+
+  const handleEditTask = (task: any) => {
+    setSelectedTask(task);
+    setIsTaskModalOpen(true);
+  };
+
   const stats = useMemo(() => ({
     active: tasks.length,
     pending: submissions.filter(s => s.status === 'pending').length,
@@ -47,7 +58,7 @@ const WorkManager = () => {
     let remark = "";
     if (action === 'rejected') {
       const input = window.prompt("Enter refusal reason (Admin Remarks):", "Insufficient evidence provided.");
-      if (input === null) return; // User cancelled
+      if (input === null) return;
       remark = input;
     }
 
@@ -77,7 +88,7 @@ const WorkManager = () => {
       
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 px-2 pt-4">
          <div>
-            <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">Task Hub.</h1>
+            <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">Task Hub.</h1>
             <p className="text-slate-400 font-bold uppercase tracking-widest text-[8px] md:text-xs mt-2">Centralized Command for Member Yield</p>
          </div>
          <div className="flex gap-2 w-full md:w-auto">
@@ -99,7 +110,7 @@ const WorkManager = () => {
           <motion.div key="manage" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-6">
              <div className="flex justify-between items-center px-4">
                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 italic"><Layers size={14}/> Operational Nodes</h3>
-                <button onClick={() => { setSelectedTask(null); setIsTaskModalOpen(true); }} className="h-10 px-6 bg-indigo-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center gap-2"><Plus size={16}/> New Task</button>
+                <button onClick={openNewTaskModal} className="h-10 px-6 bg-indigo-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center gap-2"><Plus size={16}/> New Task</button>
              </div>
 
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mx-1">
@@ -116,7 +127,7 @@ const WorkManager = () => {
                      <p className="text-[8px] font-medium text-slate-400 line-clamp-2 leading-relaxed mb-6">{task.instruction}</p>
                      
                      <div className="flex gap-2 border-t border-slate-50 pt-4">
-                        <button onClick={() => { setSelectedTask(task); setIsTaskModalOpen(true); }} className="flex-1 h-10 bg-slate-50 text-slate-400 rounded-xl font-black text-[9px] uppercase flex items-center justify-center gap-2 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"><Edit3 size={14}/> Modify</button>
+                        <button onClick={() => handleEditTask(task)} className="flex-1 h-10 bg-slate-50 text-slate-400 rounded-xl font-black text-[9px] uppercase flex items-center justify-center gap-2 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"><Edit3 size={14}/> Modify</button>
                         <button onClick={() => handleDeleteTask(task.id)} className="w-10 h-10 bg-rose-50 text-rose-400 rounded-xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-colors"><Trash2 size={16}/></button>
                      </div>
                   </div>
