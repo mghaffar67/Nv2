@@ -1,95 +1,90 @@
 
+import { dbNode } from '../../utils/db';
+
 /**
- * Noor Official V3 - Work Controller
- * Logic: User Plan -> Allowed Tasks -> Reward Calculation
+ * Noor Official V3 - Work Protocol
+ * Logic: Plan -> Specific User Hub -> Daily Quota Sync
  */
 
-const getDB = () => JSON.parse(localStorage.getItem('noor_mock_db') || '[]');
-const saveDB = (db: any[]) => localStorage.setItem('noor_mock_db', JSON.stringify(db));
-
-const TASK_QUOTAS: Record<string, { count: number, rewardPerTask: number }> = {
-  'BASIC': { count: 5, rewardPerTask: 10 },
-  'STANDARD': { count: 10, rewardPerTask: 10 },
-  'GOLD ELITE': { count: 15, rewardPerTask: 10 },
-  'DIAMOND': { count: 20, rewardPerTask: 32.5 }
+const getTasksDB = () => {
+  if (typeof window === 'undefined') {
+    // In Node.js environment, simulate persistent task storage
+    return [
+      { id: 'NODE-101', title: 'Official Channel Subscription', reward: 25, plan: 'BASIC', instruction: 'Subscribe and screenshot.', isActive: true },
+      { id: 'NODE-102', title: 'Premium Portal Audit', reward: 150, plan: 'GOLD ELITE', instruction: 'Verify ad nodes.', isActive: true }
+    ];
+  }
+  const data = localStorage.getItem('noor_tasks_db');
+  return data ? JSON.parse(data) : [];
 };
 
 export const workPluginController = {
   getTasks: async (req: any, res: any) => {
-    const user = req.user;
-    const plan = user.currentPlan || 'BASIC';
-    const quota = TASK_QUOTAS[plan.toUpperCase()] || TASK_QUOTAS['BASIC'];
-    
-    // In mock, we generate tasks dynamically based on quota
+    if (!req.user) return res.status(401).json({ message: "Identity required." });
+    const user = dbNode.findUserById(req.user.id);
+    if (!user) return res.status(404).json({ message: "Identity Node missing." });
+
+    const allTasks = getTasksDB();
     const today = new Date().toISOString().split('T')[0];
     const completedIds = (user.completedTasksToday || [])
       .filter((t: any) => t.date === today)
       .map((t: any) => t.taskId);
 
-    const tasks = [];
-    for (let i = 1; i <= quota.count; i++) {
-      const taskId = `TASK-${plan.toUpperCase()}-${i}`;
-      if (!completedIds.includes(taskId)) {
-        tasks.push({
-          id: taskId,
-          title: `${plan} Earning Node #${i}`,
-          reward: quota.rewardPerTask,
-          timer: 15,
-          category: 'Digital Ad Audit'
-        });
-      }
-    }
+    const availableTasks = allTasks.filter((task: any) => {
+      if (!task.isActive) return false;
+      if (task.plan && task.plan !== 'ANY' && user.currentPlan !== task.plan) return false;
+      if (task.assignmentType === 'specific' && !task.targetUsers?.includes(user.id)) return false;
+      if (completedIds.includes(task.id)) return false;
+      return true;
+    });
 
-    return res.status(200).json(tasks);
+    return res.status(200).json(availableTasks);
   },
 
   completeTask: async (req: any, res: any) => {
     const { taskId } = req.body;
-    const user = req.user;
-    let db = getDB();
-    const uIdx = db.findIndex((u: any) => u.id === user.id);
-    const currentUser = db[uIdx];
+    if (!req.user) return res.status(401).json({ message: "Identity required." });
+    const user = dbNode.findUserById(req.user.id);
+    if (!user) return res.status(404).json({ message: "Identity Node missing." });
 
-    const plan = currentUser.currentPlan || 'BASIC';
-    const quota = TASK_QUOTAS[plan.toUpperCase()] || TASK_QUOTAS['BASIC'];
+    const allTasks = getTasksDB();
+    const task = allTasks.find((t: any) => t.id === taskId);
+    if (!task) return res.status(404).json({ message: "Task not found." });
+
     const today = new Date().toISOString().split('T')[0];
-
-    // Ensure not already completed
-    if (!currentUser.completedTasksToday) currentUser.completedTasksToday = [];
-    const alreadyDone = currentUser.completedTasksToday.find((t: any) => t.taskId === taskId && t.date === today);
-    if (alreadyDone) return res.status(400).json({ message: "Task already synced for today." });
-
-    // Reward Logic
-    const reward = quota.rewardPerTask;
-    currentUser.balance = (Number(currentUser.balance) || 0) + reward;
+    if (!user.completedTasksToday) user.completedTasksToday = [];
     
-    // Log Completion
-    currentUser.completedTasksToday.push({ taskId, date: today });
+    const alreadyDone = user.completedTasksToday.find((t: any) => t.taskId === taskId && t.date === today);
+    if (alreadyDone) return res.status(400).json({ message: "Yield already distributed for this node." });
 
-    // Log Transaction
+    const reward = Number(task.reward);
+    const newBalance = (Number(user.balance) || 0) + reward;
+    const completedTasksToday = [...user.completedTasksToday, { taskId, date: today }];
+
     const earningTrx = {
-      id: `WRK-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-      userId: user.id,
+      id: `REW-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
       type: 'reward',
       amount: reward,
       status: 'approved',
-      gateway: 'Daily Work Yield',
-      note: `Completed Task: ${taskId}`,
+      gateway: 'Task Yield',
+      note: `Sync: ${task.title}`,
       date: today,
       timestamp: new Date().toISOString()
     };
 
-    if (!currentUser.transactions) currentUser.transactions = [];
-    currentUser.transactions.unshift(earningTrx);
+    const transactions = user.transactions || [];
+    transactions.unshift(earningTrx);
 
-    db[uIdx] = currentUser;
-    saveDB(db);
-    localStorage.setItem('noor_user', JSON.stringify({ ...currentUser, password: undefined }));
+    dbNode.updateUser(user.id, { 
+      balance: newBalance, 
+      completedTasksToday,
+      transactions 
+    });
 
     return res.status(200).json({
       success: true,
-      message: `Success! Rs. ${reward} Added to Node.`,
-      newBalance: currentUser.balance
+      message: `System Sync: Rs. ${reward} cached.`,
+      newBalance
     });
   }
 };

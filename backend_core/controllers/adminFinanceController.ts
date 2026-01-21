@@ -1,36 +1,37 @@
+import { dbNode } from '../utils/db';
 
-// Mock Admin Finance Controller
 export const adminFinanceController = {
-  // In a real app, this would query a database
   manageRequest: async (req: any, res: any) => {
-    const { transactionId, action, type } = req.body;
-    
-    // Logic for Deposits
+    const { transactionId, userId, action, type } = req.body;
+    const user = dbNode.findUserById(userId);
+    if (!user) return res.status(404).json({ message: "Identity node missing." });
+
+    const trxIndex = user.transactions.findIndex((t: any) => t.id === transactionId);
+    if (trxIndex === -1) return res.status(404).json({ message: "Ledger entry missing." });
+
+    const transaction = user.transactions[trxIndex];
+    if (transaction.status !== 'pending') {
+      return res.status(400).json({ message: "Packet already processed." });
+    }
+
     if (type === 'deposit') {
       if (action === 'approve') {
-        // 1. Find Transaction
-        // 2. Set status = 'approved'
-        // 3. User.balance += Amount
-        return res.status(200).json({ message: 'Deposit approved and balance updated.' });
+        transaction.status = 'approved';
+        user.balance = (Number(user.balance) || 0) + Number(transaction.amount);
       } else {
-        // Set status = 'rejected'
-        return res.status(200).json({ message: 'Deposit request rejected.' });
+        transaction.status = 'rejected';
       }
-    }
-
-    // Logic for Withdrawals
-    if (type === 'withdraw') {
+    } else if (type === 'withdraw') {
       if (action === 'approve') {
-        // Set status = 'approved' (Paid)
-        return res.status(200).json({ message: 'Withdrawal marked as paid.' });
+        transaction.status = 'approved';
       } else {
-        // 1. Set status = 'rejected'
-        // 2. CRITICAL: Refund money to User.balance
-        // User.balance += Amount
-        return res.status(200).json({ message: 'Withdrawal rejected. Funds refunded to user.' });
+        transaction.status = 'rejected';
+        // REFUND logic: Re-credit user balance since it was locked on request
+        user.balance = (Number(user.balance) || 0) + Number(transaction.amount);
       }
     }
 
-    return res.status(400).json({ message: 'Invalid action.' });
+    dbNode.updateUser(userId, { transactions: user.transactions, balance: user.balance });
+    return res.status(200).json({ success: true, message: "Protocol synchronized." });
   }
 };

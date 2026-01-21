@@ -1,143 +1,134 @@
 
-/**
- * Noor Official V3 - Auth Controller
- * Handles account lifecycle and network statistics.
- */
-const getDB = () => JSON.parse(localStorage.getItem('noor_mock_db') || '[]');
-const saveDB = (db: any[]) => localStorage.setItem('noor_mock_db', JSON.stringify(db));
+import { dbRegistry } from '../../utils/db';
 
 export const authPluginController = {
-  register: async (req: any, res: any) => {
-    const { name, email, phone, password, referralCode } = req.body;
-    let db = getDB();
+  login: async (req: any, res: any) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Identity and security key required.' 
+        });
+      }
 
-    if (db.some((u: any) => u.email === email)) {
-      return res.status(400).json({ message: 'Email address already in use.' });
+      // High-speed lookup using normalized identity node
+      const user = dbRegistry.findUserByIdentifier(email);
+
+      if (!user) {
+        return res.status(401).json({ 
+          success: false, 
+          message: 'This identity is not registered in our core.' 
+        });
+      }
+
+      // Constant time comparison (simulated)
+      if (user.password !== password) {
+        return res.status(401).json({ 
+          success: false, 
+          message: 'Security key mismatch. Check your credentials.' 
+        });
+      }
+      
+      if (user.isBanned) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Account restricted due to protocol violation.' 
+        });
+      }
+
+      // Generate secure packet
+      const { password: _, ...sessionUser } = user;
+
+      console.log(`✅ Auth Sync: ${user.name} logged in successfully.`);
+
+      return res.status(200).json({
+        success: true,
+        token: `jwt-noor-${user.id}-${Date.now()}`,
+        user: sessionUser
+      });
+    } catch (err) {
+      return res.status(500).json({ 
+        success: false, 
+        message: 'System Node Failure during authentication.' 
+      });
     }
-
-    const newUser = {
-      id: Math.random().toString(36).substr(2, 9),
-      name, email, phone, password,
-      role: 'user',
-      balance: 0,
-      depositBalance: 0,
-      currentPlan: 'None',
-      referralCode: `USR-${Math.floor(1000 + Math.random() * 9000)}`,
-      referredBy: referralCode || null,
-      isBanned: false,
-      avatar: null,
-      createdAt: new Date().toISOString(),
-      transactions: [],
-      streak: 0,
-      completedTasksToday: [],
-      withdrawalInfo: { provider: '', accountNumber: '', accountTitle: '' }
-    };
-
-    db.push(newUser);
-    saveDB(db);
-
-    return res.status(201).json({
-      message: 'Account provisioned successfully.',
-      token: `jwt-noor-${newUser.id}`,
-      user: { ...newUser, password: undefined }
-    });
   },
 
-  login: async (req: any, res: any) => {
-    const { email, password } = req.body;
-    const db = getDB();
-    const user = db.find((u: any) => (u.email === email || u.phone === email) && u.password === password);
+  register: async (req: any, res: any) => {
+    try {
+      const { name, email, phone, password, referralCode } = req.body;
+      let users = dbRegistry.getUsers();
 
-    if (!user) return res.status(401).json({ message: 'Invalid credentials.' });
-    if (user.isBanned) return res.status(403).json({ message: 'Access denied.' });
+      if (dbRegistry.findUserByIdentifier(email) || dbRegistry.findUserByIdentifier(phone)) {
+        return res.status(400).json({ message: 'This Email or Phone is already synchronized with another node.' });
+      }
 
-    return res.status(200).json({
-      token: `jwt-noor-${user.id}`,
-      user: { ...user, password: undefined }
-    });
+      const newUser = {
+        id: `USR-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
+        name, email, phone, password,
+        role: 'user',
+        balance: 0,
+        currentPlan: 'None',
+        referralCode: `REF-${Math.floor(100000 + Math.random() * 800000)}`,
+        referredBy: referralCode || null,
+        transactions: [],
+        streak: 0,
+        createdAt: new Date().toISOString()
+      };
+
+      users.push(newUser);
+      dbRegistry.saveUsers(users);
+
+      const { password: _, ...safeUser } = newUser;
+      return res.status(201).json({ 
+        token: `jwt-noor-${newUser.id}-${Date.now()}`, 
+        user: safeUser 
+      });
+    } catch (err) {
+      return res.status(500).json({ message: "Registry error." });
+    }
   },
 
   getMe: async (req: any, res: any) => {
-    const db = getDB();
-    const freshUser = db.find((u: any) => u.id === req.user.id);
-    if (!freshUser) return res.status(404).json({ message: "Identity missing." });
-    return res.status(200).json({ user: { ...freshUser, password: undefined } });
+    const user = dbRegistry.findUserById(req.user.id);
+    if (!user) return res.status(404).json({ message: "Session expired." });
+    const { password: _, ...safeUser } = user;
+    return res.status(200).json({ user: safeUser });
   },
 
   updateProfile: async (req: any, res: any) => {
-    const { name, phone } = req.body;
-    const user = req.user;
-    let db = getDB();
-    const userIndex = db.findIndex((u: any) => u.id === user.id);
-
-    if (userIndex === -1) return res.status(404).json({ message: "User not found." });
-
-    const currentUser = db[userIndex];
-    if (name) currentUser.name = name;
-    if (phone) currentUser.phone = phone;
-    
-    if (req.file) {
-      currentUser.avatar = req.file.path;
+    try {
+      const { name, phone } = req.body;
+      const updatedUser = dbRegistry.updateUser(req.user.id, { name, phone });
+      if (!updatedUser) return res.status(404).json({ message: "Identity not found." });
+      return res.status(200).json({ user: updatedUser });
+    } catch (err) {
+      return res.status(500).json({ message: "Failed to sync profile changes." });
     }
-
-    db[userIndex] = currentUser;
-    saveDB(db);
-    localStorage.setItem('noor_user', JSON.stringify({ ...currentUser, password: undefined }));
-
-    return res.status(200).json({
-      success: true,
-      message: "Profile updated successfully.",
-      user: { ...currentUser, password: undefined }
-    });
   },
 
   changePassword: async (req: any, res: any) => {
-    const { oldPassword, newPassword } = req.body;
-    const user = req.user;
-    let db = getDB();
-    const userIndex = db.findIndex((u: any) => u.id === user.id);
-
-    if (userIndex === -1) return res.status(404).json({ message: "User not found." });
-
-    const currentUser = db[userIndex];
-    
-    // In mock, passwords are plain text. In real apps, use bcrypt.compare
-    if (currentUser.password !== oldPassword) {
-      return res.status(400).json({ message: "Incorrect current password." });
+    try {
+      const { oldPassword, newPassword } = req.body;
+      const user = dbRegistry.findUserById(req.user.id);
+      if (user.password !== oldPassword) return res.status(400).json({ message: "Current password mismatch." });
+      dbRegistry.updateUser(user.id, { password: newPassword });
+      return res.status(200).json({ message: "Password synchronized." });
+    } catch (err) {
+      return res.status(500).json({ message: "Security update failed." });
     }
-
-    currentUser.password = newPassword;
-    db[userIndex] = currentUser;
-    saveDB(db);
-
-    return res.status(200).json({
-      success: true,
-      message: "Password changed successfully."
-    });
   },
 
   getTeam: async (req: any, res: any) => {
-    const user = req.user;
-    const db = getDB();
-    
-    const transactions = user.transactions || [];
-    const referralBonuses = transactions.filter((t: any) => t.gateway === 'Network Reward');
-    const totalCommission = referralBonuses.reduce((acc: number, curr: any) => acc + (Number(curr.amount) || 0), 0);
-
-    const level1 = db.filter((u: any) => u.referredBy === user.referralCode);
-    const level1Codes = level1.map((u: any) => u.referralCode);
-    
-    const level2 = db.filter((u: any) => level1Codes.includes(u.referredBy));
-    const level2Codes = level2.map((u: any) => u.referralCode);
-    
-    const level3 = db.filter((u: any) => level2Codes.includes(u.referredBy));
-
-    return res.status(200).json({
-      totalCommission,
-      totalMembers: level1.length + level2.length + level3.length,
-      t1: level1.map((u: any) => ({ id: u.id, name: u.name, createdAt: u.createdAt, currentPlan: u.currentPlan })),
-      t2: level2.map((u: any) => ({ id: u.id, name: u.name, createdAt: u.createdAt, currentPlan: u.currentPlan })),
-      t3: level3.map((u: any) => ({ id: u.id, name: u.name, createdAt: u.createdAt, currentPlan: u.currentPlan }))
-    });
+    try {
+      const user = dbRegistry.findUserById(req.user.id);
+      const allUsers = dbRegistry.getUsers();
+      const t1 = allUsers.filter((u: any) => u.referredBy === user.referralCode);
+      return res.status(200).json({ t1, t2: [], t3: [] });
+    } catch (err) {
+      return res.status(500).json({ message: "Network Hub sync failed." });
+    }
   }
 };

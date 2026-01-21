@@ -7,37 +7,32 @@ import { ConfigProvider } from './context/ConfigContext';
 import ProtectedRoute from './components/routes/ProtectedRoutes';
 import MaintenanceGuard from './components/layout/MaintenanceGuard';
 
-// Import Pages
+// Pages
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Support from './pages/Support';
 import DynamicPage from './pages/public/DynamicPage';
-
-// --- Admin Pages ---
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UsersManager from './pages/admin/UsersManager';
 import FinanceManager from './pages/admin/finance/FinanceManager';
 import WorkManager from './pages/admin/WorkManager';
 import RequestsManager from './pages/admin/RequestsManager';
-
-// --- Settings Portal ---
 import SettingsLayout from './pages/admin/settings/SettingsLayout';
-import GeneralSettings from './pages/admin/settings/GeneralSettings';
-import ModulesSEO from './pages/admin/settings/ModulesSEO';
-import HeroSection from './pages/admin/settings/HeroSection';
-import WebAppearance from './pages/admin/settings/WebAppearance';
-import CMSEditor from './pages/admin/settings/CMSEditor';
 import GlobalSettings from './pages/admin/settings/Settings';
-import SEOManager from './pages/admin/settings/SEOManager'; // Added Step 8
-
-// --- User Pages ---
+import SEOManager from './pages/admin/settings/SEOManager';
+import ReviewsManager from './pages/admin/settings/ReviewsManager';
+import WebAppearance from './pages/admin/settings/WebAppearance';
+import ModuleControl from './pages/admin/settings/ModuleControl';
+import CMSEditor from './pages/admin/settings/CMSEditor';
+import DatabaseManager from './pages/admin/settings/DatabaseManager';
 import UserDashboard from './pages/user/UserDashboard';
 import DailyWork from './pages/user/DailyWork';
 import Plans from './pages/user/Plans';
 import PlanHistory from './pages/user/PlanHistory';
 import MyTeam from './pages/user/MyTeam';
 import Wallet from './pages/user/Wallet';
+import Withdraw from './pages/user/finance/Withdraw';
 import Transactions from './pages/user/finance/Transactions';
 import Settings from './pages/user/Settings';
 import Profile from './pages/user/Profile';
@@ -66,6 +61,7 @@ const App: React.FC = () => (
               <Route path="work" element={<DailyWork />} />
               <Route path="team" element={<MyTeam />} />
               <Route path="wallet" element={<Wallet />} />
+              <Route path="wallet/withdraw" element={<Withdraw />} />
               <Route path="history" element={<Transactions />} />
               <Route path="plans" element={<Plans />} />
               <Route path="plans/history" element={<PlanHistory />} />
@@ -88,11 +84,11 @@ const App: React.FC = () => (
               <Route path="settings" element={<SettingsLayout />}>
                  <Route index element={<Navigate to="general" replace />} />
                  <Route path="general" element={<GlobalSettings />} />
-                 <Route path="modules" element={<ModulesSEO />} />
-                 <Route index element={<Navigate to="general" replace />} />
+                 <Route path="database" element={<DatabaseManager />} />
+                 <Route path="modules" element={<ModuleControl />} />
                  <Route path="seo" element={<SEOManager />} />
-                 <Route path="hero" element={<HeroSection />} />
                  <Route path="appearance" element={<WebAppearance />} />
+                 <Route path="reviews" element={<ReviewsManager />} />
                  <Route path="cms" element={<CMSEditor />} />
               </Route>
             </Route>

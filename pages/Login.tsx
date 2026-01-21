@@ -1,102 +1,178 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Mail, Lock, ChevronRight, Eye, EyeOff, 
-  ShieldCheck, Zap, Loader2 
+  ShieldCheck, Zap, Loader2, ChevronRight, 
+  Eye, EyeOff, Smartphone, Mail, RefreshCcw, 
+  Lock, ArrowLeft, Fingerprint, Globe
 } from 'lucide-react';
-
-const DemoLoginSection = ({ onDemo }: { onDemo: (role: 'user' | 'admin') => void }) => (
-  <div className="mt-5 pt-4 border-t border-slate-50">
-    <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest text-center mb-3">One-Tap Demo Access</p>
-    <div className="grid grid-cols-2 gap-2">
-      <button onClick={() => onDemo('admin')} className="h-9 bg-sky-50 text-sky-600 rounded-lg text-[9px] font-black uppercase tracking-widest border border-sky-100">Admin</button>
-      <button onClick={() => onDemo('user')} className="h-9 bg-indigo-50 text-indigo-600 rounded-lg text-[9px] font-black uppercase tracking-widest border border-indigo-100">User</button>
-    </div>
-  </div>
-);
+import { dbRegistry } from '../backend_core/utils/db';
 
 const Login = () => {
-  const { login, demoLogin, loading, user } = useAuth();
+  const { login, demoLogin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-
-  const [email, setEmail] = useState('');
+  
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (user && !loading) {
-      const target = user.role === 'admin' ? '/admin/dashboard' : '/user/dashboard';
-      navigate(target, { replace: true });
-    }
-  }, [user, navigate, loading]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (authLoading) return;
     setError('');
+    
     try {
-      await login(email, password);
+      await login(identifier, password);
     } catch (err: any) {
-      setError(err.message || 'Invalid credentials');
+      setError(err.message || 'Authentication packet rejected.');
+    }
+  };
+
+  const handleRestore = () => {
+    if(window.confirm("Bahi, kya aap database ko factory settings par reset karna chahtay hain?")) {
+      dbRegistry.resetDatabase();
     }
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-[#f8f9fb] relative overflow-hidden">
-      <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-sky-100 blur-[80px] rounded-full opacity-30"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-indigo-100 blur-[80px] rounded-full opacity-30"></div>
+    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-slate-950 relative font-sans overflow-hidden">
+      
+      {/* Dynamic Background Elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/20 blur-[120px] rounded-full animate-pulse" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-sky-500/10 blur-[100px] rounded-full animate-pulse" style={{ animationDelay: '2s' }} />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-10 pointer-events-none">
+        <div className="w-full h-full bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:40px_40px]" />
+      </div>
 
-      <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-[360px] z-10">
-        <div className="relative bg-white/95 backdrop-blur-xl rounded-[28px] border border-white shadow-xl p-5 md:p-8 overflow-hidden">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-[420px] z-10"
+      >
+        <div className="bg-white/5 backdrop-blur-3xl rounded-[50px] border border-white/10 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] p-8 md:p-12 relative overflow-hidden group">
           
-          <AnimatePresence>
-            {loading && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center">
-                <Loader2 className="w-8 h-8 text-sky-500 animate-spin" />
-                <p className="text-[9px] font-black text-slate-900 uppercase tracking-widest mt-2">Authenticating</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <div className="text-center mb-5">
-            <div className="inline-flex items-center gap-1.5 bg-slate-900 text-white px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest mb-3">
-              <Zap size={8} fill="currentColor" className="text-sky-400" /> NOOR PORTAL
+          {/* Header Branding */}
+          <div className="text-center mb-10 relative">
+            <motion.div 
+              whileHover={{ rotate: 15, scale: 1.1 }}
+              className="w-20 h-20 bg-indigo-600 rounded-[30px] flex items-center justify-center mx-auto mb-6 shadow-[0_0_40px_rgba(79,70,229,0.4)] border border-indigo-400/50"
+            >
+              <Zap size={40} className="text-white fill-white" />
+            </motion.div>
+            
+            <div className="space-y-1">
+               <h1 className="text-3xl md:text-4xl font-black text-white tracking-tighter uppercase italic leading-none">
+                 Noor <span className="text-indigo-400">V3.</span>
+               </h1>
+               <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.4em]">Authorized Access Portal</p>
             </div>
-            <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none mb-1">Partner Login</h1>
-            <p className="text-slate-400 text-[9px] font-bold uppercase tracking-widest">Secure Access</p>
           </div>
 
-          <AnimatePresence>
+          <AnimatePresence mode="wait">
             {error && (
-              <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mb-3 p-2.5 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl text-[9px] font-black uppercase flex items-center gap-2">
-                <ShieldCheck size={12} /> {error}
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                className="mb-8 p-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-3xl text-[10px] font-black uppercase flex items-center gap-3 shadow-lg"
+              >
+                <ShieldCheck size={18} className="shrink-0" /> {error}
               </motion.div>
             )}
           </AnimatePresence>
 
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div className="relative">
-              <Mail size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" />
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="w-full h-11 pl-11 pr-4 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs outline-none focus:ring-4 focus:ring-sky-500/5 transition-all" required />
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-5 flex items-center gap-2">
+                 <Fingerprint size={12} className="text-indigo-500" /> Identity ID
+               </label>
+               <div className="relative group">
+                  <Smartphone size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-indigo-400 transition-colors" />
+                  <input 
+                    type="text" value={identifier} onChange={(e) => setIdentifier(e.target.value)} 
+                    placeholder="Email or Mobile Node" 
+                    className="w-full h-16 pl-16 pr-6 bg-white/5 border border-white/10 rounded-[28px] font-bold text-sm text-white placeholder:text-slate-600 outline-none focus:bg-white/10 focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 transition-all" 
+                    required 
+                  />
+               </div>
             </div>
-            <div className="relative">
-              <Lock size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" />
-              <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="w-full h-11 pl-11 pr-11 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs outline-none focus:ring-4 focus:ring-sky-500/5 transition-all" required />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-300 p-2">{showPassword ? <EyeOff size={14} /> : <Eye size={14} />}</button>
+
+            <div className="space-y-2">
+               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-5 flex items-center gap-2">
+                 <Lock size={12} className="text-indigo-500" /> Security Key
+               </label>
+               <div className="relative group">
+                 <Fingerprint size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-indigo-400 transition-colors" />
+                 <input 
+                   type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} 
+                   placeholder="Enter Password" 
+                   className="w-full h-16 pl-16 pr-16 bg-white/5 border border-white/10 rounded-[28px] font-bold text-sm text-white placeholder:text-slate-600 outline-none focus:bg-white/10 focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 transition-all" 
+                   required 
+                 />
+                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-600 p-2 hover:text-white transition-colors">
+                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                 </button>
+               </div>
             </div>
-            <button type="submit" disabled={loading} className="w-full h-12 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">Sign In <ChevronRight size={16} /></button>
+
+            <div className="flex items-center justify-end px-2">
+               <Link to="/support" className="text-[9px] font-black text-indigo-400 uppercase tracking-widest hover:text-indigo-300 transition-colors">Forgot Key?</Link>
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={authLoading} 
+              className="w-full h-16 bg-indigo-600 hover:bg-indigo-500 text-white rounded-[28px] font-black text-[12px] uppercase tracking-[0.3em] shadow-[0_20px_40px_-10px_rgba(79,70,229,0.3)] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 mt-4 overflow-hidden relative group"
+            >
+              {authLoading ? (
+                <><Loader2 className="w-5 h-5 text-white animate-spin" /> Authorizing...</>
+              ) : (
+                <>
+                  <span className="relative z-10">Initiate Session</span>
+                  <ChevronRight size={20} className="relative z-10 group-hover:translate-x-1 transition-transform" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                </>
+              )}
+            </button>
           </form>
 
-          <DemoLoginSection onDemo={demoLogin} />
+          <div className="mt-10 pt-8 border-t border-white/5">
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => demoLogin('admin')} className="h-12 bg-white/5 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-all border border-white/5">Admin Node</button>
+              <button onClick={() => demoLogin('user')} className="h-12 bg-indigo-600/10 text-indigo-400 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-600/20 transition-all border border-indigo-500/20">User Node</button>
+            </div>
+            
+            <button 
+              onClick={handleRestore}
+              className="w-full mt-6 h-10 text-[8px] font-black text-slate-600 uppercase tracking-[0.3em] flex items-center justify-center gap-2 hover:text-rose-500 transition-all"
+            >
+              <RefreshCcw size={10} /> Factory Reset Database
+            </button>
+          </div>
 
-          <p className="mt-5 text-center text-[9px] text-slate-400 font-bold uppercase tracking-widest">
-            New here? <Link to="/register" className="text-sky-500 ml-1">Create ID</Link>
-          </p>
+          <div className="mt-10 text-center">
+            <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest">
+              New to the platform? <Link to="/register" className="text-white font-black ml-1 hover:underline underline-offset-4 decoration-indigo-500">Create Identity</Link>
+            </p>
+          </div>
+
+          {/* Bottom Branding */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 opacity-20 flex items-center gap-1.5 whitespace-nowrap">
+             <Globe size={10} className="text-white" />
+             <span className="text-[7px] font-black text-white uppercase tracking-[0.5em]">Global Decentralized Network</span>
+          </div>
         </div>
       </motion.div>
+
+      {/* Exit Button */}
+      <Link to="/" className="fixed top-8 left-8 flex items-center gap-3 text-slate-500 hover:text-white transition-colors group">
+         <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center border border-white/5 group-hover:bg-white/10">
+            <ArrowLeft size={18} />
+         </div>
+         <span className="text-[10px] font-black uppercase tracking-widest hidden md:block">Back to Portal</span>
+      </Link>
     </div>
   );
 };

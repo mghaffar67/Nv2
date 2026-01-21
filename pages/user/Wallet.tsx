@@ -1,202 +1,140 @@
-
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence, animate } from 'framer-motion';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { 
-  ShieldCheck, 
-  TrendingUp, History, Zap, ArrowUpRight, Banknote, Smartphone, 
-  Coins, CreditCard, ChevronLeft, Loader2, Sparkles
+  ShieldCheck, Zap, History, Banknote, 
+  ArrowUpRight, ArrowDownLeft,
+  Clock, Loader2, Info, CreditCard,
+  Plus, TrendingUp
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuth } from '../../context/AuthContext';
-import { useConfig } from '../../context/ConfigContext';
-import { userFinanceController } from '../../backend_core/controllers/userFinanceController';
-
-const CountUp = ({ value }: { value: number }) => {
-  const [display, setDisplay] = useState(value);
-  useEffect(() => {
-    const controls = animate(display, value, {
-      duration: 1.5,
-      onUpdate: (latest) => setDisplay(Math.floor(latest)),
-    });
-    return () => controls.stop();
-  }, [value]);
-  return <>{display.toLocaleString()}</>;
-};
-
-const ShimmerBalance = ({ value }: { value: number }) => (
-  <div className="relative inline-block">
-    <motion.div 
-      initial={{ x: '-100%' }}
-      animate={{ x: '200%' }}
-      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-20deg] z-10 pointer-events-none"
-    />
-    <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-none flex items-baseline justify-center relative z-0">
-      <span className="text-xl md:text-2xl text-emerald-400 mr-2 italic font-black">PKR</span>
-      <CountUp value={value} />
-    </h1>
-  </div>
-);
+import { api } from '../../utils/api';
 
 const Wallet = () => {
   const { user } = useAuth();
-  const { config } = useConfig();
-  const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit');
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  
-  const [form, setForm] = useState({
-    amount: '', senderNumber: '', trxId: '', gateway: '',
-    accountNumber: user?.withdrawalInfo?.accountNumber || '',
-    accountTitle: user?.withdrawalInfo?.accountTitle || ''
-  });
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (config.paymentGateways.length > 0) {
-      setForm(prev => ({ ...prev, gateway: config.paymentGateways[0].name }));
-    }
-  }, [config.paymentGateways]);
-
-  const handleAction = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user?.id) return;
-    setLoading(true);
-    try {
-      if (activeTab === 'deposit') {
-        if (!form.trxId || !form.amount) throw new Error("Please fill all fields");
-        await userFinanceController.requestDeposit({ 
-          body: { userId: user.id, ...form, proofImage: 'MOCK_IMAGE_DATA' } 
-        }, { 
-          status: (c: number) => ({ json: (d: any) => { if (c >= 400) throw new Error(d.message); return d; } }) 
-        });
-      } else {
-        await userFinanceController.requestWithdraw({ 
-          body: { userId: user.id, ...form } 
-        }, { 
-          status: (c: number) => ({ 
-            json: (d: any) => {
-              if (c >= 400) throw new Error(d.message || "Failed");
-              return d;
-            } 
-          }) 
-        });
+    const fetchHistory = async () => {
+      setLoading(true);
+      try {
+        const res = await api.get('/finance/history');
+        setTransactions(Array.isArray(res) ? res : []);
+      } catch (err) {
+        console.error("Ledger sync failure.");
+      } finally {
+        setLoading(false);
       }
-      setSuccess(true);
-      setTimeout(() => { 
-        setSuccess(false); 
-        window.location.reload(); 
-      }, 2000);
-    } catch (err: any) { 
-      alert(err.message || "Request failed. Please try again."); 
-    } finally { 
-      setLoading(false); 
-    }
-  };
-
-  const selectedGateway = config.paymentGateways.find(g => g.name === form.gateway);
+    };
+    fetchHistory();
+  }, []);
 
   return (
-    <div className="max-w-md mx-auto px-1 pb-24 space-y-3 animate-fade-in">
+    <div className="max-w-md mx-auto space-y-4 pb-24 animate-fade-in px-1">
       
-      {/* BALANCE CARD */}
-      <div className="bg-slate-950 p-8 md:p-10 rounded-[44px] text-white shadow-2xl relative overflow-hidden text-center mx-1">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-emerald-500/10 via-transparent to-sky-500/10" />
+      {/* 1. COMPACT FINTECH SLAB - REDESIGNED */}
+      <div className="bg-slate-950 p-6 rounded-[32px] text-white shadow-xl relative overflow-hidden mx-1 border border-white/5">
+        <div className="absolute top-0 right-0 p-4 opacity-5 rotate-12 scale-110 text-sky-400 pointer-events-none">
+          <CreditCard size={100} />
+        </div>
         <div className="relative z-10">
-           <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em] mb-6 backdrop-blur-md text-emerald-400">
-              <Sparkles size={10} className="animate-pulse" /> SECURE LEDGER
+           <div className="flex justify-between items-center mb-4">
+              <div className="inline-flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-full text-[7px] font-black uppercase tracking-widest text-indigo-400 border border-white/5 backdrop-blur-sm">
+                 <ShieldCheck size={10} /> SECURE NODE
+              </div>
+              <div className="flex items-center gap-1">
+                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                 <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Live Ledger</span>
+              </div>
            </div>
-           <div className="flex flex-col items-center mb-8">
-              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.3em] mb-3">Net Liquidity</p>
-              <ShimmerBalance value={user?.balance || 0} />
-           </div>
-           <div className="grid grid-cols-2 gap-2">
-              <Link to="/user/history" className="h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-all">
-                 <History size={16} className="text-sky-400" />
-                 <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Audit Log</span>
-              </Link>
-              <Link to="/user/plans" className="h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-all">
-                 <Zap size={16} className="text-amber-400" />
-                 <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Upgrade Hub</span>
-              </Link>
+           
+           <div className="flex items-center justify-between">
+              <div>
+                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-1 italic">Available Yield</p>
+                 <h1 className="text-4xl font-black tracking-tighter leading-none italic">
+                   <span className="text-xl text-emerald-400 mr-1 italic font-black">Rs.</span>
+                   {(user?.balance || 0).toLocaleString()}
+                 </h1>
+              </div>
+              <div className="flex flex-col items-end gap-1">
+                 <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest">{user?.currentPlan || 'BASIC'}</p>
+                 <Link to="/user/plans" className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg active:scale-90 transition-all border border-indigo-400/20">
+                    <Plus size={20} className="text-white" />
+                 </Link>
+              </div>
            </div>
         </div>
       </div>
 
-      {/* ACTION TABS */}
-      <div className="bg-white p-1 rounded-2xl border border-slate-100 shadow-sm flex gap-1 mx-1">
-         <button onClick={() => setActiveTab('deposit')} className={clsx("flex-1 h-11 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all flex items-center justify-center gap-2", activeTab === 'deposit' ? "bg-slate-900 text-white shadow-lg" : "text-slate-400")}>
-            <TrendingUp size={16} /> Deposit
-         </button>
-         <button onClick={() => setActiveTab('withdraw')} className={clsx("flex-1 h-11 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all flex items-center justify-center gap-2", activeTab === 'withdraw' ? "bg-slate-900 text-white shadow-lg" : "text-slate-400")}>
-            <ArrowUpRight size={16} /> Withdraw
-         </button>
+      {/* 2. RAPID ACCESS NODES */}
+      <div className="grid grid-cols-2 gap-3 mx-1">
+         <Link to="/user/wallet/withdraw" className="group bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm flex flex-col gap-3 active:scale-95 transition-all">
+            <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+               <Banknote size={20} />
+            </div>
+            <div>
+               <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Payout Request</h4>
+               <p className="text-[7px] font-bold text-slate-400 uppercase mt-0.5">Withdraw Capital</p>
+            </div>
+         </Link>
+         <Link to="/user/history" className="group bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm flex flex-col gap-3 active:scale-95 transition-all">
+            <div className="w-10 h-10 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center group-hover:bg-sky-600 group-hover:text-white transition-colors">
+               <History size={20} />
+            </div>
+            <div>
+               <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Full Ledger</h4>
+               <p className="text-[7px] font-bold text-slate-400 uppercase mt-0.5">Audit History</p>
+            </div>
+         </Link>
       </div>
 
-      <AnimatePresence mode="wait">
-        <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mx-1">
-          {activeTab === 'deposit' ? (
-            <div className="space-y-3">
-               {selectedGateway && (
-                 <div className="bg-emerald-50 p-5 rounded-[32px] border border-emerald-100 text-center">
-                    <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-1">Destination Node:</p>
-                    <h4 className="text-2xl font-black text-slate-900 tracking-widest">{selectedGateway.accountNumber}</h4>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase mt-1 italic">{selectedGateway.name} ({selectedGateway.accountTitle})</p>
-                 </div>
-               )}
-               
-               <div className="bg-white p-6 rounded-[36px] border border-slate-100 shadow-sm space-y-4">
-                  <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest ml-2">Configuration</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {config.paymentGateways.map(g => (
-                      <button key={g.name} onClick={() => setForm({...form, gateway: g.name})} className={clsx("h-11 rounded-xl border-2 font-black text-[8px] uppercase transition-all", form.gateway === g.name ? "border-slate-900 bg-slate-50 text-slate-900" : "border-slate-50 text-slate-300")}>{g.name}</button>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <InputGroup label="PKR AMOUNT" type="number" value={form.amount} onChange={(e: any) => setForm({...form, amount: e.target.value})} placeholder="Min 100" />
-                    <InputGroup label="SENDER NO" type="tel" value={form.senderNumber} onChange={(e: any) => setForm({...form, senderNumber: e.target.value})} placeholder="03xx" />
-                  </div>
-                  <InputGroup label="TRANSACTION ID (TRX)" value={form.trxId} onChange={(e: any) => setForm({...form, trxId: e.target.value})} placeholder="TRX123456" />
-                  <button onClick={handleAction} disabled={loading} className="w-full h-14 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-xl flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 transition-all mt-2">
-                    {loading ? 'SYNCHRONIZING...' : 'SUBMIT PACKET'}
-                  </button>
-               </div>
-            </div>
-          ) : (
-            <div className="bg-white p-6 rounded-[36px] border border-slate-100 shadow-sm space-y-5">
-               <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest ml-2">Destination Node</p>
-               <div className="grid grid-cols-2 gap-2">
-                  {config.paymentGateways.map(g => (
-                    <button key={g.name} onClick={() => setForm({...form, gateway: g.name})} className={clsx("h-11 rounded-xl border-2 font-black text-[8px] uppercase transition-all", form.gateway === g.name ? "border-slate-900 bg-slate-50 text-slate-900" : "border-slate-50 text-slate-300")}>{g.name}</button>
-                  ))}
-               </div>
-               <div className="space-y-4">
-                 <InputGroup label="ACCOUNT NUMBER" value={form.accountNumber} onChange={(e: any) => setForm({...form, accountNumber: e.target.value})} placeholder="03xx" />
-                 <InputGroup label="ACCOUNT TITLE" value={form.accountTitle} onChange={(e: any) => setForm({...form, accountTitle: e.target.value})} placeholder="Owner Name" />
-                 <div className="pt-2">
-                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-3">Payout Value</label>
-                    <div className="relative mt-2">
-                      <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-slate-300 text-xl">Rs</span>
-                      <input type="number" value={form.amount} onChange={(e: any) => setForm({...form, amount: e.target.value})} className="w-full h-16 bg-slate-50 border border-slate-100 rounded-3xl pl-14 pr-6 font-black text-2xl text-slate-900 outline-none" placeholder="Min 500" />
-                    </div>
-                 </div>
-               </div>
-               <button onClick={handleAction} disabled={loading || (user?.balance || 0) < 500} className="w-full h-14 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all">
-                  {loading ? 'PROCESSING...' : 'REQUEST PAYOUT'}
-               </button>
-            </div>
-          )}
-        </motion.div>
-      </AnimatePresence>
+      {/* 3. MINI LEDGER PREVIEW */}
+      <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm mx-1 p-5">
+         <div className="flex items-center justify-between mb-4 border-b border-slate-50 pb-3">
+            <h3 className="text-[9px] font-black text-slate-800 uppercase tracking-widest italic flex items-center gap-1.5">
+              <TrendingUp size={12} className="text-indigo-500" /> Recent Flows
+            </h3>
+            <Link to="/user/history" className="text-[8px] font-black text-indigo-600 uppercase tracking-widest">View All</Link>
+         </div>
+
+         <div className="space-y-1">
+            {loading ? (
+              <div className="py-12 text-center flex flex-col items-center gap-2">
+                 <Loader2 size={20} className="animate-spin text-indigo-500" />
+                 <p className="text-[7px] font-black text-slate-300 uppercase tracking-widest">Syncing...</p>
+              </div>
+            ) : transactions.length > 0 ? (
+              transactions.slice(0, 4).map((trx) => (
+                <div key={trx.id} className="p-3 bg-slate-50/50 rounded-2xl flex items-center justify-between border border-transparent hover:border-slate-100 transition-all">
+                   <div className="flex items-center gap-3">
+                      <div className={clsx(
+                        "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                        trx.type === 'withdraw' ? "bg-rose-50 text-rose-500" : "bg-emerald-50 text-emerald-600"
+                      )}>
+                         {trx.type === 'withdraw' ? <ArrowUpRight size={14} /> : <ArrowDownLeft size={14} />}
+                      </div>
+                      <div>
+                         <h4 className="font-black text-slate-800 text-[9px] uppercase leading-none mb-1">{trx.gateway || trx.type}</h4>
+                         <p className="text-[6px] font-bold text-slate-400 uppercase">{trx.date}</p>
+                      </div>
+                   </div>
+                   <p className={clsx("font-black text-[10px] italic", trx.type === 'withdraw' ? "text-slate-900" : "text-emerald-600")}>
+                     {trx.type === 'withdraw' ? '-' : '+'}Rs {trx.amount}
+                   </p>
+                </div>
+              ))
+            ) : (
+              <div className="py-12 text-center flex flex-col items-center gap-2 border-2 border-dashed border-slate-50 rounded-2xl">
+                 <Info size={16} className="text-slate-200" />
+                 <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Ledger Empty</p>
+              </div>
+            )}
+         </div>
+      </div>
     </div>
   );
 };
-
-const InputGroup = ({ label, ...props }: any) => (
-  <div className="space-y-1.5">
-    <label className="text-[7px] font-black text-slate-400 uppercase tracking-widest ml-3">{label}</label>
-    <input {...props} className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold text-sm outline-none focus:ring-4 focus:ring-sky-50 transition-all" />
-  </div>
-);
 
 export default Wallet;

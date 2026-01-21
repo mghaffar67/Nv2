@@ -13,28 +13,25 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  // Fast-track: If storage exists but state is updating, don't show full page loader if possible
+  // This allows the app to feel snappy
+  const hasLocalToken = !!localStorage.getItem('noor_token');
+
+  if (loading && !hasLocalToken) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
-        <div className="relative">
-          <Loader2 className="w-16 h-16 text-sky-500 animate-spin" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-2 h-2 bg-slate-900 rounded-full animate-ping" />
-          </div>
-        </div>
-        <p className="mt-6 text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 animate-pulse">
-          Securing Environment
-        </p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white">
+        <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+        <p className="mt-4 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 italic">Syncing Hub...</p>
       </div>
     );
   }
 
-  if (!user) {
+  if (!user && !hasLocalToken) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (requiredRole && user.role !== requiredRole) {
-    // Redirect unauthorized admins to admin dash, or users to user dash
+  // Final role verification
+  if (requiredRole && user && user.role !== requiredRole) {
     const fallback = user.role === 'admin' ? '/admin/dashboard' : '/user/dashboard';
     return <Navigate to={fallback} replace />;
   }

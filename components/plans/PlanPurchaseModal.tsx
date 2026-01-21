@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Wallet, Smartphone, Upload, CheckCircle2, ShieldAlert, Zap, ArrowRight, Copy, Image as ImageIcon } from 'lucide-react';
+import { X, Wallet, Smartphone, Upload, CheckCircle2, ShieldAlert, Zap, ArrowRight, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { planController } from '../../backend_core/controllers/planController';
 import { clsx } from 'clsx';
@@ -10,9 +9,10 @@ interface PlanPurchaseModalProps {
   isOpen: boolean;
   onClose: () => void;
   plan: any;
+  onSuccess: (plan: any) => void;
 }
 
-const PlanPurchaseModal = ({ isOpen, onClose, plan }: PlanPurchaseModalProps) => {
+const PlanPurchaseModal = ({ isOpen, onClose, plan, onSuccess }: PlanPurchaseModalProps) => {
   const { user } = useAuth();
   const [tab, setTab] = useState<'wallet' | 'direct'>('wallet');
   const [loading, setLoading] = useState(false);
@@ -47,10 +47,12 @@ const PlanPurchaseModal = ({ isOpen, onClose, plan }: PlanPurchaseModalProps) =>
         });
       });
 
-      if (res.code === 200 || res.code === 201) {
-        alert(res.data.message);
+      if (res.code === 200) {
+        onSuccess(plan);
         onClose();
-        window.location.reload();
+      } else if (res.code === 201) {
+        alert("Activation request filed! Audit pending.");
+        onClose();
       } else {
         alert(res.data.message);
       }
@@ -59,7 +61,7 @@ const PlanPurchaseModal = ({ isOpen, onClose, plan }: PlanPurchaseModalProps) =>
     }
   };
 
-  const isBalanceEnough = (user?.balance || 0) >= plan?.price;
+  if (!plan) return null;
 
   return (
     <AnimatePresence>
@@ -85,7 +87,7 @@ const PlanPurchaseModal = ({ isOpen, onClose, plan }: PlanPurchaseModalProps) =>
 
             <div className="flex bg-slate-50 m-6 p-1 rounded-2xl border border-slate-100">
               <button onClick={() => setTab('wallet')} className={clsx("flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", tab === 'wallet' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400")}>Wallet Pay</button>
-              <button onClick={() => setTab('direct')} className={clsx("flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", tab === 'direct' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400")}>Deposit Proof</button>
+              <button onClick={() => setTab('direct')} className={clsx("flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", tab === 'direct' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400")}>Direct Transfer</button>
             </div>
 
             <div className="px-6 pb-8 min-h-[220px]">
@@ -95,8 +97,7 @@ const PlanPurchaseModal = ({ isOpen, onClose, plan }: PlanPurchaseModalProps) =>
                     <div className="flex items-center gap-3"><Wallet size={18} className="text-sky-500" /><span className="text-[11px] font-black text-slate-600 uppercase">Available</span></div>
                     <span className="text-sm font-black text-sky-600">Rs. {user?.balance?.toLocaleString()}</span>
                   </div>
-                  {!isBalanceEnough && <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100 flex items-center gap-3"><ShieldAlert size={18} className="text-rose-500" /><p className="text-[10px] font-bold text-rose-600 uppercase">Insufficient balance.</p></div>}
-                  <button disabled={!isBalanceEnough || loading} onClick={handlePurchase} className="w-full h-14 bg-slate-900 text-white rounded-[24px] font-black text-xs uppercase tracking-[0.2em] shadow-xl disabled:opacity-30 flex items-center justify-center gap-2">
+                  <button disabled={user?.balance! < plan.price || loading} onClick={handlePurchase} className="w-full h-14 bg-slate-900 text-white rounded-[24px] font-black text-xs uppercase tracking-[0.2em] shadow-xl disabled:opacity-30 flex items-center justify-center gap-2">
                     {loading ? 'Processing...' : 'Unlock Instantly'} <CheckCircle2 size={16} />
                   </button>
                 </div>

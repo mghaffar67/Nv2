@@ -1,4 +1,3 @@
-
 import express from 'express';
 import { financePluginController } from './controller';
 import { authMiddleware } from '../auth/middleware';

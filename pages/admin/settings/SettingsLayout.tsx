@@ -4,12 +4,12 @@ import { Outlet, NavLink } from 'react-router-dom';
 import { 
   Settings as GeneralIcon, 
   Layers as ModuleIcon, 
-  Palette as AppearanceIcon, 
-  Globe as SEOIcon,
+  Monitor,
+  Search,
+  MessageSquare,
   ChevronRight,
   FileText,
-  Monitor,
-  Search
+  Database
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion } from 'framer-motion';
@@ -36,17 +36,19 @@ const SettingsLayout = () => {
   return (
     <div className="space-y-4 animate-fade-in max-w-7xl mx-auto px-1.5 pb-20">
       <div className="px-2">
-         <h1 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase italic">Protocols.</h1>
-         <p className="text-slate-400 font-bold uppercase tracking-widest text-[8px] mt-1">Infrastructure Command Center</p>
+         <h1 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">Settings <span className="text-indigo-600">Portal.</span></h1>
+         <p className="text-slate-400 font-bold uppercase tracking-widest text-[8px] mt-2">Manage System Parameters</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <div className="lg:col-span-3">
           <div className="flex lg:flex-col gap-2 overflow-x-auto no-scrollbar pb-2 lg:pb-0">
             <SettingsLink to="/admin/settings/general" label="Core" icon={GeneralIcon} />
+            <SettingsLink to="/admin/settings/database" label="Database Lab" icon={Database} />
             <SettingsLink to="/admin/settings/modules" label="Modules" icon={ModuleIcon} />
             <SettingsLink to="/admin/settings/seo" label="SEO/Meta" icon={Search} />
             <SettingsLink to="/admin/settings/appearance" label="Landing" icon={Monitor} />
+            <SettingsLink to="/admin/settings/reviews" label="Reviews Hub" icon={MessageSquare} />
             <SettingsLink to="/admin/settings/cms" label="Legal CMS" icon={FileText} />
           </div>
         </div>

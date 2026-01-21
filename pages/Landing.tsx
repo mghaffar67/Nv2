@@ -1,231 +1,180 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   ArrowRight, Zap, Award, Star, Users, 
-  TrendingUp, Coins, Image as ImageIcon, CheckCircle2, Diamond,
-  Quote
+  TrendingUp, Coins, Diamond, ShieldCheck, 
+  Activity, MessageCircle, LogIn, ChevronRight,
+  UserPlus, Cpu, Wallet, Quote
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useConfig } from '../context/ConfigContext';
 import LivePayoutTicker from '../components/marketing/LivePayoutTicker';
-import { api } from '../utils/api';
+
+const AutoCounter = ({ start, increment, prefix = "", suffix = "" }: any) => {
+  const [count, setCount] = useState(start);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCount((prev: number) => prev + Math.floor(Math.random() * increment));
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [increment]);
+  return <span>{prefix}{count.toLocaleString()}{suffix}</span>;
+};
 
 const Landing = () => {
   const { config } = useConfig();
-  const [activeSlide, setActiveSlide] = useState(0);
-  const [seo, setSeo] = useState<any>(null);
   const slides = config.appearance.heroSlides;
-
-  useEffect(() => {
-    const fetchSEO = async () => {
-      try {
-        const data = await api.get('/system/public/seo');
-        setSeo(data);
-        
-        if (data.siteTitle) document.title = data.siteTitle;
-        const metaDesc = document.querySelector('meta[name="description"]');
-        if (metaDesc && data.metaDescription) {
-          metaDesc.setAttribute('content', data.metaDescription);
-        }
-      } catch (err) {
-        console.warn("Public SEO node offline.");
-      }
-    };
-    fetchSEO();
-
-    const timer = setInterval(() => {
-      if (slides.length > 0) {
-        setActiveSlide((prev) => (prev + 1) % slides.length);
-      }
-    }, 8000);
-    return () => clearInterval(timer);
-  }, [slides.length]);
-
-  const heroTitle = seo?.heroTitle || slides[activeSlide]?.title || config.appearance.heroTitle;
-  const heroSubtitle = seo?.heroSubtitle || slides[activeSlide]?.subtitle || config.appearance.heroSubtitle;
-  const heroImage = seo?.heroImage || slides[activeSlide]?.image;
+  const heroImage = slides[0]?.image || "https://images.unsplash.com/photo-1611974714603-3555366b3b5e?q=80&w=800";
 
   return (
-    <div className="overflow-hidden bg-[#f8f9fb]">
+    <div className="overflow-hidden bg-[#f8f9fb] font-sans pb-12">
       <LivePayoutTicker />
       
-      {/* HERO SECTION - RESPONSIVE & DYNAMIC */}
-      <section className="relative min-h-[70vh] md:min-h-[85vh] flex items-center overflow-hidden bg-slate-950 z-10">
-        <div className="absolute top-0 right-0 w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-indigo-600/10 blur-[80px] md:blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-sky-500/10 blur-[80px] md:blur-[120px] rounded-full translate-y-1/2 -translate-x-1/2" />
-
-        <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-8 md:py-24">
-          <div className="flex flex-col-reverse md:flex-row items-center gap-8 md:gap-20">
-            
-            {/* TEXT CONTENT */}
-            <motion.div 
-              initial={{ opacity: 0, x: -30 }} 
-              animate={{ opacity: 1, x: 0 }} 
-              className="flex-1 text-center md:text-left text-white z-20"
-            >
-              <div className="inline-flex items-center gap-1 bg-indigo-600 text-white px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest mb-4 md:mb-6 shadow-2xl border border-white/10">
-                <CheckCircle2 size={10} fill="currentColor" /> {config.appName.toUpperCase()} OFFICIAL
+      {/* 1. HERO */}
+      <section className="relative min-h-[45vh] md:min-h-[55vh] flex items-center overflow-hidden bg-slate-950">
+        <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-indigo-500/10 blur-[80px] rounded-full" />
+        <div className="max-w-7xl mx-auto w-full px-6 py-8 md:py-12">
+          <div className="flex flex-col md:flex-row items-center gap-8">
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex-1 text-center md:text-left text-white space-y-4">
+              <div className="inline-flex items-center gap-2 bg-indigo-500/20 border border-indigo-400/30 px-3 py-1 rounded-full text-[7px] font-black uppercase tracking-widest text-indigo-400">
+                <ShieldCheck size={9} /> NOOR OFFICIAL V3
               </div>
-              
-              <h1 className="text-3xl md:text-7xl font-black mb-4 md:mb-6 leading-[1.1] tracking-tighter uppercase italic">
-                {heroTitle}
+              <h1 className="text-4xl md:text-7xl font-black leading-[0.9] tracking-tighter uppercase italic">
+                Earn <span className="text-indigo-500">More.</span><br/>Work <span className="text-sky-400 font-light text-2xl md:text-6xl">Simple.</span>
               </h1>
-              
-              <p className="text-slate-400 text-[10px] md:text-lg font-medium mb-8 md:mb-10 max-w-xl leading-relaxed mx-auto md:mx-0 uppercase tracking-widest opacity-80">
-                {heroSubtitle}
+              <p className="text-slate-400 text-[10px] md:text-xs font-bold max-w-sm leading-relaxed uppercase tracking-widest opacity-60">
+                Pakistan's #1 Digital Earning Platform. Get paid daily to your EasyPaisa or JazzCash.
               </p>
-              
-              <div className="flex flex-col sm:flex-row justify-center md:justify-start gap-3 md:gap-4">
-                <Link to="/register" className="bg-white text-slate-950 h-12 md:h-16 px-8 md:px-10 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest shadow-2xl flex items-center justify-center gap-2 group active:scale-95 transition-all">
-                  Get Started <ArrowRight size={14} className="group-hover:translate-x-1" />
+              <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                <Link to="/register" className="bg-indigo-600 text-white h-11 px-6 rounded-xl font-black text-[9px] uppercase tracking-widest shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-2 active:scale-95 transition-all">
+                  Join Now <ArrowRight size={12} />
                 </Link>
-                <Link to="/login" className="bg-white/5 backdrop-blur-xl border border-white/10 text-white h-12 md:h-16 px-6 md:px-8 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 hover:bg-white/10">
-                  Portal Access <Zap size={14} fill="currentColor" className="text-sky-400" />
+                <Link to="/login" className="bg-white/5 border border-white/10 text-white h-11 px-6 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white/10 transition-all">
+                  Member Login
                 </Link>
               </div>
             </motion.div>
-
-            {/* DYNAMIC IMAGE - MOBILE COMPACT */}
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="flex-1 relative w-full max-w-[320px] md:max-w-none"
-            >
-              <div className="relative aspect-square md:aspect-[4/3] lg:aspect-square w-full rounded-[30px] md:rounded-[60px] overflow-hidden border-2 md:border-4 border-white/10 shadow-2xl bg-slate-900 group">
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-sky-500/20 z-10 pointer-events-none" />
-                {heroImage ? (
-                  <img 
-                    src={heroImage} 
-                    alt="Earning Experience" 
-                    className="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-110"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-slate-700">
-                    <ImageIcon size={48} />
-                  </div>
-                )}
-                
-                {/* Floating Stats */}
-                <motion.div 
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{ duration: 4, repeat: Infinity }}
-                  className="absolute bottom-4 right-4 md:bottom-6 md:right-6 bg-white/10 backdrop-blur-md p-3 md:p-4 rounded-2xl md:rounded-3xl border border-white/10 z-20 hidden sm:block"
-                >
-                  <p className="text-[7px] md:text-[8px] font-black text-sky-400 uppercase tracking-widest mb-0.5 md:mb-1">Live Disbursed</p>
-                  <p className="text-base md:text-xl font-black text-white italic">Rs. {config.appearance.siteStats.totalPaid}</p>
-                </motion.div>
-              </div>
-            </motion.div>
-
           </div>
         </div>
       </section>
 
-      {/* STATS SECTION */}
-      <section className="py-10 md:py-16 bg-white">
-         <div className="max-w-5xl mx-auto px-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-               <LandingStat icon={Users} value={config.appearance.siteStats.totalMembers} label="Fleet Size" color="bg-slate-900" />
-               <LandingStat icon={Coins} value={`Rs ${config.appearance.siteStats.totalPaid}`} label="Total Yield" color="bg-green-600" />
-               <LandingStat icon={Award} value="24/7" label="Support Node" color="bg-indigo-600" />
-               <LandingStat icon={TrendingUp} value={config.appearance.siteStats.activeUsers} label="Tracking" color="bg-sky-500" />
+      {/* 2. STATS */}
+      <section className="py-4 bg-white border-b border-slate-100">
+         <div className="max-w-7xl mx-auto px-4 grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
+            <StatPill label="Total Members" icon={Users} color="text-indigo-600 bg-indigo-50">
+               <AutoCounter start={12450} increment={2} suffix="+" />
+            </StatPill>
+            <StatPill label="Total Profit" icon={TrendingUp} color="text-emerald-600 bg-emerald-50">
+               <AutoCounter start={85200} increment={110} prefix="Rs " />
+            </StatPill>
+            <StatPill label="Active Users" icon={Activity} color="text-sky-600 bg-sky-50">
+               <AutoCounter start={3120} increment={1} />
+            </StatPill>
+            <StatPill label="Total Paid" icon={Coins} color="text-amber-600 bg-amber-50">
+               <AutoCounter start={15420500} increment={540} prefix="Rs " />
+            </StatPill>
+         </div>
+      </section>
+
+      {/* 3. WORK PROCESS */}
+      <section className="py-12 px-4 bg-[#fcfdfe]">
+         <div className="max-w-7xl mx-auto text-center mb-8">
+            <h2 className="text-xl md:text-3xl font-black text-slate-900 tracking-tighter uppercase italic">How it Works.</h2>
+            <div className="h-0.5 w-10 bg-indigo-600 mx-auto rounded-full mt-2" />
+         </div>
+         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-4xl mx-auto">
+            <WorkStep number="01" title="Register" icon={UserPlus} desc="Create your ID" delay={0.1} />
+            <WorkStep number="02" title="Plan" icon={Cpu} desc="Choose Station" delay={0.2} />
+            <WorkStep number="03" title="Work" icon={Zap} desc="Do Daily Tasks" delay={0.3} />
+            <WorkStep number="04" title="Withdraw" icon={Wallet} desc="Get Cash Daily" delay={0.4} />
+         </div>
+      </section>
+
+      {/* 4. PLANS */}
+      <section className="py-12 px-4">
+         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 max-w-5xl mx-auto">
+            <PlanCard name="BASIC" price="500" daily="50" icon={Star} color="text-slate-400" />
+            <PlanCard name="STANDARD" price="1000" daily="100" icon={Zap} color="text-indigo-500" />
+            <PlanCard name="GOLD ELITE" price="1500" daily="150" icon={Award} color="text-emerald-500" popular />
+            <PlanCard name="DIAMOND" price="5000" daily="650" icon={Diamond} color="text-sky-500" />
+         </div>
+      </section>
+
+      {/* 5. REVIEWS */}
+      <section className="py-16 px-4 bg-slate-50 border-y border-slate-100 overflow-hidden">
+         <div className="max-w-7xl mx-auto text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-600 rounded-full text-[8px] font-black uppercase tracking-widest mb-4">
+               <Star size={10} fill="currentColor" /> TESTIMONIALS
             </div>
+            <h2 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">Trusted by Thousands.</h2>
          </div>
-      </section>
-      
-      {/* PLANS PREVIEW - MOBILE SCALED CARDS */}
-      <section className="py-12 md:py-24 px-4 md:px-6 bg-slate-50 border-y border-slate-100">
-         <div className="max-w-7xl mx-auto text-center mb-10 md:mb-16">
-            <h2 className="text-2xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic">Earning Nodes.</h2>
-            <p className="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-3 md:mt-4">Select your operational tier</p>
-         </div>
-         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-6xl mx-auto">
-            <PlanNode name="BASIC TIER" price="500" daily="50" icon={Star} color="text-slate-400" />
-            <PlanNode name="GOLD ELITE" price="1500" daily="150" icon={Award} color="text-amber-500" popular />
-            <PlanNode name="DIAMOND CORE" price="5000" daily="650" icon={Diamond} color="text-sky-500" />
-         </div>
-      </section>
 
-      {/* REVIEWS SECTION */}
-      <section className="py-12 md:py-24 bg-white overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic">Member Intel.</h2>
-            <p className="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-3">Verified network feedback</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {config.appearance.reviews.map((review, i) => (
-              <motion.div 
-                key={i}
-                whileHover={{ y: -5 }}
-                className="bg-slate-50 p-6 md:p-10 rounded-[32px] md:rounded-[48px] border border-slate-100 relative group"
-              >
-                <Quote size={32} className="absolute top-6 right-6 text-slate-200 group-hover:text-indigo-100 transition-colors" />
-                <div className="flex gap-1 mb-4">
-                  {Array.from({ length: review.rating }).map((_, j) => (
-                    <Star key={j} size={10} className="fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-                <p className="text-slate-600 text-xs md:text-base font-medium mb-6 italic leading-relaxed">
-                  "{review.comment}"
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center font-black text-slate-500 text-[10px]">
-                    {review.name.charAt(0)}
+         <div className="flex gap-4 overflow-x-auto no-scrollbar pb-6 px-4">
+            {(config.appearance.reviews || []).map((review, i) => (
+               <motion.div 
+                 key={i} initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }}
+                 className="min-w-[280px] md:min-w-[320px] bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm relative"
+               >
+                  <div className="absolute top-4 right-6 text-slate-50 opacity-10"><Quote size={48} fill="currentColor" /></div>
+                  <div className="flex gap-1 mb-4">
+                     {[...Array(review.rating)].map((_, j) => <Star key={j} size={10} className="fill-amber-400 text-amber-400" />)}
                   </div>
-                  <div>
-                    <p className="font-black text-slate-900 text-[10px] md:text-xs uppercase">{review.name}</p>
-                    <p className="text-[7px] md:text-[8px] font-bold text-slate-400 uppercase tracking-widest">Verified Member</p>
+                  <p className="text-[11px] text-slate-600 font-medium italic leading-relaxed mb-6 h-12 line-clamp-3">"{review.comment}"</p>
+                  <div className="flex items-center gap-3 border-t border-slate-50 pt-4">
+                     <div className="w-10 h-10 rounded-xl bg-slate-950 flex items-center justify-center text-sky-400 font-black italic">{review.name.charAt(0)}</div>
+                     <div>
+                        <h4 className="text-[10px] font-black text-slate-900 uppercase">{review.name}</h4>
+                        <p className="text-[7px] font-bold text-emerald-500 uppercase">Verified User</p>
+                     </div>
                   </div>
-                </div>
-              </motion.div>
+               </motion.div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CALL TO ACTION */}
-      <section className="py-20 px-4">
-        <div className="max-w-4xl mx-auto bg-slate-900 rounded-[40px] md:rounded-[60px] p-8 md:p-16 text-center text-white relative overflow-hidden shadow-2xl">
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-600/20 to-transparent pointer-events-none" />
-          <h2 className="text-3xl md:text-5xl font-black mb-6 md:mb-8 tracking-tighter uppercase italic relative z-10">Start Your Earning <span className="text-sky-400">Node</span> Today.</h2>
-          <p className="text-slate-400 text-[10px] md:text-sm font-bold uppercase tracking-widest mb-10 max-w-lg mx-auto leading-relaxed relative z-10">Join thousands of Pakistanis earning daily through simple, verified digital tasks.</p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4 relative z-10">
-            <Link to="/register" className="h-14 md:h-16 px-12 bg-white text-slate-950 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-xl">
-              Register Now <ArrowRight size={16} />
-            </Link>
-          </div>
-        </div>
+         </div>
       </section>
     </div>
   );
 };
 
-const LandingStat = ({ icon: Icon, value, label, color }: any) => (
-  <div className="flex flex-col items-center text-center group">
-     <div className={clsx("w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center text-white mb-3 md:mb-4 shadow-xl transition-transform group-hover:scale-110", color)}>
-        <Icon size={18} className="md:size-24" />
+const WorkStep = ({ number, title, icon: Icon, desc, delay }: any) => (
+  <motion.div initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay }} viewport={{ once: true }} className="bg-white p-5 rounded-[32px] border border-slate-100 shadow-sm flex flex-col items-center text-center group">
+     <div className="text-[8px] font-black text-indigo-300 mb-2">{number}</div>
+     <div className="w-9 h-9 bg-slate-50 rounded-xl flex items-center justify-center text-indigo-600 mb-3"><Icon size={18} /></div>
+     <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-tight mb-1">{title}</h4>
+     <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">{desc}</p>
+  </motion.div>
+);
+
+const StatPill = ({ label, icon: Icon, color, children }: any) => (
+  <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center gap-3">
+     <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center shadow-inner shrink-0", color)}><Icon size={16} /></div>
+     <div className="overflow-hidden">
+        <p className="text-[6px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1 truncate">{label}</p>
+        <p className="text-xs font-black text-slate-900 italic leading-none">{children}</p>
      </div>
-     <p className="text-base md:text-2xl font-black text-slate-900 tracking-tight">{value}</p>
-     <p className="text-[7px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 md:mt-1">{label}</p>
   </div>
 );
 
-const PlanNode = ({ name, price, daily, icon: Icon, color, popular }: any) => (
-  <Link to="/register" className={clsx(
-    "bg-white p-6 md:p-10 rounded-[32px] md:rounded-[50px] border transition-all hover:scale-[1.02] active:scale-95 relative overflow-hidden",
-    popular ? "border-indigo-500 shadow-2xl ring-4 md:ring-8 ring-indigo-50" : "border-slate-100 shadow-sm"
-  )}>
-     {popular && <div className="absolute -top-3 md:-top-4 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-4 md:px-6 py-1 md:py-1.5 rounded-full text-[7px] md:text-[9px] font-black uppercase tracking-widest shadow-xl">Recommended</div>}
-     <div className={clsx("w-10 h-10 md:w-16 md:h-16 rounded-2xl md:rounded-3xl bg-slate-50 flex items-center justify-center mb-6 md:mb-8", color)}><Icon size={20} className="md:size-32" /></div>
-     <h4 className="text-lg md:text-2xl font-black text-slate-900 uppercase tracking-tight italic leading-tight">{name}</h4>
-     <div className="mt-6 md:mt-8 pt-6 md:pt-8 border-t border-slate-50 space-y-3 md:space-y-4">
-        <div className="flex justify-between items-end"><span className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase">Entry</span><span className="text-sm md:text-lg font-black text-slate-900">Rs {price}</span></div>
-        <div className="flex justify-between items-end"><span className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase">Daily</span><span className="text-sm md:text-lg font-black text-green-600">Rs {daily}</span></div>
+const PlanCard = ({ name, price, daily, icon: Icon, color, popular }: any) => (
+  <div className={clsx("bg-white p-5 rounded-[28px] border transition-all relative overflow-hidden flex flex-col group", popular ? "border-indigo-500 ring-4 ring-indigo-50/50" : "border-slate-100 shadow-sm")}>
+     {popular && <div className="absolute top-3 right-3 bg-indigo-600 text-white px-2 py-0.5 rounded-full text-[5px] font-black uppercase tracking-widest">Hot</div>}
+     <div className={clsx("w-8 h-8 rounded-lg bg-slate-50 shadow-inner flex items-center justify-center mb-4", color)}><Icon size={16} /></div>
+     <h4 className="text-[9px] font-black text-slate-900 uppercase tracking-tighter italic mb-4 leading-none">{name} HUB</h4>
+     <div className="space-y-1.5 mb-4">
+        <div className="flex justify-between items-end border-b border-slate-50 pb-1">
+           <span className="text-[6px] font-black text-slate-400 uppercase tracking-widest">Entry</span>
+           <span className="text-[9px] font-black text-slate-900 italic">Rs {price}</span>
+        </div>
+        <div className="flex justify-between items-end">
+           <span className="text-[6px] font-black text-slate-400 uppercase tracking-widest">Profit</span>
+           <span className="text-[9px] font-black text-emerald-600 italic">Rs {daily}/Day</span>
+        </div>
      </div>
-  </Link>
+     <Link to="/register" className={clsx("w-full h-9 rounded-lg font-black text-[7px] uppercase tracking-widest flex items-center justify-center gap-1 mt-auto", popular ? "bg-indigo-600 text-white" : "bg-slate-900 text-white")}>
+       ACTIVATE <ChevronRight size={10} />
+     </Link>
+  </div>
 );
 
 export default Landing;

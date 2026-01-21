@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, Zap, CheckCircle2, XCircle, Clock, 
   Eye, Edit3, Trash2, Check, X, Smartphone, 
   ShieldCheck, AlertCircle, Info, LayoutList,
-  Layers, Search
+  Layers, Search, MessageSquare
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { workController } from '../../backend_core/controllers/workController';
@@ -45,9 +44,22 @@ const WorkManager = () => {
   }), [tasks, submissions]);
 
   const handleReview = async (sub: any, action: 'approved' | 'rejected') => {
+    let remark = "";
+    if (action === 'rejected') {
+      const input = window.prompt("Enter refusal reason (Admin Remarks):", "Insufficient evidence provided.");
+      if (input === null) return; // User cancelled
+      remark = input;
+    }
+
     try {
       await workController.reviewSubmission({ 
-        body: { userId: sub.userId, submissionId: sub.id, status: action, reward: sub.reward } 
+        body: { 
+          userId: sub.userId, 
+          submissionId: sub.id, 
+          status: action, 
+          reward: sub.reward,
+          adminRemark: remark 
+        } 
       }, { status: () => ({ json: () => {} }) });
       fetchData();
     } catch (err) { alert("Audit node failed"); }
@@ -63,8 +75,7 @@ const WorkManager = () => {
   return (
     <div className="space-y-6 md:space-y-8 pb-24 animate-fade-in max-w-6xl mx-auto px-1">
       
-      {/* 1. Header & Stats */}
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 px-2">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 px-2 pt-4">
          <div>
             <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">Task Hub.</h1>
             <p className="text-slate-400 font-bold uppercase tracking-widest text-[8px] md:text-xs mt-2">Centralized Command for Member Yield</p>
@@ -75,7 +86,6 @@ const WorkManager = () => {
          </div>
       </header>
 
-      {/* 2. Navigation Control */}
       <div className="flex bg-white p-1.5 rounded-[24px] border border-slate-100 shadow-sm mx-1">
          <button onClick={() => setActiveTab('manage')} className={clsx("flex-1 py-3.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all", activeTab === 'manage' ? "bg-slate-900 text-white shadow-xl" : "text-slate-400 hover:text-slate-900")}>Manager</button>
          <button onClick={() => setActiveTab('review')} className={clsx("flex-1 py-3.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all relative", activeTab === 'review' ? "bg-slate-900 text-white shadow-xl" : "text-slate-400 hover:text-slate-900")}>
@@ -92,7 +102,6 @@ const WorkManager = () => {
                 <button onClick={() => { setSelectedTask(null); setIsTaskModalOpen(true); }} className="h-10 px-6 bg-indigo-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center gap-2"><Plus size={16}/> New Task</button>
              </div>
 
-             {/* TASK LIST - RESPONSIVE */}
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mx-1">
                 {tasks.map(task => (
                   <div key={task.id} className="bg-white p-6 rounded-[36px] border border-slate-100 shadow-sm group hover:border-indigo-200 transition-all">
@@ -140,7 +149,7 @@ const WorkManager = () => {
 
                   <div className="flex gap-2 shrink-0">
                      <button onClick={() => handleReview(sub, 'approved')} className="flex-grow md:flex-none px-6 h-11 bg-green-500 text-white rounded-xl font-black text-[9px] uppercase tracking-widest shadow-lg shadow-green-50 active:scale-95">Authorize</button>
-                     <button onClick={() => handleReview(sub, 'rejected')} className="px-4 h-11 bg-rose-50 text-rose-500 rounded-xl border border-rose-100 active:scale-95"><X size={18}/></button>
+                     <button onClick={() => handleReview(sub, 'rejected')} className="px-4 h-11 bg-rose-50 text-rose-500 rounded-xl border border-rose-100 active:scale-95" title="Reject with remarks"><X size={18}/></button>
                   </div>
                </div>
              ))}
