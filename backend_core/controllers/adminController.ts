@@ -1,113 +1,94 @@
 
-const getMockDB = () => {
-  const data = localStorage.getItem('noor_mock_db');
-  return data ? JSON.parse(data) : [];
-};
-
-const saveToMockDB = (db: any[]) => {
-  localStorage.setItem('noor_mock_db', JSON.stringify(db));
-};
+import { dbNode } from '../utils/db';
 
 export const adminController = {
-  // Returns a simple list of partners for targeting dropdowns
-  getPartnerList: async (req: any, res: any) => {
-    const db = getMockDB();
-    const partners = db.map((u: any) => ({ 
-      id: u.id, 
-      name: u.name, 
-      phone: u.phone 
-    }));
-    return res.status(200).json(partners);
-  },
-
-  getAllUsers: async (req: any, res: any) => {
-    const db = getMockDB();
-    const sortedUsers = [...db].sort((a: any, b: any) => {
-      const dateA = new Date(a.createdAt || 0).getTime();
-      const dateB = new Date(b.createdAt || 0).getTime();
-      return dateB - dateA;
-    });
-    return res.status(200).json(sortedUsers);
-  },
-
   getDashboardStats: async (req: any, res: any) => {
-    const db = getMockDB();
-    const todayStr = new Date().toISOString().split('T')[0];
-
+    // Force fresh registry pull
+    const db = dbNode.getUsers();
+    
     let pendingWithdrawals = 0;
     let pendingDeposits = 0;
-    let totalCashDisbursed = 0;
-    let totalRevenue = 0;
-    let recentLogs: any[] = [];
+    let totalCapitalPool = 0;
+    let totalPayoutsProcessed = 0;
     
     db.forEach((user: any) => {
-      if (user.transactions) {
+      // Calculate active balance pool
+      totalCapitalPool += (Number(user.balance) || 0);
+      
+      if (user.transactions && Array.isArray(user.transactions)) {
         user.transactions.forEach((t: any) => {
-          if (t.type === 'withdraw' && t.status === 'pending') pendingWithdrawals++;
-          if (t.type === 'deposit' && t.status === 'pending') pendingDeposits++;
-          if (t.type === 'withdraw' && t.status === 'approved') totalCashDisbursed += Number(t.amount);
-          if (t.type === 'deposit' && t.status === 'approved') totalRevenue += Number(t.amount);
-          
-          recentLogs.push({
-            id: t.id,
-            userName: user.name,
-            type: t.type,
-            amount: t.amount,
-            status: t.status,
-            date: t.date,
-            timestamp: t.timestamp
-          });
+          // Track pending items for the hub badges
+          if (t.type === 'withdraw' && t.status === 'pending') {
+            pendingWithdrawals++;
+          }
+          if (t.type === 'deposit' && t.status === 'pending') {
+            pendingDeposits++;
+          }
+          // Track total payouts
+          if (t.type === 'withdraw' && t.status === 'approved') {
+            totalPayoutsProcessed += Number(t.amount);
+          }
         });
       }
     });
 
-    recentLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
-    const stats = {
+    return res.status(200).json({
       totalActivePartners: db.length,
-      totalCapitalPool: db.reduce((acc: number, u: any) => acc + (u.balance || 0), 0),
+      totalCapitalPool,
       pendingWithdrawals,
       pendingDeposits,
-      totalCashDisbursed,
-      totalRevenue,
-      todayActiveUsers: db.filter((u: any) => u.lastCheckIn?.startsWith(todayStr)).length,
-      recentLogs: recentLogs.slice(0, 10) 
-    };
+      totalPayoutsProcessed,
+      serverTime: new Date().toISOString()
+    });
+  },
 
-    return res.status(200).json(stats);
+  getPartnerList: async (req: any, res: any) => {
+    const db = dbNode.getUsers();
+    return res.status(200).json(db);
+  },
+
+  loginAsUser: async (req: any, res: any) => {
+    const { userId } = req.body;
+    const user = dbNode.findUserById(userId);
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    const { password: _, ...sessionUser } = user;
+    return res.status(200).json({
+      success: true,
+      token: `jwt-noor-${user.id}-${Date.now()}`,
+      user: sessionUser
+    });
   },
 
   editUserBalance: async (req: any, res: any) => {
-    const { userId, amount, action } = req.body; 
-    let db = getMockDB();
-    const userIndex = db.findIndex((u: any) => u.id === userId);
-    if (userIndex === -1) return res.status(404).json({ message: "User not found" });
+    const { userId, amount, action, reason } = req.body; 
+    const user = dbNode.findUserById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    const user = db[userIndex];
-    if (action === 'add') {
-      user.balance += Number(amount);
-    } else {
-      user.balance -= Number(amount);
-    }
-
-    db[userIndex] = user;
-    saveToMockDB(db);
-    return res.status(200).json({ success: true, newBalance: user.balance });
-  },
-
-  // Added missing loginAsUser method to support admin impersonation API route and resolve reference error
-  loginAsUser: async (req: any, res: any) => {
-    const { userId } = req.body;
-    const db = getMockDB();
-    const user = db.find((u: any) => u.id === userId);
+    const numericAmount = Number(amount);
+    let newBalance = Number(user.balance) || 0;
     
-    if (user) {
-      return res.status(200).json({
-        success: true,
-        token: `impersonate-mock-${user.id}`,
-        user: { ...user, password: undefined, isImpersonated: true }
-      });
+    if (action === 'add') {
+      newBalance += numericAmount;
+    } else {
+      newBalance = Math.max(0, newBalance - numericAmount);
     }
-    return res.status(404).json({ message: 'User not found for impersonation.' });
+
+    const historyEntry = {
+      id: `ADM-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
+      type: action === 'add' ? 'reward' : 'withdraw',
+      amount: numericAmount,
+      status: 'approved',
+      gateway: 'System Adjustment',
+      note: reason || `Manual balance adjustment by admin.`,
+      date: new Date().toISOString().split('T')[0],
+      timestamp: new Date().toISOString()
+    };
+
+    const trx = user.transactions || [];
+    trx.unshift(historyEntry);
+
+    dbNode.updateUser(userId, { balance: newBalance, transactions: trx });
+    return res.status(200).json({ success: true, newBalance, historyEntry });
   }
 };

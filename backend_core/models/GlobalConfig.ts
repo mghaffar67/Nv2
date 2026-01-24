@@ -12,6 +12,7 @@ export const GlobalConfigSchema = {
   },
   financeSettings: {
     minWithdraw: { type: Number, default: 500 },
+    maxWithdraw: { type: Number, default: 50000 },
     referralRequiredForWithdraw: { type: Boolean, default: false },
     withdrawFeePercent: { type: Number, default: 10 }
   },

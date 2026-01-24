@@ -12,6 +12,7 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Support from './pages/Support';
+import LivePayouts from './pages/public/LivePayouts'; // New Import
 import DynamicPage from './pages/public/DynamicPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UsersManager from './pages/admin/UsersManager';
@@ -48,6 +49,7 @@ const App: React.FC = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/support" element={<Support />} />
+              <Route path="/payouts" element={<LivePayouts />} /> // New Route
               <Route path="/pages/:slug" element={<DynamicPage />} />
             </Route>
 

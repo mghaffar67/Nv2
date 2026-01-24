@@ -13,6 +13,7 @@ export interface SiteReview {
 
 export interface FinanceSettings {
   minWithdraw: number;
+  maxWithdraw: number;
   referralRequiredForWithdraw: boolean;
   withdrawFeePercent: number;
 }
@@ -71,6 +72,12 @@ export interface GlobalConfig {
   appName: string;
   currency: string;
   maintenanceMode: boolean;
+  broadcastMessage: string;
+  branding: {
+    logo: string;
+    siteIcon: string;
+    copyright: string;
+  };
   financeSettings: FinanceSettings;
   referralSettings: ReferralSettings;
   paymentGateways: PaymentGateway[];

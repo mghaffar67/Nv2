@@ -14,10 +14,10 @@ interface ThemeConfig {
 
 const themes: Record<ThemeName, ThemeConfig> = {
   ocean: {
-    primary: '#0ea5e9',
-    secondary: '#6366f1',
-    bg: '#f8fafc',
-    text: '#1e293b',
+    primary: '#6366f1',
+    secondary: '#0ea5e9',
+    bg: '#f8f9fc',
+    text: '#0f172a',
     card: '#ffffff',
     accent: '#38bdf8'
   },
@@ -32,9 +32,9 @@ const themes: Record<ThemeName, ThemeConfig> = {
   dark: {
     primary: '#6366f1',
     secondary: '#a855f7',
-    bg: '#0f172a',
+    bg: '#0a0c10',
     text: '#f1f5f9',
-    card: '#1e293b',
+    card: '#12151c',
     accent: '#818cf8'
   }
 };
@@ -65,9 +65,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     root.style.setProperty('--text-base', c.text);
     root.style.setProperty('--card-base', c.card);
     
-    // Smooth transition
     root.style.transition = 'background-color 0.3s ease, color 0.3s ease';
-    
     localStorage.setItem('noor_theme', theme);
   }, [theme]);
 

@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowUpRight, ArrowDownLeft, Clock, History as HistoryIcon,
   Filter, TrendingUp, ShieldCheck, ChevronRight,
-  Loader2, Zap, LayoutGrid, BarChart3, Activity, Info
+  Loader2, Zap, LayoutGrid, BarChart3, Activity, Info,
+  Printer, FileText, Download, Receipt
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, 
@@ -23,21 +24,22 @@ const History = () => {
   const [selectedTrx, setSelectedTrx] = useState<any | null>(null);
   const [viewMode, setViewMode] = useState<'line' | 'bar'>('line');
 
-  useEffect(() => {
-    const fetchHistory = async () => {
-      setLoading(true);
-      try {
-        const res = await api.get('/finance/history');
-        setTransactions(Array.isArray(res) ? res : []);
-      } catch (err) {
-        console.error("Records sync failure.");
-        setTransactions([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchHistory();
-  }, []);
+  const fetchHistory = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get(`/finance/history?userId=${user?.id}`);
+      setTransactions(Array.isArray(res) ? res : []);
+    } catch (err) {
+      console.error("Records sync failure.");
+      setTransactions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { 
+    if (user?.id) fetchHistory(); 
+  }, [user?.id]);
 
   const filteredData = useMemo(() => {
     return transactions.filter(t => filterType === 'all' || t.type === filterType);
@@ -60,14 +62,6 @@ const History = () => {
     });
   }, [transactions]);
 
-  const stats = useMemo(() => {
-    const approved = transactions.filter(t => t.status === 'approved');
-    return {
-      totalIn: approved.filter(t => t.type !== 'withdraw').reduce((a, b) => a + Number(b.amount), 0),
-      totalOut: approved.filter(t => t.type === 'withdraw').reduce((a, b) => a + Number(b.amount), 0),
-    };
-  }, [transactions]);
-
   return (
     <div className="w-full max-w-full space-y-4 pb-24 animate-fade-in px-1 overflow-x-hidden">
       
@@ -78,7 +72,7 @@ const History = () => {
                <h2 className="text-[10px] font-black text-slate-800 uppercase tracking-widest italic flex items-center gap-1.5">
                   <Activity size={14} className="text-indigo-600" /> Cash Performance
                </h2>
-               <p className="text-[7px] font-bold text-slate-400 uppercase mt-1">Growth Hub Stats</p>
+               <p className="text-[7px] font-bold text-slate-400 uppercase mt-1">Registry Flow Stats</p>
             </div>
             <div className="flex bg-slate-50 p-1 rounded-xl shrink-0">
                <button onClick={() => setViewMode('line')} className={clsx("p-1.5 rounded-lg transition-all", viewMode === 'line' ? "bg-white shadow-sm text-indigo-600" : "text-slate-300")}><TrendingUp size={14}/></button>
@@ -112,17 +106,6 @@ const History = () => {
                )}
             </ResponsiveContainer>
          </div>
-
-         <div className="grid grid-cols-2 gap-4 mt-6 pt-5 border-t border-slate-50 w-full">
-            <div className="text-center overflow-hidden">
-               <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate">Total Inflow</p>
-               <p className="text-xs font-black text-emerald-600 truncate">Rs {stats.totalIn.toLocaleString()}</p>
-            </div>
-            <div className="text-center border-l border-slate-50 overflow-hidden">
-               <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate">Total Payouts</p>
-               <p className="text-xs font-black text-slate-900 truncate">Rs {stats.totalOut.toLocaleString()}</p>
-            </div>
-         </div>
       </div>
 
       {/* 2. FILTER PROTOCOL */}
@@ -154,10 +137,10 @@ const History = () => {
           filteredData.map((trx, idx) => (
             <motion.div 
               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }}
-              key={trx.id} onClick={() => setSelectedTrx(trx)}
-              className="bg-white p-4 rounded-[22px] border border-slate-100 shadow-sm flex items-center justify-between active:scale-[0.98] transition-all cursor-pointer group w-full overflow-hidden"
+              key={trx.id} 
+              className="bg-white p-4 rounded-[22px] border border-slate-100 shadow-sm flex items-center justify-between active:scale-[0.98] transition-all group w-full overflow-hidden"
             >
-              <div className="flex items-center gap-3 overflow-hidden">
+              <div onClick={() => setSelectedTrx(trx)} className="flex flex-grow items-center gap-3 overflow-hidden cursor-pointer">
                 <div className={clsx(
                   "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm",
                   trx.type === 'withdraw' ? "bg-rose-50 text-rose-500" : 
@@ -173,20 +156,32 @@ const History = () => {
                   <div className="flex items-center gap-2">
                     <p className="text-[6px] font-bold text-slate-400 uppercase">{trx.date}</p>
                     <span className={clsx(
-                      "px-1.5 py-0.5 rounded-md text-[5px] font-black uppercase tracking-widest",
-                      trx.status === 'approved' ? "bg-green-100 text-green-600" : 
-                      trx.status === 'pending' ? "bg-amber-100 text-amber-600" : "bg-rose-100 text-rose-600"
+                      "px-1.5 py-0.5 rounded-md text-[5px] font-black uppercase tracking-widest border",
+                      trx.status === 'approved' ? "bg-green-50 text-green-600 border-green-100" : 
+                      trx.status === 'pending' ? "bg-amber-50 text-amber-600 border-amber-100 animate-pulse" : "bg-rose-50 text-rose-600 border-rose-100"
                     )}>
                       {trx.status}
                     </span>
                   </div>
                 </div>
               </div>
-              <div className="text-right shrink-0">
-                <p className={clsx("font-black text-xs italic leading-none mb-1", trx.type === 'withdraw' ? "text-slate-900" : "text-emerald-600")}>
-                  {trx.type === 'withdraw' ? '-' : '+'}Rs {trx.amount}
-                </p>
-                <p className="text-[5px] font-black text-slate-300 uppercase tracking-tighter">ID: {trx.id.slice(-5)}</p>
+              
+              <div className="flex items-center gap-4 shrink-0">
+                <div className="text-right">
+                  <p className={clsx("font-black text-xs italic leading-none mb-1", trx.type === 'withdraw' ? "text-slate-900" : "text-emerald-600")}>
+                    {trx.type === 'withdraw' ? '-' : '+'}Rs {trx.amount}
+                  </p>
+                  <p className="text-[5px] font-black text-slate-300 uppercase tracking-tighter">REF: {trx.id.slice(-5)}</p>
+                </div>
+                {trx.status === 'approved' && (
+                  <button 
+                    onClick={() => setSelectedTrx(trx)}
+                    className="w-10 h-10 bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-white border border-transparent hover:border-slate-100 rounded-xl transition-all flex items-center justify-center shadow-sm"
+                    title="Print Receipt"
+                  >
+                    <Receipt size={18} />
+                  </button>
+                )}
               </div>
             </motion.div>
           ))
@@ -196,6 +191,18 @@ const History = () => {
              <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">No matching records</p>
           </div>
         )}
+      </div>
+
+      <div className="mx-1 p-6 bg-indigo-50/50 rounded-[32px] border border-indigo-100 flex items-start gap-4 shadow-sm">
+         <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-indigo-500 shadow-sm shrink-0 border border-indigo-50">
+            <ShieldCheck size={20} />
+         </div>
+         <div>
+            <h4 className="text-[10px] font-black text-indigo-900 uppercase tracking-widest mb-1 italic">Registry Protocol</h4>
+            <p className="text-[8px] text-indigo-700/80 font-bold leading-relaxed uppercase tracking-wider">
+               Noor Core V3 enforces a strict ledger policy. Every balance change is timestamped and cryptographically linked to your identity node for audit purposes.
+            </p>
+         </div>
       </div>
 
       <InvoiceModal isOpen={!!selectedTrx} onClose={() => setSelectedTrx(null)} transaction={selectedTrx} />

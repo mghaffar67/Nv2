@@ -1,23 +1,23 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useConfig } from '../context/ConfigContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  ShieldCheck, Zap, Loader2, ChevronRight, 
-  Eye, EyeOff, Lock, User, ArrowLeft, AlertCircle
+  Zap, Loader2, ChevronRight, 
+  Lock, User, ArrowLeft, AlertCircle, 
+  LogIn as LoginIcon
 } from 'lucide-react';
 
 const Login = () => {
   const { login, demoLogin, loading: authLoading, user } = useAuth();
+  const { config } = useConfig();
   const navigate = useNavigate();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [btnLoading, setBtnLoading] = useState(false);
 
-  // Prevention check: If already logged in, redirect away
   useEffect(() => {
     if (user && !authLoading) {
       const target = user.role === 'admin' ? '/admin/dashboard' : '/user/dashboard';
@@ -25,125 +25,67 @@ const Login = () => {
     }
   }, [user, authLoading, navigate]);
 
-  const validate = () => {
-    if (!identifier.trim()) return "Email ya Mobile number likhna zaroori hai.";
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^((\+92)|(92)|(0))?3[0-9]{9}$/;
-    
-    if (!emailRegex.test(identifier) && !phoneRegex.test(identifier)) {
-      return "Ghalat format! Sahi Email ya Mobile (03001234567) likhen.";
-    }
-    if (password.length < 6) return "Password kam az kam 6 characters ka hona chahiye.";
-    return null;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (authLoading || btnLoading) return;
-    
-    const validationError = validate();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
     setError('');
-    setBtnLoading(true);
-    
     try {
       await login(identifier, password);
     } catch (err: any) {
-      setError(err.message || 'Login nahi ho saka. Details check karen.');
-      setBtnLoading(false);
+      setError(err.message || 'Login failed. Details check karen.');
     }
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-[#f8f9fb] relative font-sans overflow-hidden">
-      <div className="absolute top-[-10%] right-[-10%] w-[400px] h-[400px] bg-indigo-500/5 blur-[120px] rounded-full" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-sky-500/5 blur-[120px] rounded-full" />
-
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.98, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="w-full max-w-[380px] z-10"
-      >
-        <div className="bg-white rounded-[40px] border border-slate-100 shadow-[0_30px_60px_-20px_rgba(0,0,0,0.08)] p-8 md:p-10 relative">
+    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-[#f8f9fb] font-sans">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-[360px]">
+        <div className="bg-white rounded-[44px] border border-slate-100 shadow-2xl p-8 md:p-10 relative overflow-hidden">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-slate-900 rounded-[24px] flex items-center justify-center mx-auto mb-6 shadow-2xl border-4 border-slate-50 text-sky-400">
-              <Zap size={32} fill="currentColor" />
-            </div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
-              Noor <span className="text-indigo-600">Portal.</span>
-            </h1>
-            <p className="text-slate-400 text-[9px] font-bold uppercase tracking-[0.3em] mt-3 italic">Verified Node Authentication</p>
+            <div className="w-14 h-14 bg-slate-950 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-xl text-sky-400"><Zap size={28} fill="currentColor" /></div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">Welcome Back.</h1>
+            <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.3em] mt-2 italic">Authorized Partner Node</p>
           </div>
 
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             {error && (
-              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                className="mb-6 p-4 bg-rose-50 border border-rose-100 text-rose-600 rounded-2xl text-[10px] font-black uppercase flex items-start gap-3 shadow-sm"
-              >
-                <AlertCircle size={16} className="shrink-0 mt-0.5" /> 
-                <span>{error}</span>
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 p-4 bg-rose-50 text-rose-600 rounded-2xl text-[10px] font-black uppercase flex items-center gap-3">
+                <AlertCircle size={14} /> {error}
               </motion.div>
             )}
           </AnimatePresence>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Email ya Mobile</label>
+               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Email ya Mobile No.</label>
                <div className="relative group">
-                 <User size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors" />
-                 <input 
-                   type="text" value={identifier} onChange={(e) => setIdentifier(e.target.value)} 
-                   placeholder="03001234567" 
-                   className="w-full h-14 pl-14 pr-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-sm text-slate-900 outline-none focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 transition-all" 
-                   required 
-                 />
+                 <User size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors" />
+                 <input value={identifier} onChange={e => setIdentifier(e.target.value)} className="w-full h-12 pl-12 pr-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-sm outline-none focus:bg-white focus:ring-4 focus:ring-indigo-50" placeholder="03001234567" required />
                </div>
             </div>
 
             <div className="space-y-1.5">
-               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Secure Key</label>
+               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Password</label>
                <div className="relative group">
-                 <Lock size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors" />
-                 <input 
-                   type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} 
-                   placeholder="••••••••" 
-                   className="w-full h-14 pl-14 pr-14 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-sm text-slate-900 outline-none focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 transition-all" 
-                   required 
-                 />
-                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-600">
-                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                 </button>
+                 <Lock size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors" />
+                 <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full h-12 pl-12 pr-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-sm outline-none focus:bg-white focus:ring-4 focus:ring-indigo-50" placeholder="••••••••" required />
                </div>
             </div>
 
-            <button 
-              type="submit" 
-              disabled={authLoading || btnLoading} 
-              className="w-full h-16 bg-slate-950 hover:bg-indigo-600 text-white rounded-[24px] font-black text-[11px] uppercase tracking-[0.25em] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 mt-6"
-            >
-              {(authLoading || btnLoading) ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Sync Identity <ChevronRight size={18} /></>}
+            <button type="submit" disabled={authLoading} className="w-full h-14 bg-slate-950 text-white rounded-[20px] font-black text-[10px] uppercase tracking-[0.25em] shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 mt-6">
+              {authLoading ? <Loader2 size={20} className="animate-spin" /> : <><LoginIcon size={16} /> Enter Portal</>}
             </button>
           </form>
 
-          <div className="mt-10 pt-8 border-t border-slate-50 text-center">
-             <div className="grid grid-cols-2 gap-3 mb-6">
-                <button onClick={() => demoLogin('admin')} className="h-11 bg-slate-50 text-slate-400 rounded-xl text-[8px] font-black uppercase hover:bg-slate-100 hover:text-slate-900 transition-all border border-slate-100">Test Admin</button>
-                <button onClick={() => demoLogin('user')} className="h-11 bg-slate-50 text-slate-400 rounded-xl text-[8px] font-black uppercase hover:bg-slate-100 hover:text-slate-900 transition-all border border-slate-100">Test User</button>
-             </div>
-             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-               New associate? <Link to="/register" className="text-indigo-600 font-black ml-1 hover:underline">Register Hub</Link>
-             </p>
+          <div className="mt-8 pt-6 border-t border-slate-50 flex flex-col items-center gap-4">
+             {config.modules.demoLoginEnabled && (
+               <div className="flex gap-2">
+                  <button onClick={() => demoLogin('admin')} className="px-4 py-2 bg-slate-50 rounded-xl text-[8px] font-black uppercase text-slate-400 hover:text-slate-900 transition-colors">Demo Admin</button>
+                  <button onClick={() => demoLogin('user')} className="px-4 py-2 bg-slate-50 rounded-xl text-[8px] font-black uppercase text-slate-400 hover:text-slate-900 transition-colors">Demo User</button>
+               </div>
+             )}
+             <p className="text-[10px] text-slate-400 font-bold uppercase">New member? <Link to="/register" className="text-indigo-600 font-black">Join Hub</Link></p>
           </div>
         </div>
       </motion.div>
-
-      <Link to="/" className="fixed top-8 left-8 flex items-center gap-2 text-slate-400 hover:text-indigo-600 transition-colors group">
-         <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-         <span className="text-[10px] font-black uppercase tracking-widest">Portal Home</span>
-      </Link>
     </div>
   );
 };

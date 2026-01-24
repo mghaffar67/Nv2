@@ -33,14 +33,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // STABLE SESSION RESTORATION
   useLayoutEffect(() => {
     const token = localStorage.getItem('noor_token');
-    const savedUser = localStorage.getItem('noor_user'); // Unified Key
+    const savedUser = localStorage.getItem('noor_user');
     
     if (token && savedUser) {
       try {
         const parsed = JSON.parse(savedUser);
         setUser(parsed);
       } catch (e) {
-        console.error("Session corruption detected. Purging.");
+        console.error("Session corrupted detected. Purging.");
         localStorage.removeItem('noor_token');
         localStorage.removeItem('noor_user');
       }
@@ -54,19 +54,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const data = await api.post('/auth/login', { email: email.trim(), password });
       
       if (data && data.token && data.user) {
-        // ATOMIC COMMIT
+        // 1. SAVE TO STORAGE FIRST
         localStorage.setItem('noor_token', data.token);
-        localStorage.setItem('noor_user', JSON.stringify(data.user)); // Unified Key
+        localStorage.setItem('noor_user', JSON.stringify(data.user));
         
+        // 2. UPDATE REACT STATE
         setUser(data.user);
         
+        // 3. NAVIGATE AFTER STATE IS COMMITTED
         const target = data.user.role === 'admin' ? '/admin/dashboard' : '/user/dashboard';
         
-        // Ensure browser has committed storage before moving
-        requestAnimationFrame(() => {
-          navigate(target, { replace: true });
-          setLoading(false);
-        });
+        setLoading(false);
+        navigate(target, { replace: true });
+      } else {
+        throw new Error("Invalid response from auth node.");
       }
     } catch (error: any) {
       setLoading(false);
@@ -82,10 +83,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('noor_token', data.token);
         localStorage.setItem('noor_user', JSON.stringify(data.user));
         setUser(data.user);
-        requestAnimationFrame(() => {
-          navigate('/user/dashboard', { replace: true });
-          setLoading(false);
-        });
+        setLoading(false);
+        navigate('/user/dashboard', { replace: true });
       }
     } catch (error: any) {
       setLoading(false);
@@ -103,7 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     localStorage.removeItem('noor_token');
     localStorage.removeItem('noor_user');
-    navigate('/login', { replace: true });
+    navigate('/', { replace: true }); // Logout to Landing
   };
 
   return (

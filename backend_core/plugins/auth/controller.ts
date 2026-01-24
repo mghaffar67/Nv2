@@ -1,44 +1,35 @@
 
-import { dbRegistry } from '../../utils/db';
+import { dbNode } from '../../utils/db';
 
 export const authPluginController = {
   login: async (req: any, res: any) => {
     try {
       const { email, password } = req.body;
-      
-      if (!email || !password) {
-        return res.status(400).json({ success: false, message: 'ID aur Password likhna zaroori hai.' });
-      }
+      if (!email || !password) return res.status(400).json({ message: 'Missing credentials.' });
 
-      const user = dbRegistry.findUserByIdentifier(email);
-
+      const user = dbNode.findUserByIdentifier(email);
       if (!user || user.password !== password) {
-        return res.status(401).json({ success: false, message: 'Ghalat details! Dobara check karen.' });
+        return res.status(401).json({ message: 'Invalid ID ya password.' });
       }
       
-      if (user.isBanned) {
-        return res.status(403).json({ success: false, message: 'Aap ka account suspend kar diya gaya hai.' });
-      }
+      if (user.isBanned) return res.status(403).json({ message: 'Account Suspended.' });
 
       const { password: _, ...sessionUser } = user;
-      const timestamp = Date.now();
-
       return res.status(200).json({
         success: true,
-        token: `jwt-noor-${user.id}-${timestamp}`,
+        token: `jwt-noor-${user.id}-${Date.now()}`,
         user: sessionUser
       });
     } catch (err) {
-      return res.status(500).json({ success: false, message: 'System Error: Authentication node down.' });
+      return res.status(500).json({ message: 'Auth Node Error.' });
     }
   },
 
   register: async (req: any, res: any) => {
     try {
       const { name, email, phone, password, referralCode } = req.body;
-      
-      if (dbRegistry.findUserByIdentifier(email) || dbRegistry.findUserByIdentifier(phone)) {
-        return res.status(400).json({ success: false, message: 'Ye Email ya Phone pehle se registered hai.' });
+      if (dbNode.findUserByIdentifier(email) || dbNode.findUserByIdentifier(phone)) {
+        return res.status(400).json({ message: 'Email/Phone pehle se registered hai.' });
       }
 
       const newUser = {
@@ -51,95 +42,81 @@ export const authPluginController = {
         referredBy: referralCode || null,
         transactions: [],
         completedTasksToday: [],
+        workSubmissions: [],
+        purchaseHistory: [],
         streak: 0,
         createdAt: new Date().toISOString()
       };
 
-      const users = dbRegistry.getUsers();
+      const users = dbNode.getUsers();
       users.push(newUser);
-      dbRegistry.saveUsers(users);
+      dbNode.saveUsers(users);
 
       const { password: _, ...safeUser } = newUser;
-      return res.status(201).json({ 
-        success: true,
-        token: `jwt-noor-${newUser.id}-${Date.now()}`, 
-        user: safeUser 
-      });
+      return res.status(201).json({ token: `jwt-noor-${newUser.id}-${Date.now()}`, user: safeUser });
     } catch (err) {
-      return res.status(500).json({ success: false, message: "Registry update failed." });
+      return res.status(500).json({ message: "Registry creation failed." });
     }
   },
 
   getMe: async (req: any, res: any) => {
-    const user = dbRegistry.findUserById(req.user.id);
-    if (!user) return res.status(404).json({ message: "User session lost." });
-    const { password: _, ...safeUser } = user;
-    return res.status(200).json({ user: safeUser });
+    const user = dbNode.findUserById(req.user.id);
+    if (!user) return res.status(404).json({ message: "Node lost." });
+    const { password: _, ...safe } = user;
+    return res.status(200).json({ user: safe });
   },
 
-  // Fix: Added missing updateProfile method to handle user profile modifications
+  // Added updateProfile to handle identity updates and avatar uploads
   updateProfile: async (req: any, res: any) => {
     try {
       const { name, phone } = req.body;
+      const userId = req.user.id;
+      const user = dbNode.findUserById(userId);
+      if (!user) return res.status(404).json({ message: "User not found." });
+
       const updates: any = {};
       if (name) updates.name = name;
       if (phone) updates.phone = phone;
       if (req.file) updates.avatar = req.file.path;
 
-      const user = dbRegistry.updateUser(req.user.id, updates);
-      if (!user) return res.status(404).json({ message: "User identity node not found" });
-
-      return res.status(200).json({ success: true, message: "Profile synchronized successfully", user });
+      dbNode.updateUser(userId, updates);
+      return res.status(200).json({ success: true, message: "Profile updated successfully." });
     } catch (err) {
-      return res.status(500).json({ message: "Internal update failure" });
+      return res.status(500).json({ message: "Identity sync failed." });
     }
   },
 
-  // Fix: Added missing changePassword method for user security updates
+  // Added changePassword to handle security key updates
   changePassword: async (req: any, res: any) => {
     try {
       const { oldPassword, newPassword } = req.body;
-      const user = dbRegistry.findUserById(req.user.id);
+      const userId = req.user.id;
+      const user = dbNode.findUserById(userId);
+      if (!user) return res.status(404).json({ message: "User not found." });
 
-      if (!user || user.password !== oldPassword) {
-        return res.status(400).json({ message: "Ghalat purana password" });
+      if (user.password !== oldPassword) {
+        return res.status(400).json({ message: "Current security key is incorrect." });
       }
 
-      dbRegistry.updateUser(user.id, { password: newPassword });
-      return res.status(200).json({ success: true, message: "Naya password set kar diya gaya hai" });
+      dbNode.updateUser(userId, { password: newPassword });
+      return res.status(200).json({ success: true, message: "Security key updated successfully." });
     } catch (err) {
-      return res.status(500).json({ message: "Security update error" });
+      return res.status(500).json({ message: "Security update node failed." });
     }
   },
 
-  // Fix: Added missing getTeam method to calculate and return 3-tier referral hierarchy
   getTeam: async (req: any, res: any) => {
-    try {
-      const user = dbRegistry.findUserById(req.user.id);
-      if (!user) return res.status(404).json({ message: "Auth node session lost" });
+    const user = dbNode.findUserById(req.user.id);
+    if (!user) return res.status(404).json({ message: "Identity node missing." });
 
-      const allUsers = dbRegistry.getUsers();
-      
-      const t1 = allUsers.filter((u: any) => u.referredBy === user.referralCode);
-      const t1Codes = t1.map((u: any) => u.referralCode);
-      const t2 = allUsers.filter((u: any) => t1Codes.includes(u.referredBy));
-      const t2Codes = t2.map((u: any) => u.referralCode);
-      const t3 = allUsers.filter((u: any) => t2Codes.includes(u.referredBy));
+    const all = dbNode.getUsers();
+    const t1 = all.filter((u: any) => u.referredBy === user.referralCode);
+    const t1Codes = t1.map((u: any) => u.referralCode);
+    const t2 = all.filter((u: any) => t1Codes.includes(u.referredBy));
+    const t2Codes = t2.map((u: any) => u.referralCode);
+    const t3 = all.filter((u: any) => t2Codes.includes(u.referredBy));
 
-      const sanitize = (list: any[]) => list.map(u => ({
-        id: u.id,
-        name: u.name,
-        currentPlan: u.currentPlan,
-        createdAt: u.createdAt
-      }));
-
-      return res.status(200).json({
-        t1: sanitize(t1),
-        t2: sanitize(t2),
-        t3: sanitize(t3)
-      });
-    } catch (err) {
-      return res.status(500).json({ message: "Team hierarchy sync failed" });
-    }
+    const sanitize = (l: any[]) => l.map(u => ({ id: u.id, name: u.name, currentPlan: u.currentPlan }));
+    return res.status(200).json({ t1: sanitize(t1), t2: sanitize(t2), t3: sanitize(t3) });
   }
 };

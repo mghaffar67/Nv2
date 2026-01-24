@@ -1,138 +1,117 @@
 
-import { dbRegistry } from '../../utils/db';
+import { dbNode } from '../../utils/db';
 import { distributeCommission } from '../../utils/commissionHelper';
 
 export const financePluginController = {
+  getHistory: async (req: any, res: any) => {
+    try {
+      const user = dbNode.findUserById(req.user.id);
+      if (!user) return res.status(404).json({ message: "Identity node lost." });
+      
+      const history = (user.transactions || []).map((t: any) => {
+        let context = "";
+        if (t.type === 'withdraw') {
+          const last4 = t.accountNumber ? t.accountNumber.slice(-4) : "****";
+          context = `${t.gateway} (****${last4})`;
+        } else if (t.type === 'deposit') {
+          context = `via ${t.gateway}`;
+        } else {
+          context = t.note || "System Yield";
+        }
+        return { ...t, displayContext: context };
+      });
+
+      return res.status(200).json(history);
+    } catch (err) {
+      return res.status(500).json({ message: "Registry sync failure." });
+    }
+  },
+
   depositReq: async (req: any, res: any) => {
-    const { amount, method, trxId, senderNumber } = req.body;
-    const user = dbRegistry.findUserById(req.user.id);
-    if (!user) return res.status(404).json({ message: 'Auth session lost.' });
+    const { amount, method, trxId, senderNumber, image } = req.body;
+    const user = dbNode.findUserById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'Identity missing.' });
 
     const newTrx = {
-      id: `TRX-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+      id: `DEP-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+      userId: user.id,
       type: 'deposit',
       amount: Number(amount),
-      gateway: method || 'EasyPaisa',
+      gateway: method,
       trxId,
       senderNumber,
+      proofImage: image,
       status: 'pending',
       date: new Date().toISOString().split('T')[0],
       timestamp: new Date().toISOString()
     };
 
-    const transactions = user.transactions || [];
-    transactions.unshift(newTrx);
-    dbRegistry.updateUser(user.id, { transactions });
-
-    return res.status(201).json({ success: true, message: 'Deposit filed. Verification pending.' });
+    const trx = user.transactions || [];
+    trx.unshift(newTrx);
+    dbNode.updateUser(user.id, { transactions: trx });
+    return res.status(201).json({ success: true, message: 'Deposit packet submitted.', transaction: newTrx });
   },
 
   withdrawReq: async (req: any, res: any) => {
-    const { amount, method, accountNumber, accountTitle } = req.body;
-    const user = dbRegistry.findUserById(req.user.id);
-    if (!user) return res.status(404).json({ message: 'Auth session lost.' });
+    const { amount, gateway, accountNumber, accountTitle } = req.body;
+    const user = dbNode.findUserById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'Auth session expired.' });
 
     const amt = Number(amount);
-    if (user.balance < amt) return res.status(400).json({ message: 'Insufficient liquidity.' });
+    const config = dbNode.getConfig();
+    const minLimit = config.financeSettings.minWithdraw || 500;
+    const maxLimit = config.financeSettings.maxWithdraw || 50000;
 
-    const newBalance = user.balance - amt;
+    // Hardened Security Validation
+    if (amt < minLimit) return res.status(400).json({ message: `Minimum withdrawal is PKR ${minLimit}.` });
+    if (amt > maxLimit) return res.status(400).json({ message: `Maximum withdrawal is PKR ${maxLimit}.` });
+    if ((user.balance || 0) < amt) return res.status(400).json({ message: 'Insufficient liquidity in wallet.' });
+
     const newTrx = {
       id: `WD-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+      userId: user.id,
       type: 'withdraw',
       amount: amt,
-      gateway: method,
-      status: 'pending',
+      gateway,
       accountNumber,
       accountTitle,
+      status: 'pending',
       date: new Date().toISOString().split('T')[0],
       timestamp: new Date().toISOString()
     };
 
-    const transactions = user.transactions || [];
-    transactions.unshift(newTrx);
-    dbRegistry.updateUser(user.id, { balance: newBalance, transactions });
-
-    return res.status(201).json({ message: 'Withdrawal locked. Syncing with registry.' });
-  },
-
-  getHistory: async (req: any, res: any) => {
-    if (!req.user) return res.status(401).json({ message: "Identity missing." });
-    const user = dbRegistry.findUserById(req.user.id);
-    if (!user) return res.status(404).json({ message: "Identity Station missing." });
+    // Atomic Deduct
+    const newBalance = user.balance - amt;
+    const trx = user.transactions || [];
+    trx.unshift(newTrx);
     
-    const history = (user.transactions || []).sort((a: any, b: any) => 
-      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
-    return res.status(200).json(history);
+    dbNode.updateUser(user.id, { balance: newBalance, transactions: trx });
+    return res.status(201).json({ success: true, message: 'Withdrawal request locked.', newBalance });
   },
 
   activatePlan: async (req: any, res: any) => {
-    const { planId } = req.body;
-    const user = dbRegistry.findUserById(req.user.id);
-    if (!user) return res.status(404).json({ message: "Auth session lost." });
+    const { planId, method } = req.body;
+    const user = dbNode.findUserById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found." });
 
-    const PLAN_PRICES: Record<string, number> = {
-      'BASIC': 500,
-      'STANDARD': 1000,
-      'GOLD ELITE': 1500,
-      'DIAMOND': 5000
-    };
+    const priceMap: Record<string, number> = { 'BASIC': 500, 'STANDARD': 1000, 'GOLD ELITE': 1500, 'DIAMOND': 5000 };
+    const normalized = planId.replace(' PLAN', '').toUpperCase();
+    const price = priceMap[normalized] || 0;
 
-    const normalizedPlanId = planId.toUpperCase().replace(' PLAN', '');
-    const price = PLAN_PRICES[normalizedPlanId] || 0;
-    const currentPlanPrice = PLAN_PRICES[user.currentPlan || ''] || 0;
-
-    let newBalance = user.balance;
-
-    if (user.currentPlan && user.currentPlan !== 'None' && price < currentPlanPrice) {
-      const refund = currentPlanPrice - price;
-      newBalance += refund;
+    if (method === 'wallet') {
+      if ((user.balance || 0) < price) return res.status(400).json({ message: "Low balance." });
       
-      const refundTrx = {
-        id: `REF-${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
-        type: 'reward',
-        amount: refund,
-        status: 'approved',
-        gateway: 'Station Downgrade Refund',
-        date: new Date().toISOString().split('T')[0],
-        timestamp: new Date().toISOString()
-      };
-      const transactions = user.transactions || [];
-      transactions.unshift(refundTrx);
-      dbRegistry.updateUser(user.id, { transactions });
-    } else {
-      if (user.balance < price) {
-        return res.status(400).json({ message: "Insufficient liquidity for upgrade." });
-      }
-      newBalance -= price;
+      const newBalance = (user.balance || 0) - price;
+      const expiry = new Date();
+      expiry.setDate(expiry.getDate() + 30);
+
+      const history = user.purchaseHistory || [];
+      history.unshift({ id: Date.now().toString(), planId: normalized, amount: price, method: 'wallet', status: 'active', date: new Date().toISOString() });
+
+      dbNode.updateUser(user.id, { balance: newBalance, currentPlan: normalized, planExpiry: expiry.toISOString(), purchaseHistory: history });
+      distributeCommission(user.id, price);
+      return res.status(200).json({ success: true, message: "Station Activated." });
     }
-
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + 30);
-
-    const purchase = {
-      id: Math.random().toString(36).substr(2, 9).toUpperCase(),
-      planId: normalizedPlanId,
-      amount: price,
-      method: 'wallet',
-      status: 'active',
-      date: new Date().toISOString()
-    };
-
-    const purchaseHistory = user.purchaseHistory || [];
-    purchaseHistory.unshift(purchase);
-
-    dbRegistry.updateUser(user.id, {
-      balance: newBalance,
-      currentPlan: normalizedPlanId,
-      planExpiry: expiryDate.toISOString(),
-      purchaseHistory
-    });
-    
-    if (price > currentPlanPrice) {
-      await distributeCommission(user.id, price - currentPlanPrice);
-    }
-    
-    return res.status(200).json({ success: true, message: `${normalizedPlanId} Station Active.`, newBalance });
+    return res.status(400).json({ message: "Invalid method." });
   }
 };

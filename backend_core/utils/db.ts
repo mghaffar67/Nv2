@@ -1,93 +1,100 @@
 
-import { INITIAL_USERS } from '../../src/data/mockRegistry';
-
-const DB_KEY = 'noor_v3_unified_storage';
-// Added key for export history storage
-const HISTORY_KEY = 'noor_v3_export_history';
-const isNode = typeof window === 'undefined';
+import { INITIAL_USERS, INITIAL_TASKS, INITIAL_CONFIG } from '../../src/data/mockRegistry';
 
 /**
- * Identity Normalizer: 
- * Ensures '0300...' and '300...' are treated the same for login.
+ * Noor Official V3 - Master Database Registry (Purified)
+ * Role: Single Source of Truth for the Virtual Backend
  */
-const normalize = (val: string) => {
-  if (!val) return '';
-  let clean = val.toLowerCase().trim().replace(/\s+/g, '');
-  if (clean.includes('@')) return clean;
-  let digits = clean.replace(/[^0-9]/g, '');
-  if (digits.startsWith('92') && digits.length > 10) digits = '0' + digits.slice(2);
-  else if (digits.length === 10 && !digits.startsWith('0')) digits = '0' + digits;
-  return digits;
+
+const KEYS = {
+  USERS: 'noor_v3_master_registry',
+  TASKS: 'noor_tasks_db',
+  PAGES: 'noor_pages_db',
+  CONFIG: 'noor_config'
 };
 
-export const dbRegistry = {
-  getUsers: () => {
-    if (isNode) return INITIAL_USERS;
-    const data = localStorage.getItem(DB_KEY);
-    if (!data) {
-      localStorage.setItem(DB_KEY, JSON.stringify(INITIAL_USERS));
-      return INITIAL_USERS;
-    }
-    try {
-      return JSON.parse(data);
-    } catch (e) {
-      localStorage.setItem(DB_KEY, JSON.stringify(INITIAL_USERS));
-      return INITIAL_USERS;
-    }
-  },
+const isNode = typeof window === 'undefined';
+
+const notifySystemChange = () => {
+  if (!isNode) {
+    window.dispatchEvent(new Event('noor_db_update'));
+  }
+};
+
+const getFromStore = (key: string, fallback: any) => {
+  if (isNode) return fallback;
+  const data = localStorage.getItem(key);
+  if (!data) {
+    localStorage.setItem(key, JSON.stringify(fallback));
+    return fallback;
+  }
+  try {
+    return JSON.parse(data);
+  } catch (e) {
+    return fallback;
+  }
+};
+
+const saveToStore = (key: string, data: any) => {
+  if (!isNode) {
+    localStorage.setItem(key, JSON.stringify(data));
+    notifySystemChange();
+  }
+};
+
+export const dbNode = {
+  getUsers: () => getFromStore(KEYS.USERS, INITIAL_USERS),
   
   saveUsers: (users: any[]) => {
-    if (!isNode) localStorage.setItem(DB_KEY, JSON.stringify(users));
-  },
-
-  /**
-   * FACTORY RESET PROTOCOL
-   * Clears EVERYTHING and reloads initial registry.
-   */
-  factoryReset: () => {
+    saveToStore(KEYS.USERS, users);
     if (!isNode) {
-      localStorage.clear(); 
-      localStorage.setItem(DB_KEY, JSON.stringify(INITIAL_USERS));
-      return true;
+      const sessionUserStr = localStorage.getItem('noor_user');
+      if (sessionUserStr) {
+        const sessionUser = JSON.parse(sessionUserStr);
+        const updated = users.find(u => u.id === sessionUser.id);
+        if (updated) {
+          const { password: _, ...safe } = updated;
+          localStorage.setItem('noor_user', JSON.stringify(safe));
+        }
+      }
     }
-    return false;
-  },
-
-  findUserByIdentifier: (input: string) => {
-    const users = dbRegistry.getUsers();
-    const target = normalize(input);
-    return users.find((u: any) => normalize(u.email) === target || normalize(u.phone) === target);
   },
 
   findUserById: (id: string) => {
-    return dbRegistry.getUsers().find((u: any) => u.id === id);
+    const users = dbNode.getUsers();
+    return users.find((u: any) => u.id === id);
+  },
+
+  findUserByIdentifier: (input: string) => {
+    const term = input.toLowerCase().trim();
+    const users = dbNode.getUsers();
+    return users.find((u: any) => u.email.toLowerCase() === term || u.phone === term);
   },
 
   updateUser: (id: string, updates: any) => {
-    const users = dbRegistry.getUsers();
+    const users = dbNode.getUsers();
     const idx = users.findIndex((u: any) => u.id === id);
     if (idx !== -1) {
-      users[idx] = { ...users[idx], ...updates };
-      dbRegistry.saveUsers(users);
+      const currentUser = users[idx];
+      users[idx] = { 
+        ...currentUser, 
+        ...updates,
+        withdrawalInfo: updates.withdrawalInfo ? { ...currentUser.withdrawalInfo, ...updates.withdrawalInfo } : currentUser.withdrawalInfo,
+        transactions: updates.transactions || currentUser.transactions || [],
+        purchaseHistory: updates.purchaseHistory || currentUser.purchaseHistory || [],
+        workSubmissions: updates.workSubmissions || currentUser.workSubmissions || []
+      };
+      dbNode.saveUsers(users);
       return users[idx];
     }
     return null;
   },
 
-  // Fix: Added missing getExportHistory method for audit logs
-  getExportHistory: () => {
-    if (isNode) return [];
-    const data = localStorage.getItem(HISTORY_KEY);
-    return data ? JSON.parse(data) : [];
-  },
-
-  // Fix: Added missing addExportRecord method to log registry backups
-  addExportRecord: (record: any) => {
-    if (isNode) return;
-    const history = dbRegistry.getExportHistory();
-    const newRecord = { ...record, timestamp: new Date().toISOString() };
-    localStorage.setItem(HISTORY_KEY, JSON.stringify([newRecord, ...history].slice(0, 10)));
-  }
+  getConfig: () => getFromStore(KEYS.CONFIG, INITIAL_CONFIG),
+  saveConfig: (config: any) => saveToStore(KEYS.CONFIG, config),
+  
+  getTasks: () => getFromStore(KEYS.TASKS, INITIAL_TASKS),
+  saveTasks: (tasks: any[]) => saveToStore(KEYS.TASKS, tasks)
 };
 
-export const dbNode = dbRegistry;
+export const dbRegistry = dbNode;
