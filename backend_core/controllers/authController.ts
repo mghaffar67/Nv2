@@ -7,7 +7,7 @@ export const authController = {
       const { email, password } = req.body;
       
       if (!email || !password) {
-        return res.status(400).json({ message: 'Email/Mobile aur Password likhna zaroori hai.' });
+        return res.status(400).json({ message: 'Email aur Password likhna zaroori hai.' });
       }
 
       const user = dbRegistry.findUserByIdentifier(email);
@@ -29,7 +29,7 @@ export const authController = {
         user: sessionUser
       });
     } catch (err) {
-      return res.status(500).json({ message: 'System Error: Syncing failure.' });
+      return res.status(500).json({ message: 'Server error: Dobara koshish karen.' });
     }
   },
 
@@ -67,7 +67,7 @@ export const authController = {
         user: safeUser 
       });
     } catch (err) {
-      return res.status(500).json({ message: "Identity creation failed." });
+      return res.status(500).json({ message: "Account nahi ban saka. Dobara koshish karen." });
     }
   }
 };

@@ -1,52 +1,44 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   TrendingUp, TrendingDown, Wallet, Users, 
-  Activity, ShieldCheck, RefreshCw, AlertTriangle,
-  ArrowUpRight, PieChart, BarChart3, Zap, Clock
+  Activity, RefreshCw, Zap, Clock, ArrowUpRight,
+  PieChart, BarChart3, FileText
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, Tooltip, 
-  ResponsiveContainer, CartesianGrid, Legend,
-  BarChart, Bar
+  ResponsiveContainer, CartesianGrid
 } from 'recharts';
 import { api } from '../../utils/api';
-import { useConfig } from '../../context/ConfigContext';
 import { clsx } from 'clsx';
 
-const HealthCard = ({ title, value, icon: Icon, color, sub, glow }: any) => (
+const StatCard = ({ title, value, icon: Icon, gradClass, sub }: any) => (
   <motion.div 
-    initial={{ opacity: 0, scale: 0.95 }}
-    animate={{ opacity: 1, scale: 1 }}
+    initial={{ opacity: 0, y: 15 }}
+    animate={{ opacity: 1, y: 0 }}
     className={clsx(
-      "relative p-6 rounded-[36px] border border-white/5 overflow-hidden shadow-2xl transition-all",
-      glow ? "bg-slate-900" : "bg-white border-slate-100"
+      "relative p-5 rounded-[30px] overflow-hidden shadow-xl transition-all h-36 flex flex-col justify-between text-white border border-white/10",
+      gradClass
     )}
   >
-    {glow && <div className={clsx("absolute -top-10 -right-10 w-32 h-32 blur-[60px] opacity-20", color.bg)} />}
-    <div className="relative z-10 flex flex-col justify-between h-full space-y-4">
-      <div className="flex justify-between items-center">
-        <div className={clsx("w-10 h-10 rounded-2xl flex items-center justify-center", color.bg, color.text)}>
-          <Icon size={20} />
-        </div>
-        <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg">
-          <div className={clsx("w-1 h-1 rounded-full animate-pulse", color.dot)} />
-          <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">{sub}</span>
-        </div>
+    <div className="absolute -top-4 -right-4 w-20 h-20 bg-white/10 rounded-full blur-2xl" />
+    <div className="relative z-10 flex justify-between items-start">
+      <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20">
+        <Icon size={18} />
       </div>
-      <div>
-        <p className={clsx("text-[9px] font-black uppercase tracking-widest mb-1", glow ? "text-slate-400" : "text-slate-300")}>{title}</p>
-        <h3 className={clsx("text-2xl font-black italic tracking-tighter leading-none", glow ? "text-white" : "text-slate-900")}>
-          {typeof value === 'number' ? `Rs. ${value.toLocaleString()}` : value}
-        </h3>
-      </div>
+      <span className="text-[7px] font-black uppercase tracking-widest bg-black/20 px-2 py-1 rounded-lg">{sub}</span>
+    </div>
+    <div className="relative z-10">
+      <p className="text-[8px] font-bold uppercase tracking-widest opacity-80 mb-1">{title}</p>
+      <h3 className="text-xl font-black italic tracking-tighter leading-none">
+        {typeof value === 'number' ? `Rs. ${value.toLocaleString()}` : value}
+      </h3>
     </div>
   </motion.div>
 );
 
 const AdminDashboard = () => {
-  const { config } = useConfig();
   const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -56,7 +48,7 @@ const AdminDashboard = () => {
       const res = await api.get('/admin/reports');
       setReport(res);
     } catch (e) {
-      console.error("Aggregation node offline.");
+      console.error("Data refresh failed.");
     } finally {
       setLoading(false);
     }
@@ -65,177 +57,121 @@ const AdminDashboard = () => {
   useEffect(() => { fetchStats(); }, []);
 
   if (loading && !report) return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-6">
-       <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
-       <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.5em] italic">Synthesizing Network Logs...</p>
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#fbfcfe]">
+       <div className="w-10 h-10 border-4 border-slate-100 border-t-indigo-600 rounded-full animate-spin" />
+       <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Loading Dashboard...</p>
     </div>
   );
 
   return (
     <div className="space-y-6 pb-24 animate-fade-in max-w-7xl mx-auto px-2">
-      <header className="flex justify-between items-center pt-6">
+      <header className="flex justify-between items-center pt-6 px-1">
          <div>
-            <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
-              System <span className="text-indigo-600">Health.</span>
+            <h1 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
+              Admin <span className="text-indigo-600">Portal.</span>
             </h1>
-            <p className="text-slate-400 font-bold uppercase text-[9px] tracking-[0.4em] mt-3">Advanced Liquidity Audit Hub</p>
+            <p className="text-slate-400 font-bold uppercase text-[8px] tracking-[0.3em] mt-2">Daily Progress & System Stats</p>
          </div>
-         <button onClick={fetchStats} className="p-4 bg-white border border-slate-100 rounded-2xl text-slate-400 shadow-sm active:rotate-180 transition-all duration-700">
-            <RefreshCw size={24}/>
+         <button onClick={fetchStats} className="w-10 h-10 bg-white border border-slate-100 rounded-2xl flex items-center justify-center text-slate-400 shadow-sm active:rotate-180 transition-all duration-700">
+            <RefreshCw size={18}/>
          </button>
       </header>
 
-      {/* 1. TOP ANALYTICS GRID */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-         <HealthCard 
-           title="Total Revenue" 
-           value={report.finance.totalDeposits} 
+      {/* 2-COLUMN GRADIENT STATS GRID */}
+      <div className="grid grid-cols-2 gap-4 px-1">
+         <StatCard 
+           title="Total Deposits" 
+           value={report?.finance?.totalDeposits || 0} 
            icon={TrendingUp} 
-           color={{ bg: 'bg-emerald-500/10', text: 'text-emerald-500', dot: 'bg-emerald-500' }}
-           sub="Deposits"
+           gradClass="bg-gradient-to-br from-indigo-600 to-violet-700"
+           sub="Cash In"
          />
-         <HealthCard 
-           title="Total Payouts" 
-           value={report.finance.totalWithdrawals} 
-           icon={TrendingDown} 
-           color={{ bg: 'bg-rose-500/10', text: 'text-rose-500', dot: 'bg-rose-500' }}
-           sub="Withdrawals"
-         />
-         <HealthCard 
-           title="Platform Profit" 
-           value={report.finance.netProfit} 
+         <StatCard 
+           title="Total Profit" 
+           value={report?.finance?.netProfit || 0} 
            icon={Zap} 
-           color={{ bg: 'bg-indigo-600', text: 'text-white', dot: 'bg-white' }}
-           sub="Net Income"
-           glow
+           gradClass="bg-gradient-to-br from-emerald-500 to-teal-700"
+           sub="Net Earning"
          />
-         <HealthCard 
-           title="Pending Liability" 
-           value={report.finance.totalLiability} 
+         <StatCard 
+           title="Total Payouts" 
+           value={report?.finance?.totalWithdrawals || 0} 
+           icon={TrendingDown} 
+           gradClass="bg-gradient-to-br from-rose-500 to-pink-700"
+           sub="Cash Out"
+         />
+         <StatCard 
+           title="User Balances" 
+           value={report?.finance?.totalLiability || 0} 
            icon={Wallet} 
-           color={{ bg: 'bg-amber-500/10', text: 'text-amber-500', dot: 'bg-amber-500' }}
-           sub="User Balances"
+           gradClass="bg-gradient-to-br from-amber-500 to-orange-700"
+           sub="In Wallets"
          />
       </div>
 
-      {/* 2. TREND VISUALIZATION */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-         <div className="lg:col-span-8 bg-slate-950 p-8 rounded-[48px] shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-10 opacity-5 rotate-12 scale-150 text-white"><Activity size={64}/></div>
-            <div className="flex justify-between items-center mb-10 relative z-10">
-               <div>
-                  <h3 className="text-xl font-black text-white italic uppercase tracking-tight">Finance Flux Matrix</h3>
-                  <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-1">7-Day Inflow vs Outflow Comparison</p>
-               </div>
-               <div className="flex gap-4">
-                  <div className="flex items-center gap-2">
-                     <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                     <span className="text-[8px] font-black text-slate-400 uppercase">Deposits</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                     <div className="w-2 h-2 rounded-full bg-rose-500" />
-                     <span className="text-[8px] font-black text-slate-400 uppercase">Withdraws</span>
-                  </div>
-               </div>
-            </div>
-            
-            <div className="h-[300px] w-full relative z-10">
-               <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={report.trends}>
-                     <defs>
-                        <linearGradient id="colorDep" x1="0" y1="0" x2="0" y2="1">
-                           <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/><stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                        </linearGradient>
-                        <linearGradient id="colorWit" x1="0" y1="0" x2="0" y2="1">
-                           <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.3}/><stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
-                        </linearGradient>
-                     </defs>
-                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.03)" />
-                     <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 9, fontWeight: 900, fill: '#64748b'}} />
-                     <YAxis axisLine={false} tickLine={false} tick={{fontSize: 9, fontWeight: 900, fill: '#64748b'}} />
-                     <Tooltip contentStyle={{ borderRadius: '24px', border: 'none', background: '#0f172a', color: '#fff', fontSize: '10px', fontWeight: 900 }} />
-                     <Area type="monotone" dataKey="deposit" stroke="#10b981" strokeWidth={4} fill="url(#colorDep)" />
-                     <Area type="monotone" dataKey="withdraw" stroke="#f43f5e" strokeWidth={4} fill="url(#colorWit)" />
-                  </AreaChart>
-               </ResponsiveContainer>
+      {/* IMPROVED CHART WITHOUT HEALTH SECTION */}
+      <div className="bg-slate-950 p-6 rounded-[40px] shadow-2xl relative overflow-hidden mx-1">
+         <div className="flex justify-between items-center mb-8 relative z-10">
+            <div>
+               <h3 className="text-lg font-black text-white italic uppercase tracking-tight">Financial Traffic</h3>
+               <p className="text-[7px] font-bold text-slate-500 uppercase tracking-widest mt-1">7 Days Performance View</p>
             </div>
          </div>
-
-         <div className="lg:col-span-4 bg-white p-8 rounded-[48px] border border-slate-100 shadow-sm flex flex-col justify-between">
-            <div className="space-y-8">
-               <div>
-                  <h3 className="text-sm font-black text-slate-900 uppercase italic tracking-tight flex items-center gap-2">
-                    <PieChart size={18} className="text-indigo-600" /> Station Saturation
-                  </h3>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Premium Member Ratio</p>
-               </div>
-
-               <div className="space-y-6">
-                  <StatRow label="Active Premium Nodes" val={report.users.activePremium} max={report.users.totalUsers} color="bg-indigo-500" />
-                  <StatRow label="In-Flux (Today)" val={report.users.joinedToday} max={100} color="bg-sky-500" />
-                  <StatRow label="Support Queue" val={report.users.totalUsers - report.users.activePremium} max={report.users.totalUsers} color="bg-slate-400" />
-               </div>
-            </div>
-
-            <div className={clsx(
-              "mt-8 p-6 rounded-[32px] flex items-center gap-4 transition-all",
-              report.finance.systemHealth === 'HEALTHY' ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
-            )}>
-               {report.finance.systemHealth === 'HEALTHY' ? <ShieldCheck size={28}/> : <AlertTriangle size={28}/>}
-               <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest">Protocol Status</p>
-                  <h4 className="text-lg font-black tracking-tight">{report.finance.systemHealth}</h4>
-               </div>
-            </div>
+         
+         <div className="h-[280px] w-full relative z-10">
+            <ResponsiveContainer width="100%" height="100%">
+               <AreaChart data={report?.trends || []}>
+                  <defs>
+                     <linearGradient id="colorIn" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/><stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                     </linearGradient>
+                     <linearGradient id="colorOut" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.2}/><stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
+                     </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="5 5" vertical={false} stroke="rgba(255,255,255,0.03)" />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 8, fontWeight: 900, fill: '#64748b'}} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fontSize: 8, fontWeight: 900, fill: '#64748b'}} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '15px', border: 'none', background: '#0f172a', color: '#fff', fontSize: '9px', fontWeight: 900 }}
+                  />
+                  <Area type="monotone" dataKey="deposit" stroke="#10b981" strokeWidth={4} fill="url(#colorIn)" />
+                  <Area type="monotone" dataKey="withdraw" stroke="#f43f5e" strokeWidth={4} fill="url(#colorOut)" />
+               </AreaChart>
+            </ResponsiveContainer>
          </div>
       </div>
 
-      {/* 3. RECENT ACTIVITY SNIPPET */}
-      <div className="bg-white p-8 rounded-[48px] border border-slate-100 shadow-sm">
-         <div className="flex items-center justify-between mb-8">
-            <h3 className="text-sm font-black text-slate-900 uppercase italic tracking-widest flex items-center gap-2">
-               <Activity size={18} className="text-indigo-600" /> System Integrity Log
-            </h3>
-            <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em]">Latest 5 Node Events</span>
-         </div>
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 mb-3">Liquidity Inbound</p>
-               <div className="p-4 bg-slate-50 rounded-3xl flex justify-between items-center opacity-60">
-                  <div className="flex items-center gap-3">
-                     <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center"><TrendingUp size={14}/></div>
-                     <span className="text-[10px] font-black uppercase">Manual Ledger Sync</span>
-                  </div>
-                  <span className="text-[8px] font-bold uppercase text-slate-400">Synchronized</span>
+      {/* USER LIST SUMMARY */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-1">
+         <div className="bg-white p-5 rounded-[30px] border border-slate-100 shadow-sm flex items-center justify-between">
+            <div className="flex items-center gap-4">
+               <div className="w-11 h-11 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
+                  <Users size={22} />
+               </div>
+               <div>
+                  <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Members</h4>
+                  <p className="text-lg font-black text-slate-900 tracking-tight">{report?.users?.totalUsers || 0} Registered</p>
                </div>
             </div>
-            <div className="space-y-2">
-               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 mb-3">Identity Deployments</p>
-               <div className="p-4 bg-slate-50 rounded-3xl flex justify-between items-center opacity-60">
-                  <div className="flex items-center gap-3">
-                     <div className="w-8 h-8 rounded-xl bg-indigo-500 text-white flex items-center justify-center"><Users size={14}/></div>
-                     <span className="text-[10px] font-black uppercase">Identity Verification Hub</span>
-                  </div>
-                  <span className="text-[8px] font-bold uppercase text-slate-400">Operational</span>
+            <p className="text-[8px] font-black text-emerald-500 uppercase">+{report?.users?.joinedToday || 0} Today</p>
+         </div>
+
+         <div className="bg-white p-5 rounded-[30px] border border-slate-100 shadow-sm flex items-center justify-between">
+            <div className="flex items-center gap-4">
+               <div className="w-11 h-11 bg-sky-50 text-sky-600 rounded-2xl flex items-center justify-center">
+                  <PieChart size={22} />
                </div>
+               <div>
+                  <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Premium Members</h4>
+                  <p className="text-lg font-black text-slate-900 tracking-tight">{report?.users?.activePremium || 0} Active Plans</p>
+               </div>
+            </div>
+            <div className="h-2 w-16 bg-slate-100 rounded-full overflow-hidden">
+               <div className="h-full bg-sky-500" style={{ width: `${(report?.users?.activePremium / report?.users?.totalUsers || 1) * 100}%` }} />
             </div>
          </div>
       </div>
-    </div>
-  );
-};
-
-const StatRow = ({ label, val, max, color }: any) => {
-  const pct = Math.round((val / max) * 100) || 0;
-  return (
-    <div className="space-y-2">
-       <div className="flex justify-between items-end">
-          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{label}</p>
-          <p className="text-xs font-black text-slate-900">{val}</p>
-       </div>
-       <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
-          <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} className={clsx("h-full rounded-full transition-all", color)} />
-       </div>
     </div>
   );
 };

@@ -2,8 +2,8 @@
 import { dbNode } from '../utils/db';
 
 /**
- * Noor V3 - Data Science & Analytics Engine
- * High-performance aggregation for platform health.
+ * Noor V3 - Aggregation Engine
+ * High-performance reports for admin visibility.
  */
 export const analyticsController = {
   getSystemReports: async (req: any, res: any) => {
@@ -28,14 +28,14 @@ export const analyticsController = {
       });
 
       users.forEach((user: any) => {
-        // 1. Accumulate Liability (Money held by users)
+        // 1. Total User Balance
         totalLiability += (Number(user.balance) || 0);
 
-        // 2. User Stats
+        // 2. Member Stats
         if (user.createdAt?.startsWith(today)) usersJoinedToday++;
         if (user.currentPlan && user.currentPlan !== 'None') activePlanUsers++;
 
-        // 3. Financial Aggregation (Transactions)
+        // 3. Financial Totals
         if (user.transactions) {
           user.transactions.forEach((t: any) => {
             if (t.status === 'approved') {
@@ -55,9 +55,8 @@ export const analyticsController = {
       });
 
       const netProfit = totalDeposits - totalWithdrawals;
-      const systemHealth = netProfit > totalLiability ? 'HEALTHY' : 'DEFICIT';
 
-      // Convert trendMap to sorted array
+      // Convert trendMap to array for Recharts
       const trendData = last7Days.map(date => trendMap[date]).reverse();
 
       return res.status(200).json({
@@ -65,8 +64,7 @@ export const analyticsController = {
           totalDeposits,
           totalWithdrawals,
           netProfit,
-          totalLiability,
-          systemHealth
+          totalLiability
         },
         users: {
           totalUsers: users.length,
@@ -77,7 +75,7 @@ export const analyticsController = {
         timestamp: new Date().toISOString()
       });
     } catch (err) {
-      return res.status(500).json({ message: "Analytics Node Failure." });
+      return res.status(500).json({ message: "Analytics processing failed." });
     }
   }
 };
