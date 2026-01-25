@@ -1,11 +1,11 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useConfig } from '../../context/ConfigContext';
 import { 
-  Wallet, Zap, ArrowUpRight, Plus, RefreshCw, 
-  History as HistoryIcon, Network, ClipboardList, 
-  ShieldCheck, CheckCircle2, ChevronRight, UserPlus,
-  Award, BarChart3, Clock, CheckSquare, AlertCircle, TrendingUp
+  Wallet, Zap, History as HistoryIcon, Network, 
+  ClipboardList, CheckSquare, TrendingUp, Clock,
+  ArrowRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -13,34 +13,37 @@ import { clsx } from 'clsx';
 import StreakWidget from '../../components/user/StreakWidget';
 import { api } from '../../utils/api';
 
-const GradientCard = ({ title, value, sub, icon: Icon, gradient, delay }: any) => (
-  <motion.div 
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay }}
-    className={clsx(
-      "relative overflow-hidden rounded-[32px] p-5 text-white shadow-xl h-40 flex flex-col justify-between group border border-white/10",
-      gradient
-    )}
-  >
-    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
-      <Icon size={72} strokeWidth={1} />
-    </div>
-    <div className="relative z-10">
-       <p className="text-[10px] font-black uppercase tracking-widest opacity-70 mb-1">{title}</p>
-       <h3 className="text-2xl font-black tracking-tight">{value}</h3>
-    </div>
-    <div className="relative z-10 flex items-center gap-1.5 bg-black/10 w-fit px-3 py-1 rounded-full border border-white/5">
-       <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-       <p className="text-[8px] font-bold uppercase tracking-wider">{sub}</p>
-    </div>
-    {/* Animated Mesh Overlay */}
-    <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent opacity-30 animate-pulse pointer-events-none" />
-  </motion.div>
-);
+const DashboardCard = ({ title, value, sub, icon: Icon, delay }: any) => {
+  const { config } = useConfig();
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+      className="bg-white rounded-[32px] p-5 border border-slate-100 shadow-sm flex flex-col justify-between h-44 group hover:border-indigo-100 transition-all"
+    >
+      <div className="flex justify-between items-start">
+        <div 
+          className="w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg shrink-0"
+          style={{ backgroundColor: config.theme.primaryColor }}
+        >
+          <Icon size={22} />
+        </div>
+        <div className="text-right overflow-hidden ml-2">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate">{title}</p>
+          <h3 className="text-xl font-black text-slate-900 mt-1 tracking-tight truncate">{value}</h3>
+        </div>
+      </div>
+      <div className="bg-slate-50 px-3 py-2.5 rounded-xl border border-slate-100">
+        <p className="text-[9px] font-black text-slate-500 truncate uppercase tracking-widest">{sub}</p>
+      </div>
+    </motion.div>
+  );
+};
 
 const UserDashboard = () => {
   const { user } = useAuth();
+  const { config } = useConfig();
   const [stats, setStats] = useState({ totalTasks: 0, pendingTasks: 0, todayIncome: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -49,9 +52,9 @@ const UserDashboard = () => {
     try {
       const history = await api.get('/finance/history');
       const tasks = await api.get('/work/tasks');
-      
       const today = new Date().toISOString().split('T')[0];
-      const todayReward = history
+      
+      const todayReward = (history || [])
         .filter((t: any) => t.type === 'reward' && t.date === today)
         .reduce((a: number, b: any) => a + Number(b.amount), 0);
       
@@ -63,7 +66,7 @@ const UserDashboard = () => {
         totalTasks: completedCount
       });
     } catch (e) {
-      console.error("Sync error");
+      console.error("Dashboard refresh error");
     } finally {
       setLoading(false);
     }
@@ -73,74 +76,73 @@ const UserDashboard = () => {
 
   return (
     <div className="w-full px-1 pb-32 space-y-6 max-w-2xl mx-auto animate-fade-in">
-      
+      {/* 4 Standardized Cards */}
       <div className="grid grid-cols-2 gap-3 px-1">
-         <GradientCard 
+         <DashboardCard 
            title="Total Balance" 
            value={`Rs. ${(user?.balance || 0).toLocaleString()}`} 
-           sub="Net Earnings"
+           sub="Available Earnings"
            icon={Wallet}
-           gradient="bg-gradient-to-br from-indigo-500 to-indigo-900"
            delay={0.1}
          />
-         <GradientCard 
-           title="Today's Earnings" 
-           value={`Rs. ${stats.todayIncome}`} 
-           sub="Last 24 Hours"
+         <DashboardCard 
+           title="Today Profit" 
+           value={`Rs. ${stats.todayIncome.toLocaleString()}`} 
+           sub="Earned Today"
            icon={TrendingUp}
-           gradient="bg-gradient-to-br from-emerald-400 to-teal-800"
            delay={0.2}
          />
-         <GradientCard 
-           title="Available Work" 
-           value={`${stats.pendingTasks} Tasks`} 
-           sub="New Assignments"
+         <DashboardCard 
+           title="Pending Work" 
+           value={`${stats.pendingTasks} Items`} 
+           sub="Tasks Available"
            icon={Clock}
-           gradient="bg-gradient-to-br from-amber-400 to-orange-800"
            delay={0.3}
          />
-         <GradientCard 
-           title="Completed" 
-           value={`${stats.totalTasks} Done`} 
-           sub="Lifetime Record"
+         <DashboardCard 
+           title="Work Done" 
+           value={`${stats.totalTasks} Completed`} 
+           sub="Total Approved"
            icon={CheckSquare}
-           gradient="bg-gradient-to-br from-rose-400 to-purple-800"
            delay={0.4}
          />
       </div>
 
       <StreakWidget />
 
+      {/* Grid Menu */}
       <div className="grid grid-cols-4 gap-2 px-1">
          <Link to="/user/work" className="bg-white p-4 rounded-[28px] border border-slate-100 flex flex-col items-center gap-2 active:scale-95 shadow-sm">
-            <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center"><ClipboardList size={20}/></div>
-            <span className="text-[7px] font-black uppercase text-slate-400">Daily Task</span>
+            <div className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center"><ClipboardList size={20}/></div>
+            <span className="text-[7px] font-black uppercase text-slate-400">Work</span>
          </Link>
          <Link to="/user/team" className="bg-white p-4 rounded-[28px] border border-slate-100 flex flex-col items-center gap-2 active:scale-95 shadow-sm">
-            <div className="w-10 h-10 bg-sky-50 text-sky-600 rounded-xl flex items-center justify-center"><Network size={20}/></div>
-            <span className="text-[7px] font-black uppercase text-slate-400">My Team</span>
+            <div className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center"><Network size={20}/></div>
+            <span className="text-[7px] font-black uppercase text-slate-400">Team</span>
          </Link>
          <Link to="/user/history" className="bg-white p-4 rounded-[28px] border border-slate-100 flex flex-col items-center gap-2 active:scale-95 shadow-sm">
-            <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center"><HistoryIcon size={20}/></div>
-            <span className="text-[7px] font-black uppercase text-slate-400">Report</span>
+            <div className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center"><HistoryIcon size={20}/></div>
+            <span className="text-[7px] font-black uppercase text-slate-400">History</span>
          </Link>
          <Link to="/user/wallet" className="bg-white p-4 rounded-[28px] border border-slate-100 flex flex-col items-center gap-2 active:scale-95 shadow-sm">
-            <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center"><Wallet size={20}/></div>
+            <div className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center"><Wallet size={20}/></div>
             <span className="text-[7px] font-black uppercase text-slate-400">Wallet</span>
          </Link>
       </div>
 
-      <div className="mx-1 pt-2">
-         <div className="bg-slate-900 p-6 rounded-[40px] text-white flex justify-between items-center relative overflow-hidden group shadow-2xl">
-            <div className="relative z-10">
-               <h4 className="text-xl font-black tracking-tight">Refer & Earn</h4>
-               <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Invite friends to grow your daily income.</p>
+      {/* Floating Action for Quick Work */}
+      <div className="px-1">
+         <Link 
+           to="/user/work" 
+           className="w-full h-16 rounded-[24px] flex items-center justify-between px-8 text-white shadow-xl active:scale-[0.98] transition-all"
+           style={{ backgroundColor: config.theme.primaryColor }}
+         >
+            <div className="flex items-center gap-4">
+               <Zap size={22} fill="currentColor" />
+               <span className="font-black text-xs uppercase tracking-[0.2em]">Start Daily Tasks</span>
             </div>
-            <Link to="/user/team" className="relative z-10 w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-xl group-hover:rotate-12 transition-transform">
-               <ArrowUpRight size={20} />
-            </Link>
-            <div className="absolute top-0 right-0 p-8 opacity-5 scale-150 rotate-45"><UserPlus size={100}/></div>
-         </div>
+            <ArrowRight size={20} />
+         </Link>
       </div>
     </div>
   );

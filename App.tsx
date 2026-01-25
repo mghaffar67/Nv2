@@ -12,7 +12,7 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Support from './pages/Support';
-import LivePayouts from './pages/public/LivePayouts'; // New Import
+import LivePayouts from './pages/public/LivePayouts';
 import DynamicPage from './pages/public/DynamicPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UsersManager from './pages/admin/UsersManager';
@@ -20,11 +20,10 @@ import FinanceManager from './pages/admin/finance/FinanceManager';
 import WorkManager from './pages/admin/WorkManager';
 import RequestsManager from './pages/admin/RequestsManager';
 import SettingsLayout from './pages/admin/settings/SettingsLayout';
-import GlobalSettings from './pages/admin/settings/Settings';
+import CoreSettings from './pages/admin/settings/Settings';
+import BrandingSettings from './pages/admin/settings/BrandingSettings';
+import AppearanceSettings from './pages/admin/settings/AppearanceSettings';
 import SEOManager from './pages/admin/settings/SEOManager';
-import ReviewsManager from './pages/admin/settings/ReviewsManager';
-import WebAppearance from './pages/admin/settings/WebAppearance';
-import ModuleControl from './pages/admin/settings/ModuleControl';
 import CMSEditor from './pages/admin/settings/CMSEditor';
 import DatabaseManager from './pages/admin/settings/DatabaseManager';
 import UserDashboard from './pages/user/UserDashboard';
@@ -49,7 +48,7 @@ const App: React.FC = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/support" element={<Support />} />
-              <Route path="/payouts" element={<LivePayouts />} /> // New Route
+              <Route path="/payouts" element={<LivePayouts />} />
               <Route path="/pages/:slug" element={<DynamicPage />} />
             </Route>
 
@@ -85,12 +84,11 @@ const App: React.FC = () => (
               
               <Route path="settings" element={<SettingsLayout />}>
                  <Route index element={<Navigate to="general" replace />} />
-                 <Route path="general" element={<GlobalSettings />} />
+                 <Route path="general" element={<CoreSettings />} />
+                 <Route path="branding" element={<BrandingSettings />} />
+                 <Route path="appearance" element={<AppearanceSettings />} />
                  <Route path="database" element={<DatabaseManager />} />
-                 <Route path="modules" element={<ModuleControl />} />
                  <Route path="seo" element={<SEOManager />} />
-                 <Route path="appearance" element={<WebAppearance />} />
-                 <Route path="reviews" element={<ReviewsManager />} />
                  <Route path="cms" element={<CMSEditor />} />
               </Route>
             </Route>

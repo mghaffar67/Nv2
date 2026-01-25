@@ -1,4 +1,3 @@
-
 export interface HeroSlide {
   image: string;
   title: string;
@@ -14,42 +13,24 @@ export interface SiteReview {
 export interface FinanceSettings {
   minWithdraw: number;
   maxWithdraw: number;
-  referralRequiredForWithdraw: boolean;
   withdrawFeePercent: number;
+  referralRequirementActive: boolean;
+  requiredReferralCount: number;
 }
 
-export interface ReferralSettings {
-  level1Percent: number;
-  level2Percent: number;
-  level3Percent: number;
-  signupBonus: number;
-}
-
-export interface PaymentGateway {
-  name: string;
-  accountNumber: string;
-  accountTitle: string;
-}
-
-export interface PlatformModules {
-  allowDeposits: boolean;
-  allowWithdrawals: boolean;
-  isRegistrationOpen: boolean;
-  isChatSupportActive: boolean;
-  allowTaskSubmission: boolean;
+export interface BrandingConfig {
+  companyName: string;
+  logo: string;
+  banner: string;
+  contactPhone: string;
+  supportPhone: string;
   showHelpSection: boolean;
 }
 
 export interface AppearanceConfig {
   heroTitle: string;
   heroSubtitle: string;
-  announcementText: string;
   heroSlides: HeroSlide[];
-  siteStats: {
-    totalMembers: string;
-    totalPaid: string;
-    activeUsers: string;
-  };
   reviews: SiteReview[];
   showFakePayouts: boolean;
   companyBanner: string;
@@ -57,10 +38,8 @@ export interface AppearanceConfig {
 
 export interface ThemeSettings {
   primaryColor: string;
-  secondaryColor: string;
-  accentColor: string;
   fontFamily: string;
-  fontWeight: string;
+  themePreset: 'indigo' | 'emerald' | 'rose' | 'amber' | 'sky';
 }
 
 export interface GlobalConfig {
@@ -68,20 +47,25 @@ export interface GlobalConfig {
   currency: string;
   maintenanceMode: boolean;
   broadcastMessage: string;
-  branding: {
-    logo: string;
-    siteIcon: string;
-    copyright: string;
-  };
-  contactInfo: {
-    whatsapp: string;
-    supportPhone: string;
-    email: string;
-  };
+  branding: BrandingConfig;
   financeSettings: FinanceSettings;
-  referralSettings: ReferralSettings;
-  paymentGateways: PaymentGateway[];
-  modules: PlatformModules;
+  referralSettings: {
+    level1Percent: number;
+    level2Percent: number;
+    level3Percent: number;
+  };
+  paymentGateways: {
+    name: string;
+    accountNumber: string;
+    accountTitle: string;
+  }[];
+  modules: {
+    allowDeposits: boolean;
+    allowWithdrawals: boolean;
+    isRegistrationOpen: boolean;
+    allowTaskSubmission: boolean;
+    showHelpSection: boolean;
+  };
   theme: ThemeSettings;
   appearance: AppearanceConfig;
   seo: {

@@ -57,7 +57,7 @@ const StreakWidget = () => {
       <div className="flex justify-between items-center mb-8">
          <div>
             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic flex items-center gap-1.5">
-               <History size={12} className="text-indigo-500" /> Logic Cycle Reset
+               <History size={12} style={{ color: config.theme.primaryColor }} /> Cycle Reset
             </h3>
             <div className="flex items-baseline gap-1 mt-1.5">
                <span className="text-3xl font-black text-slate-900 tracking-tighter italic">{timeLeft.h}</span>
@@ -80,12 +80,18 @@ const StreakWidget = () => {
            const isCurrent = !claimedToday && day === streak + 1;
            return (
              <div key={day} className="flex flex-col items-center gap-2">
-                <div className={clsx(
-                  "w-10 h-10 rounded-2xl flex items-center justify-center transition-all border-2",
-                  isCompleted ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-100" :
-                  isCurrent ? "bg-white border-indigo-600 border-dashed animate-pulse text-indigo-600" :
-                  "bg-slate-50 border-slate-100 text-slate-200"
-                )}>
+                <div 
+                  className={clsx(
+                    "w-10 h-10 rounded-2xl flex items-center justify-center transition-all border-2",
+                    isCompleted ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-100" :
+                    isCurrent ? "bg-white border-dashed animate-pulse" :
+                    "bg-slate-50 border-slate-100 text-slate-200"
+                  )}
+                  style={{ 
+                    borderColor: isCurrent ? config.theme.primaryColor : undefined,
+                    color: isCurrent ? config.theme.primaryColor : undefined
+                  }}
+                >
                    {isCompleted ? <Check size={18} strokeWidth={4} /> : 
                     isCurrent ? <Zap size={18} fill="currentColor" /> : <Lock size={14} />}
                 </div>
@@ -102,17 +108,18 @@ const StreakWidget = () => {
            onClick={handleClaim}
            className={clsx(
              "h-14 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl",
-             claimedToday ? "bg-slate-50 text-slate-300 border border-slate-100" : "bg-emerald-600 text-white shadow-emerald-100"
+             claimedToday ? "bg-slate-50 text-slate-300 border border-slate-100" : "text-white"
            )}
+           style={{ backgroundColor: !claimedToday && !loading ? config.theme.primaryColor : undefined }}
          >
-            {loading ? <Loader2 size={16} className="animate-spin" /> : claimedToday ? 'Cycle Synced' : 'Sync Daily Yield'}
+            {loading ? <Loader2 size={16} className="animate-spin" /> : claimedToday ? 'Record Logged' : 'Collect Reward'}
          </button>
          
          <button 
             onClick={() => navigate('/user/history')}
             className="h-14 bg-slate-950 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all"
          >
-            <BarChart size={14} className="text-sky-400" /> Open Audit Hub
+            <BarChart size={14} className="text-sky-400" /> Record Center
          </button>
       </div>
     </div>
