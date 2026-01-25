@@ -2,8 +2,7 @@
 import { INITIAL_USERS, INITIAL_TASKS, INITIAL_CONFIG } from '../../src/data/mockRegistry';
 
 /**
- * Noor Official V3 - Master Database Registry (Purified)
- * Role: Single Source of Truth for the Virtual Backend
+ * Noor Official V3 - Single Source of Truth Node
  */
 
 const KEYS = {
@@ -78,11 +77,7 @@ export const dbNode = {
       const currentUser = users[idx];
       users[idx] = { 
         ...currentUser, 
-        ...updates,
-        withdrawalInfo: updates.withdrawalInfo ? { ...currentUser.withdrawalInfo, ...updates.withdrawalInfo } : currentUser.withdrawalInfo,
-        transactions: updates.transactions || currentUser.transactions || [],
-        purchaseHistory: updates.purchaseHistory || currentUser.purchaseHistory || [],
-        workSubmissions: updates.workSubmissions || currentUser.workSubmissions || []
+        ...updates
       };
       dbNode.saveUsers(users);
       return users[idx];

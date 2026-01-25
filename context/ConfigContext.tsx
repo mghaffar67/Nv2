@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { GlobalConfig } from '../types';
 
@@ -53,7 +52,7 @@ const defaultConfig: GlobalConfig = {
     primaryColor: '#6366f1',
     secondaryColor: '#0ea5e9',
     accentColor: '#6366f1',
-    darkMode: false,
+    // Removed darkMode to match ThemeSettings interface
     fontFamily: "'Inter', sans-serif",
     fontWeight: "700"
   },
@@ -72,7 +71,9 @@ const defaultConfig: GlobalConfig = {
     reviews: [
       { name: "Ali Ahmed", comment: "Bohot achi app hai, payment time par milti hai.", rating: 5 }
     ],
-    showFakePayouts: true
+    showFakePayouts: true,
+    // Added missing companyBanner to satisfy AppearanceConfig interface
+    companyBanner: ""
   },
   seo: {
     metaTitle: "Noor Official V3 - Earn Online",

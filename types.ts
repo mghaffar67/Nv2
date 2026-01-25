@@ -37,6 +37,7 @@ export interface PlatformModules {
   isRegistrationOpen: boolean;
   isChatSupportActive: boolean;
   allowTaskSubmission: boolean;
+  showHelpSection: boolean;
 }
 
 export interface AppearanceConfig {
@@ -51,19 +52,13 @@ export interface AppearanceConfig {
   };
   reviews: SiteReview[];
   showFakePayouts: boolean;
-}
-
-export interface SEOConfig {
-  metaTitle: string;
-  metaDescription: string;
-  keywords: string;
+  companyBanner: string;
 }
 
 export interface ThemeSettings {
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
-  darkMode: boolean;
   fontFamily: string;
   fontWeight: string;
 }
@@ -78,12 +73,21 @@ export interface GlobalConfig {
     siteIcon: string;
     copyright: string;
   };
+  contactInfo: {
+    whatsapp: string;
+    supportPhone: string;
+    email: string;
+  };
   financeSettings: FinanceSettings;
   referralSettings: ReferralSettings;
   paymentGateways: PaymentGateway[];
   modules: PlatformModules;
   theme: ThemeSettings;
   appearance: AppearanceConfig;
-  seo: SEOConfig;
+  seo: {
+    metaTitle: string;
+    metaDescription: string;
+    keywords: string;
+  };
   streakRewards: number[];
 }
