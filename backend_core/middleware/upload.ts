@@ -1,7 +1,7 @@
 
 /**
  * Noor Official V3 - Secure Upload Pipeline
- * Simulates Multer logic to process multipart/form-data for transaction evidence.
+ * Simulates Multer logic to process multipart/form-data for transaction evidence and task assets.
  */
 export const uploadMiddleware = {
   single: (fieldName: string) => (req: any, res: any, next: any) => {
@@ -9,13 +9,19 @@ export const uploadMiddleware = {
     const file = req.body?.[fieldName] || (req.files && req.files[fieldName]);
     
     if (file) {
+      // Determine mimetype (simulation)
+      let mimetype = 'image/png';
+      if (typeof file === 'string' && file.startsWith('data:application/pdf')) {
+        mimetype = 'application/pdf';
+      }
+
       req.file = {
         fieldname: fieldName,
-        originalname: `evidence-${Date.now()}.png`,
-        mimetype: 'image/png',
-        filename: `proof-${Date.now()}-${Math.floor(Math.random() * 1000)}.png`,
+        originalname: `asset-${Date.now()}.${mimetype === 'application/pdf' ? 'pdf' : 'png'}`,
+        mimetype: mimetype,
+        filename: `node-asset-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         path: typeof file === 'string' ? file : URL.createObjectURL(file), // Support for preview paths
-        size: 1024 * 500 // Mock 500KB
+        size: 1024 * 1024 * 5 // Mock 5MB
       };
     }
 

@@ -1,104 +1,241 @@
 
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Users, Wallet, CheckCircle2, Clock, 
-  RefreshCw, TrendingUp, CreditCard, Activity, BarChart3
+  TrendingUp, TrendingDown, Wallet, Users, 
+  Activity, ShieldCheck, RefreshCw, AlertTriangle,
+  ArrowUpRight, PieChart, BarChart3, Zap, Clock
 } from 'lucide-react';
-import { adminController } from '../../backend_core/controllers/adminController';
-import { financeController } from '../../backend_core/controllers/financeController';
+import { 
+  AreaChart, Area, XAxis, YAxis, Tooltip, 
+  ResponsiveContainer, CartesianGrid, Legend,
+  BarChart, Bar
+} from 'recharts';
+import { api } from '../../utils/api';
+import { useConfig } from '../../context/ConfigContext';
 import { clsx } from 'clsx';
 
-const GradientCard = ({ title, value, sub, icon: Icon, gradient, delay }: any) => (
+const HealthCard = ({ title, value, icon: Icon, color, sub, glow }: any) => (
   <motion.div 
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay }}
+    initial={{ opacity: 0, scale: 0.95 }}
+    animate={{ opacity: 1, scale: 1 }}
     className={clsx(
-      "relative overflow-hidden rounded-[32px] p-6 text-white shadow-xl h-44 flex flex-col justify-between group border border-white/10",
-      gradient
+      "relative p-6 rounded-[36px] border border-white/5 overflow-hidden shadow-2xl transition-all",
+      glow ? "bg-slate-900" : "bg-white border-slate-100"
     )}
   >
-    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
-      <Icon size={80} strokeWidth={1} />
+    {glow && <div className={clsx("absolute -top-10 -right-10 w-32 h-32 blur-[60px] opacity-20", color.bg)} />}
+    <div className="relative z-10 flex flex-col justify-between h-full space-y-4">
+      <div className="flex justify-between items-center">
+        <div className={clsx("w-10 h-10 rounded-2xl flex items-center justify-center", color.bg, color.text)}>
+          <Icon size={20} />
+        </div>
+        <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg">
+          <div className={clsx("w-1 h-1 rounded-full animate-pulse", color.dot)} />
+          <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">{sub}</span>
+        </div>
+      </div>
+      <div>
+        <p className={clsx("text-[9px] font-black uppercase tracking-widest mb-1", glow ? "text-slate-400" : "text-slate-300")}>{title}</p>
+        <h3 className={clsx("text-2xl font-black italic tracking-tighter leading-none", glow ? "text-white" : "text-slate-900")}>
+          {typeof value === 'number' ? `Rs. ${value.toLocaleString()}` : value}
+        </h3>
+      </div>
     </div>
-    <div className="relative z-10">
-       <p className="text-[11px] font-black uppercase tracking-widest opacity-70 mb-1">{title}</p>
-       <h3 className="text-3xl font-black tracking-tight">{value}</h3>
-    </div>
-    <div className="relative z-10 flex items-center gap-1.5 bg-black/10 w-fit px-4 py-1.5 rounded-full border border-white/5">
-       <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-       <p className="text-[9px] font-black uppercase tracking-wider">{sub}</p>
-    </div>
-    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-30 animate-pulse pointer-events-none" />
   </motion.div>
 );
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState<any>(null);
-  const [recentTrx, setRecentTrx] = useState<any[]>([]);
+  const { config } = useConfig();
+  const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = async () => {
+  const fetchStats = async () => {
     setLoading(true);
     try {
-      const statsRes = await new Promise<any>((resolve) => {
-        adminController.getDashboardStats({}, { status: () => ({ json: resolve }) });
-      });
-      const trxRes = await new Promise<any>((resolve) => {
-        financeController.getAllDeposits({}, { status: () => ({ json: resolve }) });
-      });
-      setStats(statsRes);
-      setRecentTrx(trxRes.slice(0, 4));
-    } finally { setLoading(false); }
+      const res = await api.get('/admin/reports');
+      setReport(res);
+    } catch (e) {
+      console.error("Aggregation node offline.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchStats(); }, []);
+
+  if (loading && !report) return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-6">
+       <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
+       <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.5em] italic">Synthesizing Network Logs...</p>
+    </div>
+  );
 
   return (
-    <div className="space-y-6 md:space-y-8 pb-24 animate-fade-in max-w-[1600px] mx-auto px-1">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 px-2">
+    <div className="space-y-6 pb-24 animate-fade-in max-w-7xl mx-auto px-2">
+      <header className="flex justify-between items-center pt-6">
          <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3 italic">Admin <span className="text-indigo-600">Console.</span></h1>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Platform Performance Overview</p>
+            <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
+              System <span className="text-indigo-600">Health.</span>
+            </h1>
+            <p className="text-slate-400 font-bold uppercase text-[9px] tracking-[0.4em] mt-3">Advanced Liquidity Audit Hub</p>
          </div>
-         <button onClick={fetchData} className={clsx("p-3 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-indigo-600 shadow-sm transition-all", loading && "animate-spin")}>
-            <RefreshCw size={18}/>
+         <button onClick={fetchStats} className="p-4 bg-white border border-slate-100 rounded-2xl text-slate-400 shadow-sm active:rotate-180 transition-all duration-700">
+            <RefreshCw size={24}/>
          </button>
+      </header>
+
+      {/* 1. TOP ANALYTICS GRID */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+         <HealthCard 
+           title="Total Revenue" 
+           value={report.finance.totalDeposits} 
+           icon={TrendingUp} 
+           color={{ bg: 'bg-emerald-500/10', text: 'text-emerald-500', dot: 'bg-emerald-500' }}
+           sub="Deposits"
+         />
+         <HealthCard 
+           title="Total Payouts" 
+           value={report.finance.totalWithdrawals} 
+           icon={TrendingDown} 
+           color={{ bg: 'bg-rose-500/10', text: 'text-rose-500', dot: 'bg-rose-500' }}
+           sub="Withdrawals"
+         />
+         <HealthCard 
+           title="Platform Profit" 
+           value={report.finance.netProfit} 
+           icon={Zap} 
+           color={{ bg: 'bg-indigo-600', text: 'text-white', dot: 'bg-white' }}
+           sub="Net Income"
+           glow
+         />
+         <HealthCard 
+           title="Pending Liability" 
+           value={report.finance.totalLiability} 
+           icon={Wallet} 
+           color={{ bg: 'bg-amber-500/10', text: 'text-amber-500', dot: 'bg-amber-500' }}
+           sub="User Balances"
+         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 px-1">
-         <GradientCard title="Total Members" value={stats?.totalActivePartners || '0'} sub="Active Users" icon={Users} gradient="bg-gradient-to-br from-indigo-500 to-indigo-900" delay={0.1} />
-         <GradientCard title="Total Capital" value={`Rs.${((stats?.totalCapitalPool || 0) / 1000).toFixed(1)}k`} sub="Live Liquidity" icon={Wallet} gradient="bg-gradient-to-br from-emerald-400 to-teal-800" delay={0.2} />
-         <GradientCard title="Pending Items" value={stats ? stats.pendingWithdrawals + stats.pendingDeposits : '0'} sub="Needs Action" icon={Clock} gradient="bg-gradient-to-br from-amber-400 to-orange-800" delay={0.3} />
-         <GradientCard title="Total Payouts" value={`Rs.${((stats?.totalPayoutsProcessed || 0) / 1000).toFixed(1)}k`} sub="Verified Outflow" icon={CheckCircle2} gradient="bg-gradient-to-br from-rose-400 to-purple-800" delay={0.4} />
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 px-1">
-         <div className="xl:col-span-8 bg-white p-6 md:p-8 rounded-[44px] border border-slate-100 shadow-sm overflow-hidden flex flex-col">
-            <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight italic mb-8">Recent Activity</h3>
-            <div className="overflow-x-auto no-scrollbar">
-               <table className="w-full text-left">
-                  <tbody className="divide-y divide-slate-50">
-                     {recentTrx.map((trx, i) => (
-                       <tr key={i} className="group hover:bg-slate-50/50 transition-colors">
-                          <td className="px-6 py-5"><span className="text-[11px] font-black text-slate-700 uppercase">{trx.userName}</span></td>
-                          <td className="px-6 py-5"><span className="text-[10px] font-bold uppercase text-slate-400">{trx.gateway}</span></td>
-                          <td className="px-6 py-5"><span className={clsx("px-3 py-1 rounded-full text-[8px] font-black uppercase", trx.status === 'approved' ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600")}>{trx.status}</span></td>
-                          <td className="px-6 py-5 text-right font-black text-slate-900 text-xs">Rs {trx.amount}</td>
-                       </tr>
-                     ))}
-                  </tbody>
-               </table>
+      {/* 2. TREND VISUALIZATION */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+         <div className="lg:col-span-8 bg-slate-950 p-8 rounded-[48px] shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-10 opacity-5 rotate-12 scale-150 text-white"><Activity size={64}/></div>
+            <div className="flex justify-between items-center mb-10 relative z-10">
+               <div>
+                  <h3 className="text-xl font-black text-white italic uppercase tracking-tight">Finance Flux Matrix</h3>
+                  <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-1">7-Day Inflow vs Outflow Comparison</p>
+               </div>
+               <div className="flex gap-4">
+                  <div className="flex items-center gap-2">
+                     <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                     <span className="text-[8px] font-black text-slate-400 uppercase">Deposits</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                     <div className="w-2 h-2 rounded-full bg-rose-500" />
+                     <span className="text-[8px] font-black text-slate-400 uppercase">Withdraws</span>
+                  </div>
+               </div>
+            </div>
+            
+            <div className="h-[300px] w-full relative z-10">
+               <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={report.trends}>
+                     <defs>
+                        <linearGradient id="colorDep" x1="0" y1="0" x2="0" y2="1">
+                           <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/><stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="colorWit" x1="0" y1="0" x2="0" y2="1">
+                           <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.3}/><stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
+                        </linearGradient>
+                     </defs>
+                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.03)" />
+                     <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 9, fontWeight: 900, fill: '#64748b'}} />
+                     <YAxis axisLine={false} tickLine={false} tick={{fontSize: 9, fontWeight: 900, fill: '#64748b'}} />
+                     <Tooltip contentStyle={{ borderRadius: '24px', border: 'none', background: '#0f172a', color: '#fff', fontSize: '10px', fontWeight: 900 }} />
+                     <Area type="monotone" dataKey="deposit" stroke="#10b981" strokeWidth={4} fill="url(#colorDep)" />
+                     <Area type="monotone" dataKey="withdraw" stroke="#f43f5e" strokeWidth={4} fill="url(#colorWit)" />
+                  </AreaChart>
+               </ResponsiveContainer>
             </div>
          </div>
-         <div className="xl:col-span-4 bg-slate-900 p-8 rounded-[44px] text-white flex flex-col justify-between h-full relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-8 opacity-5 rotate-12 scale-[2]"><Activity size={64}/></div>
-            <div><h4 className="text-xl font-black italic tracking-tighter uppercase mb-4">System Status</h4><p className="text-xs text-slate-400 leading-relaxed font-medium">All earning stations are synchronized and running on high-speed cloud nodes.</p></div>
-            <div className="flex items-center gap-3"><div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" /><span className="text-[9px] font-black uppercase text-slate-400">Hub: Operational</span></div>
+
+         <div className="lg:col-span-4 bg-white p-8 rounded-[48px] border border-slate-100 shadow-sm flex flex-col justify-between">
+            <div className="space-y-8">
+               <div>
+                  <h3 className="text-sm font-black text-slate-900 uppercase italic tracking-tight flex items-center gap-2">
+                    <PieChart size={18} className="text-indigo-600" /> Station Saturation
+                  </h3>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Premium Member Ratio</p>
+               </div>
+
+               <div className="space-y-6">
+                  <StatRow label="Active Premium Nodes" val={report.users.activePremium} max={report.users.totalUsers} color="bg-indigo-500" />
+                  <StatRow label="In-Flux (Today)" val={report.users.joinedToday} max={100} color="bg-sky-500" />
+                  <StatRow label="Support Queue" val={report.users.totalUsers - report.users.activePremium} max={report.users.totalUsers} color="bg-slate-400" />
+               </div>
+            </div>
+
+            <div className={clsx(
+              "mt-8 p-6 rounded-[32px] flex items-center gap-4 transition-all",
+              report.finance.systemHealth === 'HEALTHY' ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
+            )}>
+               {report.finance.systemHealth === 'HEALTHY' ? <ShieldCheck size={28}/> : <AlertTriangle size={28}/>}
+               <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest">Protocol Status</p>
+                  <h4 className="text-lg font-black tracking-tight">{report.finance.systemHealth}</h4>
+               </div>
+            </div>
          </div>
       </div>
+
+      {/* 3. RECENT ACTIVITY SNIPPET */}
+      <div className="bg-white p-8 rounded-[48px] border border-slate-100 shadow-sm">
+         <div className="flex items-center justify-between mb-8">
+            <h3 className="text-sm font-black text-slate-900 uppercase italic tracking-widest flex items-center gap-2">
+               <Activity size={18} className="text-indigo-600" /> System Integrity Log
+            </h3>
+            <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em]">Latest 5 Node Events</span>
+         </div>
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 mb-3">Liquidity Inbound</p>
+               <div className="p-4 bg-slate-50 rounded-3xl flex justify-between items-center opacity-60">
+                  <div className="flex items-center gap-3">
+                     <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center"><TrendingUp size={14}/></div>
+                     <span className="text-[10px] font-black uppercase">Manual Ledger Sync</span>
+                  </div>
+                  <span className="text-[8px] font-bold uppercase text-slate-400">Synchronized</span>
+               </div>
+            </div>
+            <div className="space-y-2">
+               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 mb-3">Identity Deployments</p>
+               <div className="p-4 bg-slate-50 rounded-3xl flex justify-between items-center opacity-60">
+                  <div className="flex items-center gap-3">
+                     <div className="w-8 h-8 rounded-xl bg-indigo-500 text-white flex items-center justify-center"><Users size={14}/></div>
+                     <span className="text-[10px] font-black uppercase">Identity Verification Hub</span>
+                  </div>
+                  <span className="text-[8px] font-bold uppercase text-slate-400">Operational</span>
+               </div>
+            </div>
+         </div>
+      </div>
+    </div>
+  );
+};
+
+const StatRow = ({ label, val, max, color }: any) => {
+  const pct = Math.round((val / max) * 100) || 0;
+  return (
+    <div className="space-y-2">
+       <div className="flex justify-between items-end">
+          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{label}</p>
+          <p className="text-xs font-black text-slate-900">{val}</p>
+       </div>
+       <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
+          <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} className={clsx("h-full rounded-full transition-all", color)} />
+       </div>
     </div>
   );
 };

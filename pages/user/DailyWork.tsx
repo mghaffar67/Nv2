@@ -7,7 +7,7 @@ import {
   Target, Info, Lock, ArrowRight, Award,
   ExternalLink, MousePointer2, Briefcase, RefreshCw,
   Eye, Monitor, ShieldAlert, Cpu, Camera, Upload, User as UserIcon,
-  Image as ImageIcon, FileText, Download
+  ImageIcon, FileText, Download, FileDown
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Link, useNavigate } from 'react-router-dom';
@@ -44,6 +44,16 @@ const TaskSubmissionModal = ({ task, onComplete, onCancel }: any) => {
     }
   };
 
+  const handleDownloadAsset = () => {
+    if (!task.mediaUrl) return;
+    const link = document.createElement('a');
+    link.href = task.mediaUrl;
+    link.download = `task-asset-${task.id}.${task.mediaType === 'pdf' ? 'pdf' : 'png'}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -68,6 +78,27 @@ const TaskSubmissionModal = ({ task, onComplete, onCancel }: any) => {
 
         <div className="bg-white/80 border border-white rounded-[44px] shadow-2xl p-8 space-y-6 relative z-10 backdrop-blur-md">
            <div className="space-y-5">
+              {/* Task Asset Preview if PDF or Image */}
+              {(task.mediaType === 'image' || task.mediaType === 'pdf') && (
+                <div className="p-4 bg-slate-900 rounded-[28px] text-white flex items-center justify-between">
+                   <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center">
+                         {task.mediaType === 'image' ? <ImageIcon size={20}/> : <FileText size={20}/>}
+                      </div>
+                      <div>
+                         <p className="text-[8px] font-black text-indigo-300 uppercase tracking-widest">Instruction Asset</p>
+                         <p className="text-[10px] font-bold text-white uppercase">{task.mediaType === 'pdf' ? 'PDF Document' : 'Reference Image'}</p>
+                      </div>
+                   </div>
+                   <button 
+                     onClick={handleDownloadAsset}
+                     className="h-10 px-4 bg-white/10 hover:bg-white/20 rounded-xl flex items-center gap-2 text-[9px] font-black uppercase transition-all"
+                   >
+                     <Download size={14}/> Download
+                   </button>
+                </div>
+              )}
+
               <div className="space-y-2">
                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 flex items-center gap-2">
                     <UserIcon size={12} className="text-indigo-500"/> Full Name
@@ -81,7 +112,7 @@ const TaskSubmissionModal = ({ task, onComplete, onCancel }: any) => {
 
               <div className="space-y-2">
                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 flex items-center gap-2">
-                    <Camera size={12} className="text-indigo-500"/> Work Photo
+                    <Camera size={12} className="text-indigo-500"/> Proof Screenshot
                  </label>
                  <div className="relative group h-48">
                     <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer z-20" />
@@ -94,7 +125,7 @@ const TaskSubmissionModal = ({ task, onComplete, onCancel }: any) => {
                        ) : (
                          <>
                            <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center text-slate-300 shadow-sm border border-slate-50 group-hover:scale-110 transition-transform"><Upload size={28}/></div>
-                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Select Proof Image</span>
+                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Select Evidence</span>
                          </>
                        )}
                     </div>
@@ -107,11 +138,6 @@ const TaskSubmissionModal = ({ task, onComplete, onCancel }: any) => {
               <div>
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Guide</p>
                 <p className="text-[11px] font-medium text-slate-600 leading-relaxed italic">"{task.instruction}"</p>
-                {task.attachment && (
-                  <button className="mt-3 flex items-center gap-2 text-indigo-600 font-bold text-[10px] uppercase tracking-widest hover:underline">
-                    <Download size={12} /> Download PDF Guide
-                  </button>
-                )}
               </div>
            </div>
         </div>
@@ -217,6 +243,11 @@ const DailyWork = () => {
                            <div className="flex items-center gap-2.5">
                               <span className="text-xs font-black text-emerald-600">Rs {task.reward} Reward</span>
                               <span className="w-1 h-1 bg-slate-200 rounded-full" />
+                              {task.mediaType === 'pdf' && (
+                                <span className="flex items-center gap-1 text-[8px] font-black text-indigo-500 uppercase bg-indigo-50 px-2 py-0.5 rounded-md">
+                                   <FileDown size={10} /> PDF Guide Included
+                                </span>
+                              )}
                               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest italic">Manual Process</span>
                            </div>
                         </div>

@@ -35,8 +35,13 @@ export const workController = {
     const filtered = db.filter((t: any) => {
       if (!t.isActive) return false;
       if (completedIds.includes(t.id)) return false;
-      if (t.plan && t.plan !== 'ANY' && user?.currentPlan !== t.plan) return false;
+      
+      // 1. Plan Gating (If task requires a plan and it's not 'ANY')
+      if (t.plan && t.plan !== 'ANY' && user?.currentPlan !== t.plan) {
+         return false;
+      }
 
+      // 2. Targeting Gating
       if (t.assignmentType === 'specific') {
         if (!t.targetUsers || !t.targetUsers.includes(userId as string)) {
           return false;

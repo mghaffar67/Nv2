@@ -2,7 +2,7 @@
 import { INITIAL_USERS, INITIAL_TASKS, INITIAL_CONFIG } from '../../src/data/mockRegistry';
 
 /**
- * Noor Official V3 - Single Source of Truth Node
+ * Noor V3 - Data Persistence & Integrity Layer
  */
 
 const KEYS = {

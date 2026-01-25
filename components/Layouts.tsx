@@ -32,7 +32,7 @@ const NavItem = ({ to, label, icon: Icon, active, collapsed }: any) => (
   <Link 
     to={to} 
     className={clsx(
-      "flex items-center gap-4 px-4 py-4 rounded-xl transition-all relative group mb-1",
+      "flex items-center gap-4 px-4 py-3 rounded-xl transition-all relative group mb-1",
       active ? "bg-indigo-600 text-white shadow-lg" : "text-slate-400 hover:text-slate-900"
     )}
   >
@@ -121,7 +121,7 @@ export const UserLayout = () => {
       {/* Main Workspace */}
       <div className="flex-grow flex flex-col min-h-screen lg:ml-[240px] transition-all w-full max-w-full overflow-x-hidden">
         
-        <header className="h-14 md:h-20 flex items-center justify-between px-4 md:px-8 bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-50/50 w-full">
+        <header className="h-14 md:h-16 flex items-center justify-between px-4 md:px-6 bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-50/50 w-full">
            <div className="flex items-center gap-4">
               <div className="w-8 h-8 bg-slate-900 rounded-xl flex items-center justify-center text-sky-400 lg:hidden shadow-lg"><Zap size={14} fill="currentColor" /></div>
               <h1 className="text-[8px] md:text-sm font-black uppercase tracking-[0.2em] text-slate-400">Noor <span className="text-slate-900 italic">V3</span></h1>
@@ -132,13 +132,13 @@ export const UserLayout = () => {
                  <p className="text-xs font-black text-slate-800 leading-none mb-1">{user?.name || 'User'}</p>
                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Partner</p>
               </div>
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-slate-900 flex items-center justify-center text-white text-[10px] md:sm font-black italic shadow-lg border border-white/10">
+              <div className="w-8 h-8 md:w-9 md:h-9 rounded-lg md:rounded-xl bg-slate-900 flex items-center justify-center text-white text-[10px] md:sm font-black italic shadow-lg border border-white/10">
                 {user?.name?.charAt(0) || 'U'}
               </div>
            </div>
         </header>
 
-        <main className="p-3 md:p-8 pb-24 lg:pb-8 w-full max-w-full overflow-x-hidden flex-grow">
+        <main className="p-2 md:p-4 pb-24 lg:pb-4 w-full max-w-full overflow-x-hidden flex-grow">
            <Outlet />
         </main>
 
@@ -196,7 +196,7 @@ export const AdminLayout = () => {
         "flex-grow flex flex-col min-h-screen transition-all duration-500 ease-in-out w-full", 
         isSidebarOpen ? "lg:ml-[240px]" : "lg:ml-[80px]"
       )}>
-        <header className="h-14 md:h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center px-4 md:px-8 justify-between sticky top-0 z-40">
+        <header className="h-14 md:h-16 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center px-4 md:px-6 justify-between sticky top-0 z-40">
            <button 
              onClick={() => setIsMobileSidebarOpen(true)} 
              className="lg:hidden p-2 bg-slate-950 text-white rounded-xl shadow-lg active:scale-95"
@@ -204,15 +204,15 @@ export const AdminLayout = () => {
              <Menu size={18} />
            </button>
            <div className="flex items-center gap-3">
-              <span className="text-[8px] md:text-xs font-black text-slate-400 uppercase tracking-[0.3em]">Management Terminal</span>
+              <span className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Command Hub</span>
            </div>
            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 md:w-11 md:h-11 bg-slate-900 rounded-xl flex items-center justify-center text-sky-400 shadow-xl border border-white/5">
+              <div className="w-8 h-8 md:w-9 md:h-9 bg-slate-900 rounded-xl flex items-center justify-center text-sky-400 shadow-xl border border-white/5">
                 <User size={16} />
               </div>
            </div>
         </header>
-        <main className="p-3 md:p-8 max-w-full overflow-x-hidden pb-12 w-full">
+        <main className="p-2 md:p-4 max-w-full overflow-x-hidden pb-12 w-full">
           <Outlet />
         </main>
       </div>

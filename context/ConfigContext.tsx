@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { GlobalConfig } from '../types';
 
@@ -7,12 +8,12 @@ interface ConfigContextType {
 }
 
 const defaultConfig: GlobalConfig = {
-  appName: "Noor Official V3",
+  appName: "Noor V3",
   currency: "PKR",
   maintenanceMode: false,
   broadcastMessage: "Welcome to Noor! Withdrawals take 24 hours to process.",
   branding: {
-    companyName: "Noor Official",
+    companyName: "Noor",
     logo: "",
     banner: "",
     contactPhone: "03001234567",
@@ -51,7 +52,7 @@ const defaultConfig: GlobalConfig = {
     heroTitle: "Start Earning Daily From Your Home.",
     heroSubtitle: "Join the most trusted platform in Pakistan.",
     heroSlides: [
-      { image: "https://images.unsplash.com/photo-1556761175-b413da4baf72?q=80&w=1920", title: "Empowering Pakistan.", subtitle: "Simple tasks, daily profits." }
+      { image: "https://images.unsplash.com/photo-1556761175-b413da4baf72?q=80&w=1920", title: "Empowering Pakistan.", subtitle: "Simple tasks, daily earnings." }
     ],
     reviews: [
       { name: "Ali Ahmed", comment: "Bohot achi app hai, payment time par milti hai.", rating: 5 },
@@ -61,8 +62,8 @@ const defaultConfig: GlobalConfig = {
     companyBanner: ""
   },
   seo: {
-    metaTitle: "Noor Official V3 - Best Earning App",
-    metaDescription: "Earn daily profits with simple tasks in Pakistan.",
+    metaTitle: "Noor V3 - Best Earning App",
+    metaDescription: "Earn daily earnings with simple tasks in Pakistan.",
     keywords: "earning app, pakistan, online work"
   },
   streakRewards: [5, 10, 15, 20, 25, 50, 100]
@@ -76,19 +77,8 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // Ensure new sections like 'appearance' exist by merging with defaults
-        return {
-          ...defaultConfig,
-          ...parsed,
-          branding: { ...defaultConfig.branding, ...parsed.branding },
-          financeSettings: { ...defaultConfig.financeSettings, ...parsed.financeSettings },
-          modules: { ...defaultConfig.modules, ...parsed.modules },
-          theme: { ...defaultConfig.theme, ...parsed.theme },
-          appearance: { ...defaultConfig.appearance, ...parsed.appearance },
-          seo: { ...defaultConfig.seo, ...parsed.seo }
-        };
+        return { ...defaultConfig, ...parsed };
       } catch (e) {
-        console.error("Config migration failed, using defaults", e);
         return defaultConfig;
       }
     }
@@ -100,7 +90,6 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     root.style.setProperty('--primary-color', config.theme.primaryColor);
     root.style.setProperty('--global-font', config.theme.fontFamily);
     localStorage.setItem('noor_config', JSON.stringify(config));
-    window.dispatchEvent(new Event('noor_db_update'));
   }, [config]);
 
   const updateConfig = (newConfig: any) => {

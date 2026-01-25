@@ -75,36 +75,35 @@ const UserDashboard = () => {
 
   return (
     <div className="w-full px-1 pb-24 space-y-4 max-w-xl mx-auto animate-fade-in">
-      {/* 4 Premium Tile Cards */}
       <div className="grid grid-cols-2 gap-2.5 px-0.5">
          <DashboardCard 
            title="Balance" 
            value={`Rs. ${(user?.balance || 0).toLocaleString()}`} 
-           sub="Net Yield Pool"
+           sub="Available Funds"
            icon={Wallet}
            delay={0.1}
            gradient="bg-gradient-to-br from-indigo-50/50 to-white"
          />
          <DashboardCard 
-           title="Today" 
+           title="Earnings Today" 
            value={`Rs. ${stats.todayIncome}`} 
-           sub="Profit Accrued"
+           sub="24h Income"
            icon={TrendingUp}
            delay={0.2}
            gradient="bg-gradient-to-br from-emerald-50/50 to-white"
          />
          <DashboardCard 
-           title="Available" 
-           value={`${stats.pendingTasks} Tasks`} 
-           sub="Registry Queue"
+           title="Assignments" 
+           value={`${stats.pendingTasks} Pending`} 
+           sub="Active Queue"
            icon={Clock}
            delay={0.3}
            gradient="bg-gradient-to-br from-sky-50/50 to-white"
          />
          <DashboardCard 
-           title="Approved" 
-           value={`${stats.totalTasks} Done`} 
-           sub="Verification Log"
+           title="Verified" 
+           value={`${stats.totalTasks} Completed`} 
+           sub="Approved Records"
            icon={CheckSquare}
            delay={0.4}
            gradient="bg-gradient-to-br from-amber-50/50 to-white"
@@ -113,19 +112,18 @@ const UserDashboard = () => {
 
       <StreakWidget />
 
-      {/* Grid Menu - More Compact */}
       <div className="grid grid-cols-4 gap-2 px-0.5">
          <Link to="/user/work" className="bg-white p-2.5 rounded-2xl border border-slate-100 flex flex-col items-center gap-1 active:scale-95 shadow-sm">
             <div className="w-8 h-8 bg-slate-50 text-slate-400 rounded-lg flex items-center justify-center"><ClipboardList size={16}/></div>
-            <span className="text-[7px] font-black uppercase text-slate-400">Work</span>
+            <span className="text-[7px] font-black uppercase text-slate-400">Assignments</span>
          </Link>
          <Link to="/user/team" className="bg-white p-2.5 rounded-2xl border border-slate-100 flex flex-col items-center gap-1 active:scale-95 shadow-sm">
             <div className="w-8 h-8 bg-slate-50 text-slate-400 rounded-lg flex items-center justify-center"><Network size={16}/></div>
-            <span className="text-[7px] font-black uppercase text-slate-400">Team</span>
+            <span className="text-[7px] font-black uppercase text-slate-400">Network</span>
          </Link>
          <Link to="/user/history" className="bg-white p-2.5 rounded-2xl border border-slate-100 flex flex-col items-center gap-1 active:scale-95 shadow-sm">
             <div className="w-8 h-8 bg-slate-50 text-slate-400 rounded-lg flex items-center justify-center"><HistoryIcon size={16}/></div>
-            <span className="text-[7px] font-black uppercase text-slate-400">Log</span>
+            <span className="text-[7px] font-black uppercase text-slate-400">Ledger</span>
          </Link>
          <Link to="/user/wallet" className="bg-white p-2.5 rounded-2xl border border-slate-100 flex flex-col items-center gap-1 active:scale-95 shadow-sm">
             <div className="w-8 h-8 bg-slate-50 text-slate-400 rounded-lg flex items-center justify-center"><Wallet size={16}/></div>
@@ -133,7 +131,6 @@ const UserDashboard = () => {
          </Link>
       </div>
 
-      {/* Primary Action */}
       <div className="px-0.5">
          <Link 
            to="/user/work" 
@@ -142,7 +139,7 @@ const UserDashboard = () => {
          >
             <div className="flex items-center gap-3">
                <Zap size={16} fill="currentColor" />
-               <span className="font-black text-[9px] uppercase tracking-widest">Execute Daily Cycle</span>
+               <span className="font-black text-[9px] uppercase tracking-widest">Start Daily Assignments</span>
             </div>
             <ArrowRight size={16} />
          </Link>

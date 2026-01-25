@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Award, Zap, ArrowRight, Check, Star, TrendingUp, Diamond, ChevronLeft, CheckCircle2, Rocket, Info, Clock, Briefcase } from 'lucide-react';
+import { Award, Zap, ArrowRight, Check, Star, TrendingUp, Diamond, ChevronLeft, CheckCircle2, Rocket, Info, Clock, Briefcase, History } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import { useAuth } from '../../context/AuthContext';
@@ -47,7 +47,7 @@ const Plans = () => {
                <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter leading-none">SUCCESS!</h2>
                <p className="text-indigo-400 font-bold uppercase tracking-widest text-[10px]">Your {showSuccess.name} plan is now active.</p>
             </div>
-            <button onClick={() => navigate('/user/dashboard')} className="w-full h-16 bg-white text-slate-950 rounded-[24px] font-black text-xs uppercase tracking-[0.3em] active:scale-95 transition-all">Go to Home</button>
+            <button onClick={() => navigate('/user/dashboard')} className="w-full h-16 bg-white text-slate-950 rounded-[24px] font-black text-xs uppercase tracking-[0.3em] active:scale-95 transition-all">Go to Dashboard</button>
          </motion.div>
       </div>
     );
@@ -59,14 +59,21 @@ const Plans = () => {
         <Link to="/user/dashboard" className="p-2.5 bg-white rounded-xl shadow-sm border border-slate-100 text-slate-400 active:scale-90 transition-all">
           <ChevronLeft size={22} />
         </Link>
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight italic">Earning <span className="text-indigo-600">Plans.</span></h1>
-        <div className="w-11 h-11 bg-slate-900 rounded-xl flex items-center justify-center text-amber-400 shadow-lg"><Award size={20} /></div>
+        <h1 className="text-2xl font-black text-slate-900 tracking-tight italic">Earning <span className="text-indigo-600">Center.</span></h1>
+        <div className="flex gap-2">
+           <Link to="/user/plans/history" className="w-11 h-11 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-slate-400 shadow-sm active:scale-90 transition-all">
+              <History size={20} />
+           </Link>
+           <div className="w-11 h-11 bg-slate-900 rounded-xl flex items-center justify-center text-amber-400 shadow-lg">
+              <Award size={20} />
+           </div>
+        </div>
       </header>
 
       {pendingRequest && (
         <div className="p-4 bg-amber-50 rounded-[28px] border border-amber-100 flex items-center gap-3 mx-1">
           <Clock size={18} className="text-amber-500 animate-pulse" />
-          <p className="text-[10px] font-black uppercase text-amber-800 tracking-widest">Plan upgrade request is being reviewed.</p>
+          <p className="text-[10px] font-black uppercase text-amber-800 tracking-widest">Plan upgrade request is currently under review.</p>
         </div>
       )}
 
@@ -102,10 +109,10 @@ const Plans = () => {
                 <p className="text-2xl font-black text-slate-900 tracking-tighter italic">Rs {plan.price}</p>
                 <div className="space-y-1">
                    <div className="flex items-center gap-1.5 text-[8px] font-bold text-slate-400 uppercase tracking-widest">
-                      <CheckCircle2 size={10} className="text-emerald-500" /> {plan.tasks} Work/Day
+                      <CheckCircle2 size={10} className="text-emerald-500" /> {plan.tasks} Assignments/Day
                    </div>
                    <div className="flex items-center gap-1.5 text-[8px] font-bold text-slate-400 uppercase tracking-widest">
-                      <CheckCircle2 size={10} className="text-emerald-500" /> Rs {plan.daily} Profit
+                      <CheckCircle2 size={10} className="text-emerald-500" /> Rs {plan.daily} Daily Income
                    </div>
                 </div>
               </div>
@@ -119,7 +126,7 @@ const Plans = () => {
                   pendingRequest ? "bg-slate-100 text-slate-300" : "bg-slate-900 text-white"
                 )}
               >
-                {isActive ? 'ACTIVE' : pendingRequest ? 'PENDING' : 'SELECT'}
+                {isActive ? 'CURRENT PLAN' : pendingRequest ? 'PENDING' : 'SELECT PLAN'}
               </button>
             </motion.div>
           );
@@ -129,8 +136,31 @@ const Plans = () => {
       <div className="p-5 bg-indigo-50/50 rounded-[32px] border border-indigo-100 flex gap-4 mx-1">
          <Info size={18} className="text-indigo-500 shrink-0 mt-1" />
          <p className="text-[10px] font-bold text-indigo-700 uppercase tracking-widest leading-relaxed">
-           Important: Selecting a new plan will replace your current one. All plans stay active for 30 days.
+           Important: Selecting a new plan will replace your current one. All memberships remain valid for 30 days.
          </p>
+      </div>
+
+      {/* RECENT PLAN LOGS MINI PREVIEW */}
+      <div className="px-1 space-y-3">
+         <div className="flex justify-between items-center px-3">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Recent Plan Log</h4>
+            <Link to="/user/plans/history" className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">View History</Link>
+         </div>
+         {user?.purchaseHistory?.slice(0, 1).map((item: any) => (
+           <div key={item.id} className="bg-white p-4 rounded-[28px] border border-slate-100 flex items-center justify-between mx-1 shadow-sm">
+              <div className="flex items-center gap-3">
+                 <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400"><History size={18} /></div>
+                 <div>
+                    <p className="text-[10px] font-black text-slate-800 uppercase">{item.planId} ACTIVATION</p>
+                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{new Date(item.date).toLocaleDateString()}</p>
+                 </div>
+              </div>
+              <div className="text-right">
+                 <p className="text-xs font-black text-slate-900">Rs {item.amount}</p>
+                 <p className="text-[7px] font-black text-emerald-600 uppercase">{item.status}</p>
+              </div>
+           </div>
+         ))}
       </div>
 
       <PlanPurchaseModal 

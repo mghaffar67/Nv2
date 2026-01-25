@@ -12,11 +12,11 @@ export interface ITask {
   category: TaskCategory;
   instruction: string;
   reward: number;
-  plan: string; // station station/plan
+  plan: string; // station/plan (e.g., 'BASIC', 'STANDARD', 'ANY')
   mediaType: MediaNode;
   mediaUrl: string;
   assignmentType: 'all' | 'specific';
-  targetUsers: string[]; 
+  targetUsers: string[]; // Array of user IDs
   validityDays: number; 
   timeLimitSeconds: number; 
   isActive: boolean;
@@ -28,7 +28,7 @@ export const TaskSchema = {
   category: { type: String, default: 'verification' },
   instruction: { type: String, required: true },
   reward: { type: Number, required: true, default: 0 },
-  plan: { type: String, default: 'BASIC' },
+  plan: { type: String, default: 'ANY' },
   mediaType: { type: String, default: 'link' },
   mediaUrl: { type: String },
   assignmentType: { type: String, enum: ['all', 'specific'], default: 'all' },

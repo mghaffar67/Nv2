@@ -7,6 +7,7 @@ import { seoController } from '../backend_core/plugins/system/seoController';
 import { gamificationController } from '../backend_core/controllers/gamificationController';
 import { financeController } from '../backend_core/controllers/financeController';
 import { workController } from '../backend_core/controllers/workController';
+import { analyticsController } from '../backend_core/controllers/analyticsController';
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -17,7 +18,7 @@ const getAuthenticatedUser = () => {
 
 export const api = {
   async handleRequest(method: string, endpoint: string, data?: any) {
-    await sleep(400); // Faster feel
+    await sleep(400); // UI responsiveness simulate
 
     const req = {
       body: data,
@@ -38,29 +39,33 @@ export const api = {
     };
 
     try {
-      // AUTH
+      // AUTH & SYSTEM
       if (endpoint === '/auth/login' && method === 'POST') await authPluginController.login(req, res);
       else if (endpoint === '/auth/register' && method === 'POST') await authPluginController.register(req, res);
       else if (endpoint === '/auth/team' && method === 'GET') await authPluginController.getTeam(req, res);
       
       // USER FINANCE
-      else if (endpoint === '/finance/history' && method === 'GET') {
-        req.user = getAuthenticatedUser(); // Ensure fresh session
-        await financePluginController.getHistory(req, res);
-      }
+      else if (endpoint === '/finance/history' && method === 'GET') await financePluginController.getHistory(req, res);
       else if (endpoint === '/finance/withdraw' && method === 'POST') await financePluginController.withdrawReq(req, res);
       else if (endpoint === '/finance/deposit' && method === 'POST') await financePluginController.depositReq(req, res);
 
-      // ADMIN FINANCE (HUB DATA)
+      // ADMIN FINANCE
       else if (endpoint === '/admin/finance/deposits' && method === 'GET') await financeController.getAllDeposits(req, res);
       else if (endpoint === '/admin/finance/withdrawals' && method === 'GET') await financeController.getAllWithdrawals(req, res);
+      else if (endpoint === '/admin/reports' && method === 'GET') await analyticsController.getSystemReports(req, res);
       
+      // ADMIN ACTIONS
+      else if (endpoint === '/admin/finance/deposit/approve' && method === 'POST') await financeController.approveDeposit(req, res);
+      else if (endpoint === '/admin/finance/deposit/reject' && method === 'POST') await financeController.rejectDeposit(req, res);
+      else if (endpoint === '/admin/finance/withdraw/approve' && method === 'POST') await financeController.approveWithdrawal(req, res);
+      else if (endpoint === '/admin/finance/withdraw/reject' && method === 'POST') await financeController.rejectWithdrawal(req, res);
+
       // WORK
       else if (endpoint === '/work/tasks' && method === 'GET') await workPluginController.getTasks(req, res);
       else if (endpoint === '/work/complete' && method === 'POST') await workPluginController.completeTask(req, res);
       else if (endpoint === '/admin/work/submissions' && method === 'GET') await workController.getAllSubmissions(req, res);
 
-      if (statusCode >= 400) throw new Error(responseData?.message || 'Node Error');
+      if (statusCode >= 400) throw new Error(responseData?.message || 'Node Failure');
       return responseData;
     } catch (err: any) {
       console.error(`[API ERROR] ${endpoint}`, err);
@@ -71,7 +76,6 @@ export const api = {
   get: (e: string) => api.handleRequest('GET', e),
   post: (e: string, d: any) => api.handleRequest('POST', e, d),
   put: (e: string, d: any) => api.handleRequest('PUT', e, d),
-  // Fix: Added optional method parameter to support PUT uploads used in Profile.tsx
   upload: (e: string, fd: FormData, method: string = 'POST') => {
     const data: any = {};
     fd.forEach((v, k) => { data[k] = v; });

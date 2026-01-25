@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Zap, Loader2, ChevronRight, 
   Lock, User, ArrowLeft, AlertCircle, 
-  LogIn as LoginIcon, ShieldCheck, UserCheck
+  LogIn as LoginIcon, ShieldCheck, UserCheck, Mail
 } from 'lucide-react';
 
 const Login = () => {
@@ -31,106 +31,103 @@ const Login = () => {
     try {
       await login(identifier, password);
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+      setError(err.message || 'Identity verification failed.');
     }
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-[#f8f9fb] relative font-sans overflow-hidden">
+    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-[#fcfdfe] relative font-sans overflow-hidden">
       
-      <div className="absolute top-[-5%] left-[-5%] w-[200px] h-[200px] bg-indigo-500/5 blur-[80px] rounded-full" />
-      <div className="absolute bottom-[-5%] right-[-5%] w-[200px] h-[200px] bg-sky-500/5 blur-[80px] rounded-full" />
+      {/* Floating Orbs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[400px] h-[400px] bg-indigo-500/5 blur-[120px] rounded-full" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-sky-500/5 blur-[120px] rounded-full" />
 
       <motion.div 
-        initial={{ opacity: 0, scale: 0.98, y: 10 }} 
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="w-full max-w-[360px] z-10 py-6"
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-[380px] z-10"
       >
-        <div className="bg-white rounded-[36px] border border-slate-100 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.08)] p-8 md:p-10 relative">
+        <div className="bg-white rounded-[44px] border border-slate-100 shadow-[0_30px_70px_-20px_rgba(0,0,0,0.08)] p-8 md:p-12 relative overflow-hidden">
           
-          <div className="text-center mb-8">
+          <div className="text-center mb-10">
             <div 
-              className="w-12 h-12 rounded-[18px] flex items-center justify-center mx-auto mb-5 shadow-lg text-white"
+              className="w-16 h-16 rounded-[26px] flex items-center justify-center mx-auto mb-6 shadow-2xl text-white transform -rotate-3"
               style={{ backgroundColor: config.theme.primaryColor }}
             >
-              <Zap size={24} fill="currentColor" />
+              <Zap size={32} fill="currentColor" />
             </div>
-            <h1 className="text-xl font-black text-slate-900 tracking-tight uppercase italic">
-              Member <span style={{ color: config.theme.primaryColor }}>Login.</span>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">
+              Member <span style={{ color: config.theme.primaryColor }}>Portal.</span>
             </h1>
-            <p className="text-slate-400 text-[8px] font-bold uppercase tracking-[0.2em] mt-2">Authenticated Access Portal</p>
+            <p className="text-slate-400 text-[9px] font-bold uppercase tracking-[0.3em] mt-2">Authorized Access Only</p>
           </div>
 
           <AnimatePresence mode="wait">
             {error && (
               <motion.div 
-                initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                className="mb-6 p-4 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl text-[9px] font-black uppercase flex items-center gap-2"
+                initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+                className="mb-6 p-4 bg-rose-50 border border-rose-100 text-rose-600 rounded-2xl text-[9px] font-black uppercase flex items-center gap-3"
               >
-                <AlertCircle size={14} /> {error}
+                <AlertCircle size={16} /> {error}
               </motion.div>
             )}
           </AnimatePresence>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-3">Account ID / Mobile</label>
-               <input 
-                 value={identifier} onChange={e => setIdentifier(e.target.value)} 
-                 className="w-full h-12 px-5 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs text-slate-900 outline-none focus:bg-white transition-all shadow-inner" 
-                 placeholder="Email or Mobile" required 
-               />
+               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4 italic">Email / ID Node</label>
+               <div className="relative">
+                  <Mail size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" />
+                  <input 
+                    value={identifier} onChange={e => setIdentifier(e.target.value)} 
+                    className="w-full h-14 pl-14 pr-6 bg-slate-50/50 border border-slate-100 rounded-2xl font-bold text-sm text-slate-900 outline-none focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all shadow-inner placeholder:text-slate-300" 
+                    placeholder="Enter email or phone" required 
+                  />
+               </div>
             </div>
 
             <div className="space-y-1.5">
-               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-3">Secure Password</label>
-               <input 
-                 type="password" value={password} onChange={e => setPassword(e.target.value)} 
-                 className="w-full h-12 px-5 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs text-slate-900 outline-none focus:bg-white transition-all shadow-inner" 
-                 placeholder="••••••••" required 
-               />
+               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4 italic">Security Key</label>
+               <div className="relative">
+                  <Lock size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" />
+                  <input 
+                    type="password" value={password} onChange={e => setPassword(e.target.value)} 
+                    className="w-full h-14 pl-14 pr-6 bg-slate-50/50 border border-slate-100 rounded-2xl font-bold text-sm text-slate-900 outline-none focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all shadow-inner placeholder:text-slate-300" 
+                    placeholder="••••••••" required 
+                  />
+               </div>
             </div>
 
             <button 
               type="submit" 
               disabled={authLoading} 
-              className="w-full h-14 text-white rounded-[20px] font-black text-[10px] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
+              className="w-full h-16 text-white rounded-[26px] font-black text-[11px] uppercase tracking-[0.3em] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 mt-6 disabled:opacity-50"
               style={{ backgroundColor: config.theme.primaryColor }}
             >
-              {authLoading ? <Loader2 size={20} className="animate-spin" /> : <>Authenticate Node <ChevronRight size={16} /></>}
+              {authLoading ? <Loader2 size={24} className="animate-spin" /> : <>Access Account <ChevronRight size={18} /></>}
             </button>
           </form>
 
-          {/* Demo Login Buttons */}
-          <div className="mt-8 pt-8 border-t border-slate-50">
-             <p className="text-center text-[8px] font-black text-slate-300 uppercase tracking-widest mb-4">Quick Probe Access</p>
+          <div className="mt-10 pt-8 border-t border-slate-50 flex flex-col gap-6">
              <div className="grid grid-cols-2 gap-3">
-                <button 
-                  onClick={() => demoLogin('admin')} 
-                  className="h-10 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border border-slate-100 active:scale-95"
-                >
-                  <ShieldCheck size={14} /> Admin
+                <button onClick={() => demoLogin('admin')} className="h-11 bg-slate-950 text-white rounded-xl text-[8px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg flex items-center justify-center gap-2">
+                  <ShieldCheck size={14} className="text-sky-400" /> Admin Probe
                 </button>
-                <button 
-                  onClick={() => demoLogin('user')} 
-                  className="h-10 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border border-slate-100 active:scale-95"
-                >
-                  <UserCheck size={14} /> User
+                <button onClick={() => demoLogin('user')} className="h-11 bg-white border border-slate-100 text-slate-600 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-sm flex items-center justify-center gap-2">
+                  <User size={14} className="text-indigo-500" /> Partner Access
                 </button>
              </div>
-          </div>
-
-          <div className="mt-8 text-center">
-             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">
-               New Associate? <Link to="/register" className="font-black hover:underline ml-1" style={{ color: config.theme.primaryColor }}>Join Now</Link>
+             
+             <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+               New Associate? <Link to="/register" className="font-black hover:underline" style={{ color: config.theme.primaryColor }}>Join Network</Link>
              </p>
           </div>
         </div>
       </motion.div>
 
-      <Link to="/" className="fixed top-6 left-6 flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors">
-         <ArrowLeft size={18} />
-         <span className="text-[9px] font-black uppercase tracking-widest">Portal Exit</span>
+      <Link to="/" className="fixed top-8 left-8 flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-all group">
+         <div className="p-2 bg-white rounded-lg border border-slate-100 shadow-sm group-hover:-translate-x-1 transition-transform"><ArrowLeft size={16} /></div>
+         <span className="text-[9px] font-black uppercase tracking-widest">Platform Exit</span>
       </Link>
     </div>
   );
