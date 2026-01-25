@@ -12,7 +12,8 @@ import {
   ChevronRight,
   FileText,
   Database,
-  Lock
+  Lock,
+  Puzzle
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion } from 'framer-motion';
@@ -48,6 +49,7 @@ const SettingsLayout = () => {
             <SettingsLink to="/admin/settings/general" label="Core System" icon={Lock} />
             <SettingsLink to="/admin/settings/branding" label="Branding & Info" icon={ImageIcon} />
             <SettingsLink to="/admin/settings/appearance" label="Themes & UI" icon={Palette} />
+            <SettingsLink to="/admin/settings/integrations" label="Connection Hub" icon={Puzzle} />
             <SettingsLink to="/admin/settings/seo" label="SEO Settings" icon={Search} />
             <SettingsLink to="/admin/settings/database" label="Database" icon={Database} />
             <SettingsLink to="/admin/settings/cms" label="CMS Pages" icon={FileText} />

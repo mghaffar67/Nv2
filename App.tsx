@@ -6,6 +6,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ConfigProvider } from './context/ConfigContext';
 import ProtectedRoute from './components/routes/ProtectedRoutes';
 import MaintenanceGuard from './components/layout/MaintenanceGuard';
+import { IntegrationLoader } from './components/layout/IntegrationLoader';
 
 // Pages
 import Landing from './pages/Landing';
@@ -26,6 +27,7 @@ import AppearanceSettings from './pages/admin/settings/AppearanceSettings';
 import SEOManager from './pages/admin/settings/SEOManager';
 import CMSEditor from './pages/admin/settings/CMSEditor';
 import DatabaseManager from './pages/admin/settings/DatabaseManager';
+import IntegrationHub from './pages/admin/settings/IntegrationHub';
 import UserDashboard from './pages/user/UserDashboard';
 import DailyWork from './pages/user/DailyWork';
 import Plans from './pages/user/Plans';
@@ -42,6 +44,7 @@ const App: React.FC = () => (
     <ConfigProvider>
       <AuthProvider>
         <MaintenanceGuard>
+          <IntegrationLoader />
           <Routes>
             <Route element={<PublicLayout />}>
               <Route path="/" element={<Landing />} />
@@ -90,6 +93,7 @@ const App: React.FC = () => (
                  <Route path="database" element={<DatabaseManager />} />
                  <Route path="seo" element={<SEOManager />} />
                  <Route path="cms" element={<CMSEditor />} />
+                 <Route path="integrations" element={<IntegrationHub />} />
               </Route>
             </Route>
 

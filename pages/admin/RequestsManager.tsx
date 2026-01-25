@@ -2,13 +2,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Search, Eye, RefreshCw, Briefcase, Wallet, 
-  Check, X, Smartphone, Copy, ShieldCheck, 
-  Clock, Zap, ArrowRight, AlertCircle
+  Search, Eye, RefreshCw, Smartphone, Copy, Check, X, 
+  ArrowRight, ShieldCheck, Clock, AlertCircle, Image as ImageIcon,
+  User as UserIcon, Send, Wallet,
+  // Added missing CheckSquare icon from lucide-react
+  CheckSquare
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { api } from '../../utils/api';
-import { useConfig } from '../../context/ConfigContext';
 import { ProofModal } from '../../components/admin/ProofModal';
 
 const RequestCard = ({ item, type, onApprove, onReject, onViewProof }: any) => {
@@ -17,72 +18,82 @@ const RequestCard = ({ item, type, onApprove, onReject, onViewProof }: any) => {
   return (
     <motion.div 
       layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={clsx(
-        "bg-white rounded-[24px] border border-slate-100 shadow-sm flex flex-col overflow-hidden",
-        isDeposit ? "border-l-4 border-l-emerald-500" : "border-l-4 border-l-rose-500"
-      )}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="bg-white rounded-[32px] border border-slate-100 shadow-sm flex flex-col overflow-hidden group hover:border-indigo-200 transition-all"
     >
-      <div className="p-4 flex items-center justify-between border-b border-slate-50">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-slate-900 flex items-center justify-center text-white text-[10px] font-black italic">
+      <div className="p-5 flex items-center justify-between border-b border-slate-50">
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="w-10 h-10 rounded-[14px] bg-slate-950 text-sky-400 flex items-center justify-center font-black italic shadow-lg shrink-0">
             {item.userName?.charAt(0)}
           </div>
-          <div>
-            <h4 className="font-black text-slate-800 text-[10px] uppercase truncate tracking-tight">{item.userName}</h4>
-            <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">{item.userPhone}</p>
+          <div className="overflow-hidden">
+            <h4 className="font-black text-slate-900 text-[11px] uppercase truncate tracking-tight">{item.userName}</h4>
+            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest truncate">{item.userPhone}</p>
           </div>
         </div>
-        <p className={clsx("font-black text-xs italic", isDeposit ? "text-emerald-600" : "text-rose-600")}>
-          Rs {item.amount?.toLocaleString()}
-        </p>
+        <div className="bg-amber-50 px-2.5 py-1 rounded-full text-[7px] font-black uppercase text-amber-600 border border-amber-100 flex items-center gap-1 shrink-0">
+          <Clock size={8} /> Pending
+        </div>
       </div>
 
-      <div className="p-4 space-y-3">
-        <div className="bg-slate-50 p-3 rounded-xl space-y-2">
-           <div className="flex justify-between items-center">
-              <span className="text-[7px] font-black text-slate-400 uppercase">{isDeposit ? 'TRX ID' : 'BANK/ACCOUNT'}</span>
-              <span className="text-[8px] font-mono font-black text-slate-700">{isDeposit ? (item.trxId || 'N/A') : item.accountNumber}</span>
+      <div className="p-5 space-y-4">
+        <div className="flex justify-between items-end">
+           <div>
+              <p className="text-[7px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 italic">Voucher Value</p>
+              <h3 className={clsx("text-xl font-black italic tracking-tighter leading-none", isDeposit ? "text-emerald-600" : "text-rose-600")}>
+                Rs {item.amount?.toLocaleString()}
+              </h3>
            </div>
-           <div className="flex justify-between items-center">
-              <span className="text-[7px] font-black text-slate-400 uppercase">METHOD</span>
-              <span className="text-[8px] font-black text-indigo-600 uppercase italic">{item.gateway}</span>
+           <div className="text-right">
+              <span className="px-2 py-1 bg-slate-100 text-slate-500 rounded-lg text-[8px] font-black uppercase tracking-widest italic">{item.gateway}</span>
            </div>
         </div>
 
-        <div className="flex gap-2">
-          {item.status === 'pending' ? (
-            <>
-               {isDeposit && item.proofImage && (
-                 <button onClick={() => onViewProof(item.proofImage)} className="h-9 w-9 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-900 hover:text-white transition-all">
-                    <Eye size={14}/>
-                 </button>
-               )}
-               <button onClick={() => onApprove(item)} className="flex-grow h-9 bg-slate-950 text-white rounded-lg font-black text-[8px] uppercase tracking-widest shadow-lg active:scale-95 transition-all">
-                 Approve
-               </button>
-               <button onClick={() => onReject(item)} className="h-9 w-9 border border-rose-100 text-rose-500 rounded-lg flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all">
-                 <X size={14}/>
-               </button>
-            </>
-          ) : (
-            <div className={clsx(
-              "h-9 w-full rounded-lg flex items-center justify-center gap-2 font-black text-[7px] uppercase tracking-widest border",
-              item.status === 'approved' ? "bg-emerald-50 border-emerald-100 text-emerald-600" : "bg-rose-50 border-rose-100 text-rose-600"
-            )}>
-              {item.status === 'approved' ? 'Success' : 'Rejected'}
-            </div>
-          )}
+        <div className="bg-slate-50 p-4 rounded-2xl space-y-2 border border-slate-100">
+           <div className="flex justify-between items-center">
+              <span className="text-[7px] font-black text-slate-400 uppercase">{isDeposit ? 'TRX ID' : 'ACCOUNT'}</span>
+              <span className="text-[9px] font-mono font-black text-slate-700">{isDeposit ? (item.trxId || '---') : item.accountNumber}</span>
+           </div>
+           {!isDeposit && (
+             <div className="flex justify-between items-center">
+                <span className="text-[7px] font-black text-slate-400 uppercase">TITLE</span>
+                <span className="text-[9px] font-black text-slate-600 truncate max-w-[100px] uppercase">{item.accountTitle}</span>
+             </div>
+           )}
+        </div>
+
+        <div className="flex gap-2.5">
+           {isDeposit && item.proofImage && (
+             <button 
+               onClick={() => onViewProof(item.proofImage)} 
+               className="h-11 w-11 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+               title="View Verification"
+             >
+                <ImageIcon size={18}/>
+             </button>
+           )}
+           <button 
+             onClick={() => onApprove(item)} 
+             className="flex-grow h-11 bg-slate-950 text-white rounded-xl font-black text-[9px] uppercase tracking-widest shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2"
+           >
+             <Check size={14} className="text-emerald-400" /> Approve
+           </button>
+           <button 
+             onClick={() => onReject(item)} 
+             className="h-11 w-11 border border-rose-100 text-rose-500 rounded-xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-sm active:scale-95"
+           >
+             <X size={18}/>
+           </button>
         </div>
       </div>
     </motion.div>
   );
 };
 
-const RequestsManager = () => {
+const RequestHub = () => {
   const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit');
-  const [statusFilter, setStatusFilter] = useState<'pending' | 'approved' | 'rejected'>('pending');
   const [searchTerm, setSearchTerm] = useState('');
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,7 +104,9 @@ const RequestsManager = () => {
     try {
       const endpoint = activeTab === 'deposit' ? '/admin/finance/deposits' : '/admin/finance/withdrawals';
       const res = await api.get(endpoint);
-      setData(Array.isArray(res) ? res : []);
+      // Filter only pending for the Hub
+      const pendingOnly = (res || []).filter((i: any) => i.status === 'pending');
+      setData(pendingOnly);
     } catch (e) {
       setData([]);
     } finally {
@@ -104,67 +117,85 @@ const RequestsManager = () => {
   useEffect(() => { fetchData(); }, [activeTab]);
 
   const handleAction = async (item: any, action: 'approve' | 'reject') => {
-    let reason = action === 'reject' ? (prompt("Reason for rejection?") || "Data Error") : "";
-    if (action === 'reject' && !reason) return;
+    let reason = "";
+    if (action === 'reject') {
+      reason = prompt("Reason for rejection?") || "";
+      if (!reason) return;
+    }
 
-    if (!window.confirm(`Confirm PKR ${item.amount}?`)) return;
+    if (!window.confirm(`Action PKR ${item.amount} for ${item.userName}?`)) return;
 
     try {
-      await api.post(`/admin/finance/${activeTab}/${action}`, { transactionId: item.id, userId: item.userId, reason });
+      const endpoint = `/admin/finance/${activeTab}/${action}`;
+      await api.post(endpoint, { transactionId: item.id, userId: item.userId, reason });
       fetchData();
+      // Notify parent app of badge update
+      window.dispatchEvent(new Event('noor_badge_update'));
     } catch (e: any) { alert(e.message); }
   };
 
   const filteredData = useMemo(() => {
-    return data.filter(item => {
-      const matchesStatus = item.status === statusFilter;
-      const term = searchTerm.toLowerCase();
-      return matchesStatus && (item.userName?.toLowerCase().includes(term) || item.userPhone?.includes(term));
-    });
-  }, [data, statusFilter, searchTerm]);
+    const term = searchTerm.toLowerCase();
+    return data.filter(i => i.userName?.toLowerCase().includes(term) || i.userPhone?.includes(term));
+  }, [data, searchTerm]);
 
   return (
-    <div className="space-y-4 pb-32 animate-fade-in max-w-7xl mx-auto px-2">
-      <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 pt-4">
+    <div className="space-y-6 pb-32 animate-fade-in max-w-[1400px] mx-auto px-2">
+      <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pt-6 px-1">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
-            Pending <span className="text-indigo-600">Requests.</span>
+          <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
+            Request <span className="text-indigo-600">Hub.</span>
           </h1>
-          <p className="text-slate-400 font-bold uppercase text-[7px] tracking-[0.4em] mt-2">Manage User Payments</p>
+          <p className="text-slate-400 font-bold uppercase text-[9px] tracking-[0.4em] mt-3">Active Pending Queue Management</p>
         </div>
         <div className="flex gap-2">
-          <div className="bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm flex items-center gap-2">
-            <span className="text-[9px] font-black text-slate-600 uppercase">{data.filter(i => i.status === 'pending').length} In Queue</span>
+          <div className="bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
+            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+            <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest">{data.length} IN WAITING</span>
           </div>
-          <button onClick={fetchData} className="w-10 h-10 bg-slate-950 text-white rounded-xl flex items-center justify-center">
-             <RefreshCw size={18} />
+          <button onClick={fetchData} className="w-12 h-12 bg-slate-950 text-white rounded-2xl flex items-center justify-center shadow-xl active:rotate-180 transition-all duration-700">
+             <RefreshCw size={20} />
           </button>
         </div>
       </header>
 
-      <div className="flex bg-white p-1 rounded-2xl border border-slate-100 shadow-sm">
-         <button onClick={() => setActiveTab('deposit')} className={clsx("flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all", activeTab === 'deposit' ? "bg-slate-950 text-white" : "text-slate-400")}>Deposits</button>
-         <button onClick={() => setActiveTab('withdraw')} className={clsx("flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all", activeTab === 'withdraw' ? "bg-slate-950 text-white" : "text-slate-400")}>Payouts</button>
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 px-1">
+         <div className="md:col-span-4 flex bg-white p-1.5 rounded-[22px] border border-slate-100 shadow-sm">
+            <button onClick={() => setActiveTab('deposit')} className={clsx("flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'deposit' ? "bg-slate-950 text-white shadow-lg" : "text-slate-400")}>Deposits</button>
+            <button onClick={() => setActiveTab('withdraw')} className={clsx("flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'withdraw' ? "bg-slate-950 text-white shadow-lg" : "text-slate-400")}>Payouts</button>
+         </div>
+         <div className="md:col-span-8 relative">
+            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" />
+            <input 
+              type="text" placeholder="Search by name or number..." 
+              value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+              className="w-full h-16 pl-14 pr-6 bg-white border border-slate-100 rounded-[22px] font-bold text-sm outline-none shadow-sm focus:ring-4 focus:ring-indigo-50/50 transition-all" 
+            />
+         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-1">
         <AnimatePresence mode="popLayout">
           {filteredData.map((item) => (
             <RequestCard 
               key={item.id} 
               item={item} 
               type={activeTab}
-              onApprove={(i: any) => handleAction(i, 'approve')}
-              onReject={(i: any) => handleAction(i, 'reject')}
+              onApprove={handleAction}
+              onReject={handleAction}
               onViewProof={setSelectedProof}
             />
           ))}
         </AnimatePresence>
       </div>
 
-      {filteredData.length === 0 && !loading && (
-        <div className="py-20 text-center opacity-30">
-           <p className="text-[10px] font-black uppercase tracking-widest">No Requests Found</p>
+      {!loading && filteredData.length === 0 && (
+        <div className="py-24 text-center">
+           <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              {/* Fixed: Re-added missing CheckSquare icon here after importing it above */}
+              <CheckSquare size={40} className="text-slate-200" />
+           </div>
+           <p className="text-[11px] font-black uppercase text-slate-300 tracking-[0.3em] italic">Queue is fully cleared</p>
         </div>
       )}
 
@@ -173,4 +204,4 @@ const RequestsManager = () => {
   );
 };
 
-export default RequestsManager;
+export default RequestHub;

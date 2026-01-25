@@ -3,13 +3,15 @@ import { INITIAL_USERS, INITIAL_TASKS, INITIAL_CONFIG } from '../../src/data/moc
 
 /**
  * Noor V3 - Data Persistence & Integrity Layer
+ * Hardened for Official Deployment
  */
 
 const KEYS = {
   USERS: 'noor_v3_master_registry',
   TASKS: 'noor_tasks_db',
   PAGES: 'noor_pages_db',
-  CONFIG: 'noor_config'
+  CONFIG: 'noor_config',
+  INTEGRATIONS: 'noor_integrations_db'
 };
 
 const isNode = typeof window === 'undefined';
@@ -89,7 +91,11 @@ export const dbNode = {
   saveConfig: (config: any) => saveToStore(KEYS.CONFIG, config),
   
   getTasks: () => getFromStore(KEYS.TASKS, INITIAL_TASKS),
-  saveTasks: (tasks: any[]) => saveToStore(KEYS.TASKS, tasks)
+  saveTasks: (tasks: any[]) => saveToStore(KEYS.TASKS, tasks),
+
+  // INTEGRATION HUB REGISTRY
+  getIntegrations: () => getFromStore(KEYS.INTEGRATIONS, []),
+  saveIntegrations: (data: any[]) => saveToStore(KEYS.INTEGRATIONS, data)
 };
 
 export const dbRegistry = dbNode;
