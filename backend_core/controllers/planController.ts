@@ -1,59 +1,6 @@
 
-const getMockDB = () => {
-  const data = localStorage.getItem('noor_mock_db');
-  return data ? JSON.parse(data) : [];
-};
-
-const saveToMockDB = (db: any[]) => {
-  localStorage.setItem('noor_mock_db', JSON.stringify(db));
-};
-
-const getConfig = () => {
-  const data = localStorage.getItem('noor_config');
-  return data ? JSON.parse(data) : null;
-};
-
-// Commission logic: Recursive upline rewards
-const distributeCommission = (db: any[], startUser: any, amount: number) => {
-  const config = getConfig();
-  if (!config) return;
-
-  const tiers = [
-    { percent: config.referralSettings.level1Percent, level: 1 },
-    { percent: config.referralSettings.level2Percent, level: 2 },
-    { percent: config.referralSettings.level3Percent, level: 3 }
-  ];
-
-  let currentUplineCode = startUser.referredBy;
-
-  for (const tier of tiers) {
-    if (!currentUplineCode) break;
-
-    const uplineIndex = db.findIndex(u => u.referralCode === currentUplineCode);
-    if (uplineIndex === -1) break;
-
-    const uplineUser = db[uplineIndex];
-    const commission = (amount * tier.percent) / 100;
-
-    // Credit Upline
-    uplineUser.balance = (uplineUser.balance || 0) + commission;
-    
-    // Log Commission Transaction
-    if (!uplineUser.transactions) uplineUser.transactions = [];
-    uplineUser.transactions.unshift({
-      id: `COM-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
-      type: 'reward',
-      amount: commission,
-      status: 'approved',
-      gateway: `Team L${tier.level} Bonus`,
-      note: `Commission from ${startUser.name}'s upgrade`,
-      date: new Date().toISOString().split('T')[0],
-      timestamp: new Date().toISOString()
-    });
-
-    currentUplineCode = uplineUser.referredBy;
-  }
-};
+import { dbNode } from '../utils/db';
+import { distributeCommission } from '../utils/commissionHelper';
 
 const PLAN_PRICES: Record<string, number> = {
   'BASIC': 500,
@@ -64,70 +11,79 @@ const PLAN_PRICES: Record<string, number> = {
 
 export const planController = {
   requestPlanPurchase: async (req: any, res: any) => {
-    const { userId, planId, method, trxId, proofImage, senderNumber } = req.body;
-    let db = getMockDB();
-    const userIndex = db.findIndex((u: any) => u.id === userId);
+    try {
+      const { userId, planId, method, trxId, proofImage, senderNumber } = req.body;
+      const user = dbNode.findUserById(userId);
 
-    if (userIndex === -1) return res.status(404).json({ message: 'User not found' });
-    const user = db[userIndex];
-    
-    const normalizedId = planId.replace(' PLAN', '').toUpperCase();
-    const price = PLAN_PRICES[normalizedId] || 0;
+      if (!user) return res.status(404).json({ message: 'User node not found in registry.' });
+      
+      const normalizedId = planId.replace(' PLAN', '').toUpperCase();
+      const price = PLAN_PRICES[normalizedId] || 0;
 
-    if (method === 'wallet') {
-      if ((user.balance || 0) < price) {
-        return res.status(400).json({ message: 'Insufficient wallet balance.' });
+      if (method === 'wallet') {
+        const currentBalance = Number(user.balance) || 0;
+        if (currentBalance < price) {
+          return res.status(400).json({ message: 'Insufficient node liquidity.' });
+        }
+
+        // Atomic Transaction
+        const newBalance = currentBalance - price;
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + 30);
+
+        const purchaseRecord = {
+          id: `PH-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+          planId: normalizedId,
+          amount: price,
+          method: 'wallet',
+          status: 'active',
+          date: new Date().toISOString()
+        };
+
+        const history = user.purchaseHistory || [];
+        history.unshift(purchaseRecord);
+
+        dbNode.updateUser(userId, { 
+          balance: newBalance, 
+          currentPlan: normalizedId, 
+          planExpiry: expiryDate.toISOString(),
+          purchaseHistory: history
+        });
+
+        // Async commission payout
+        distributeCommission(userId, price);
+
+        return res.status(200).json({ message: 'Station Upgraded. Network yielded.', user });
       }
 
-      user.balance = (user.balance || 0) - price;
-      user.currentPlan = normalizedId;
-      const expiryDate = new Date();
-      expiryDate.setDate(expiryDate.getDate() + 30);
-      user.planExpiry = expiryDate.toISOString();
+      if (method === 'direct') {
+        if (!trxId || (!proofImage && !req.body.proofImage)) {
+          return res.status(400).json({ message: 'TRX ID and Proof Evidence are required for direct activation.' });
+        }
 
-      if (!user.purchaseHistory) user.purchaseHistory = [];
-      user.purchaseHistory.unshift({
-        id: Math.random().toString(36).substr(2, 9).toUpperCase(),
-        planId: normalizedId,
-        amount: price,
-        method: 'wallet',
-        status: 'active',
-        date: new Date().toISOString()
-      });
+        const requestRecord = {
+          id: `REQ-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+          planId: normalizedId,
+          amount: price,
+          method: 'direct',
+          status: 'pending',
+          trxId,
+          senderNumber,
+          proofImage: proofImage || req.body.proofImage,
+          date: new Date().toISOString()
+        };
 
-      // Distribute Network Commissions
-      distributeCommission(db, user, price);
+        const history = user.purchaseHistory || [];
+        history.unshift(requestRecord);
 
-      db[userIndex] = user;
-      saveToMockDB(db);
-      localStorage.setItem('noor_user', JSON.stringify(user));
-      return res.status(200).json({ message: 'Station Upgraded & Commissions Paid!', user });
-    }
-
-    if (method === 'direct') {
-      if (!trxId || !proofImage) {
-        return res.status(400).json({ message: 'TRX ID and Proof Screenshot are required.' });
+        dbNode.updateUser(userId, { purchaseHistory: history });
+        return res.status(201).json({ message: 'Activation request queued for audit.' });
       }
 
-      if (!user.purchaseHistory) user.purchaseHistory = [];
-      user.purchaseHistory.unshift({
-        id: `REQ-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
-        planId: normalizedId,
-        amount: price,
-        method: 'direct',
-        status: 'pending',
-        trxId,
-        senderNumber,
-        proofImage,
-        date: new Date().toISOString()
-      });
-
-      db[userIndex] = user;
-      saveToMockDB(db);
-      localStorage.setItem('noor_user', JSON.stringify(user));
-      return res.status(201).json({ message: 'Activation request submitted for audit!' });
+      return res.status(400).json({ message: 'Invalid protocol method selected.' });
+    } catch (err) {
+      console.error("Plan Controller Error:", err);
+      return res.status(500).json({ message: "Internal logic failure during plan activation." });
     }
-
-    return res.status(400).json({ message: 'Invalid activation method.' });
   }
 };
