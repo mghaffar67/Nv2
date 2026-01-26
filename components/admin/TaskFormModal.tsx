@@ -69,7 +69,6 @@ const TaskFormModal = ({ isOpen, onClose, task, onUpdate }: TaskFormModalProps) 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'pdf') => {
     const file = e.target.files?.[0];
     if (file) {
-      // Basic size check (10MB limit for base64 storage)
       if (file.size > 10 * 1024 * 1024) {
         alert("File too large. Max 10MB allowed for registry nodes.");
         return;
@@ -123,11 +122,6 @@ const TaskFormModal = ({ isOpen, onClose, task, onUpdate }: TaskFormModalProps) 
     }, 600);
   };
 
-  const filteredUsers = users.filter(u => 
-    u.name.toLowerCase().includes(userSearch.toLowerCase()) || 
-    u.phone.includes(userSearch)
-  );
-
   return (
     <AnimatePresence>
       {isOpen && (
@@ -139,8 +133,8 @@ const TaskFormModal = ({ isOpen, onClose, task, onUpdate }: TaskFormModalProps) 
                <div className="flex items-center gap-4 relative z-10">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-indigo-600 text-white shadow-xl"><Briefcase size={20}/></div>
                   <div>
-                    <h3 className="text-lg font-black uppercase italic tracking-tight">{task ? 'Edit Task' : 'Deploy Task'}</h3>
-                    <p className="text-[7px] font-bold text-slate-500 uppercase tracking-widest leading-none mt-1">Work Hub Node Configuration</p>
+                    <h3 className="text-lg font-black uppercase italic tracking-tight">{task ? 'Edit Task Node' : 'Initialize Task'}</h3>
+                    <p className="text-[7px] font-bold text-slate-500 uppercase tracking-widest mt-1">Assignment Configuration Protocol</p>
                   </div>
                </div>
                <button onClick={onClose} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-white/40 transition-all"><X size={20} /></button>
@@ -148,32 +142,30 @@ const TaskFormModal = ({ isOpen, onClose, task, onUpdate }: TaskFormModalProps) 
 
             <form onSubmit={handleSubmit} className="p-6 md:p-10 space-y-6 overflow-y-auto no-scrollbar bg-[#fcfdfe] flex-grow">
                
-               {/* 1. CORE IDENTITY */}
                <div className="space-y-4">
                   <div className="space-y-1">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4 italic">Task Title</label>
-                    <input required value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="w-full h-14 px-6 bg-white border border-slate-200 rounded-[22px] font-black text-slate-900 outline-none shadow-sm focus:border-indigo-400 transition-all" placeholder="e.g. Handwriting Review #102" />
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4 italic">Task Headline</label>
+                    <input required value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="w-full h-14 px-6 bg-white border border-slate-200 rounded-[22px] font-black text-slate-900 outline-none shadow-sm focus:border-indigo-400 transition-all" placeholder="e.g. Document Verification Phase 2" />
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Category</label>
-                      <select value={form.category} onChange={e => setForm({...form, category: e.target.value})} className="w-full h-13 px-6 bg-white border border-slate-200 rounded-[20px] font-black text-slate-900 text-xs outline-none">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Registry Class</label>
+                      <select value={form.category} onChange={e => setForm({...form, category: e.target.value})} className="w-full h-13 px-6 bg-white border border-slate-200 rounded-[20px] font-black text-slate-900 text-[10px] uppercase outline-none">
                          {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Reward (PKR)</label>
-                      <input type="number" required value={form.reward} onChange={e => setForm({...form, reward: Number(e.target.value)})} className="w-full h-13 px-6 bg-white border border-slate-200 rounded-[20px] font-black text-slate-900 text-xs outline-none" />
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Yield (PKR)</label>
+                      <input type="number" required value={form.reward} onChange={e => setForm({...form, reward: Number(e.target.value)})} className="w-full h-13 px-6 bg-white border border-slate-200 rounded-[20px] font-black text-slate-900 text-sm outline-none text-emerald-600" />
                     </div>
                   </div>
                </div>
 
-               {/* 2. TARGETING & PLAN GATING */}
                <div className="bg-slate-50 p-6 rounded-[32px] border border-slate-100 space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                      <div className="space-y-1.5">
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Plan Requirement</label>
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Plan Eligibility</label>
                         <select 
                           value={form.plan} 
                           onChange={e => setForm({...form, plan: e.target.value})}
@@ -183,53 +175,15 @@ const TaskFormModal = ({ isOpen, onClose, task, onUpdate }: TaskFormModalProps) 
                         </select>
                      </div>
                      <div className="space-y-1.5">
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Target Audience</label>
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Targeting Logic</label>
                         <div className="flex bg-white p-1 rounded-xl border border-slate-200">
-                           <button type="button" onClick={() => setForm({...form, assignmentType: 'all'})} className={clsx("flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all", form.assignmentType === 'all' ? "bg-slate-900 text-white shadow-md" : "text-slate-400")}>All Nodes</button>
-                           <button type="button" onClick={() => setForm({...form, assignmentType: 'specific'})} className={clsx("flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all", form.assignmentType === 'specific' ? "bg-slate-900 text-white shadow-md" : "text-slate-400")}>Specific</button>
+                           <button type="button" onClick={() => setForm({...form, assignmentType: 'all'})} className={clsx("flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all", form.assignmentType === 'all' ? "bg-slate-900 text-white shadow-md" : "text-slate-400")}>Global</button>
+                           <button type="button" onClick={() => setForm({...form, assignmentType: 'specific'})} className={clsx("flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all", form.assignmentType === 'specific' ? "bg-slate-900 text-white shadow-md" : "text-slate-400")}>Selected</button>
                         </div>
                      </div>
                   </div>
-
-                  {/* Specific User Selection Grid */}
-                  <AnimatePresence>
-                     {form.assignmentType === 'specific' && (
-                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="space-y-4 pt-4 border-t border-slate-200">
-                           <div className="relative">
-                              <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
-                              <input 
-                                type="text" 
-                                placeholder="Search by name or phone..." 
-                                value={userSearch}
-                                onChange={e => setUserSearch(e.target.value)}
-                                className="w-full h-10 pl-10 pr-4 bg-white border border-slate-200 rounded-xl text-[10px] font-bold outline-none"
-                              />
-                           </div>
-                           <div className="max-h-[180px] overflow-y-auto no-scrollbar grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              {filteredUsers.map(user => (
-                                 <button 
-                                   key={user.id} type="button"
-                                   onClick={() => toggleUserSelection(user.id)}
-                                   className={clsx(
-                                     "flex items-center justify-between p-3 rounded-xl border transition-all text-left",
-                                     form.targetUsers.includes(user.id) ? "bg-indigo-50 border-indigo-200" : "bg-white border-slate-100"
-                                   )}
-                                 >
-                                    <div className="overflow-hidden">
-                                       <p className="text-[10px] font-black text-slate-800 uppercase truncate">{user.name}</p>
-                                       <p className="text-[7px] font-bold text-slate-400 tracking-tighter">{user.phone}</p>
-                                    </div>
-                                    {form.targetUsers.includes(user.id) && <Check size={14} className="text-indigo-600 shrink-0" />}
-                                 </button>
-                              ))}
-                           </div>
-                           <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">{form.targetUsers.length} Nodes Selected</p>
-                        </motion.div>
-                     )}
-                  </AnimatePresence>
                </div>
 
-               {/* 3. ASSET HUB (MEDIA & INSTRUCTIONS) */}
                <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                      <div className="space-y-1.5">
@@ -242,40 +196,28 @@ const TaskFormModal = ({ isOpen, onClose, task, onUpdate }: TaskFormModalProps) 
                            <option value="image">IMAGE NODE</option>
                            <option value="pdf">PDF DOCUMENT</option>
                            <option value="link">WEB LINK</option>
-                           <option value="text">TEXT ONLY</option>
                         </select>
                      </div>
                      <div className="space-y-1.5">
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Asset Payload</label>
-                        {form.mediaType === 'image' ? (
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Payload Injection</label>
+                        {form.mediaType === 'image' || form.mediaType === 'pdf' ? (
                            <div className="relative group">
-                              <input type="file" accept="image/*" onChange={e => handleFileChange(e, 'image')} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                              <input type="file" accept={form.mediaType === 'image' ? "image/*" : "application/pdf"} onChange={e => handleFileChange(e, form.mediaType as any)} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
                               <div className={clsx(
                                 "h-12 px-4 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition-all overflow-hidden",
                                 preview ? "border-emerald-400 bg-emerald-50/20" : "border-slate-200 bg-white hover:border-indigo-400"
                               )}>
                                  {preview ? <Check size={14} className="text-emerald-500"/> : <Upload size={14} className="text-slate-300"/>}
-                                 <span className="text-[9px] font-black text-slate-500 uppercase">{preview ? "IMAGE READY" : "UPLOAD IMAGE"}</span>
+                                 <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{preview ? "ASSET LOADED" : `UPLOAD ${form.mediaType.toUpperCase()}`}</span>
                               </div>
                            </div>
-                        ) : form.mediaType === 'pdf' ? (
-                          <div className="relative group">
-                             <input type="file" accept="application/pdf" onChange={e => handleFileChange(e, 'pdf')} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                             <div className={clsx(
-                               "h-12 px-4 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition-all overflow-hidden",
-                               preview === 'pdf_detected' ? "border-emerald-400 bg-emerald-50/20" : "border-slate-200 bg-white hover:border-indigo-400"
-                             )}>
-                                {preview === 'pdf_detected' ? <Check size={14} className="text-emerald-500"/> : <FileDown size={14} className="text-slate-300"/>}
-                                <span className="text-[9px] font-black text-slate-500 uppercase">{preview === 'pdf_detected' ? "PDF LOADED" : "UPLOAD PDF"}</span>
-                             </div>
-                          </div>
                         ) : (
                            <input 
                              type="text" 
                              value={form.mediaUrl} 
                              onChange={e => setForm({...form, mediaUrl: e.target.value})}
                              className="w-full h-12 px-4 bg-white border border-slate-200 rounded-xl font-mono text-[9px] outline-none"
-                             placeholder={form.mediaType === 'link' ? "Enter Resource URL" : "Enter Text Instruction"}
+                             placeholder="https://resource-link.com"
                            />
                         )}
                      </div>
@@ -283,13 +225,13 @@ const TaskFormModal = ({ isOpen, onClose, task, onUpdate }: TaskFormModalProps) 
 
                   <div className="space-y-1.5">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4 italic">Execution Instructions</label>
-                    <textarea rows={4} value={form.instruction} onChange={e => setForm({...form, instruction: e.target.value})} className="w-full p-6 bg-white border border-slate-200 rounded-[32px] font-medium text-xs text-slate-600 outline-none shadow-sm resize-none focus:border-indigo-400" placeholder="Provide clear step-by-step guidance for the user..." />
+                    <textarea rows={4} value={form.instruction} onChange={e => setForm({...form, instruction: e.target.value})} className="w-full p-6 bg-white border border-slate-200 rounded-[32px] font-medium text-xs text-slate-600 outline-none shadow-sm resize-none focus:border-indigo-400" placeholder="Provide step-by-step guidance for the user node..." />
                   </div>
                </div>
 
-               <div className="pt-4 pb-8">
+               <div className="pt-4 pb-10">
                   <button type="submit" disabled={loading} className="w-full h-16 rounded-[32px] bg-slate-950 text-white font-black text-[11px] uppercase tracking-[0.3em] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3">
-                     {loading ? <RefreshCw className="animate-spin" size={20}/> : <><Save size={20} className="text-sky-400"/> COMMIT TO REGISTRY</>}
+                     {loading ? <RefreshCw className="animate-spin" size={20}/> : <><ShieldCheck size={20} className="text-sky-400"/> COMMIT TO REGISTRY</>}
                   </button>
                </div>
             </form>
