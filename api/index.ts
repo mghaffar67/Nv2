@@ -5,6 +5,7 @@ import authRoutes from '../backend_core/plugins/auth/routes';
 import financeRoutes from '../backend_core/plugins/finance/routes';
 import workRoutes from '../backend_core/plugins/work/routes';
 import systemRoutes from '../backend_core/plugins/system/routes';
+import rewardRoutes from '../backend_core/plugins/reward/routes';
 
 const app = express();
 app.use(cors());
@@ -15,5 +16,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/finance', financeRoutes);
 app.use('/api/work', workRoutes);
 app.use('/api/system', systemRoutes);
+app.use('/api/rewards', rewardRoutes);
 
 export default app;

@@ -1,14 +1,15 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useConfig } from '../../context/ConfigContext';
 import { 
   Wallet, Zap, History as HistoryIcon, Network, 
   ClipboardList, CheckSquare, TrendingUp, Clock,
-  ArrowRight, ShieldCheck, ChevronRight
+  ArrowRight, ShieldCheck, ChevronRight, Trophy,
+  Star, Gift
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
 import StreakWidget from '../../components/user/StreakWidget';
 import { api } from '../../utils/api';
@@ -36,7 +37,7 @@ const DashboardCard = ({ title, value, icon: Icon, delay, gradient }: any) => {
       </div>
       <div className="relative z-10 flex items-center gap-1">
         <div className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
-        <span className="text-[6px] font-bold text-white/60 uppercase tracking-widest truncate">Live Node Status</span>
+        <span className="text-[6px] font-bold text-white/60 uppercase tracking-widest truncate">Live System Sync</span>
       </div>
     </motion.div>
   );
@@ -46,6 +47,7 @@ const UserDashboard = () => {
   const { user } = useAuth();
   const { config } = useConfig();
   const [stats, setStats] = useState({ totalTasks: 0, pendingTasks: 0, todayIncome: 0 });
+  const [nextReward, setNextReward] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchStats = async () => {
@@ -53,8 +55,15 @@ const UserDashboard = () => {
     try {
       const history = await api.get('/finance/history');
       const tasks = await api.get('/work/tasks');
-      const today = new Date().toISOString().split('T')[0];
       
+      // Fetch Next Achievable Reward
+      if (config.modules.rewardsEnabled !== false) {
+        const achs = await api.get('/rewards/my-achievements');
+        const next = achs.find((a: any) => !a.isClaimed);
+        setNextReward(next);
+      }
+
+      const today = new Date().toISOString().split('T')[0];
       const todayReward = (history || [])
         .filter((t: any) => t.type === 'reward' && t.date === today)
         .reduce((a: number, b: any) => a + Number(b.amount), 0);
@@ -80,28 +89,28 @@ const UserDashboard = () => {
       {/* 2-Column Compact Stats */}
       <div className="grid grid-cols-2 gap-2.5">
          <DashboardCard 
-           title="Account Balance" 
+           title="My Balance" 
            value={`Rs. ${(user?.balance || 0).toLocaleString()}`} 
            icon={Wallet}
            delay={0.1}
            gradient="bg-slate-900"
          />
          <DashboardCard 
-           title="Today Yield" 
+           title="Today's Income" 
            value={`Rs. ${stats.todayIncome}`} 
            icon={TrendingUp}
            delay={0.2}
            gradient="bg-indigo-600"
          />
          <DashboardCard 
-           title="Nodes Online" 
-           value={`${stats.pendingTasks} Tasks`} 
+           title="Tasks Available" 
+           value={`${stats.pendingTasks} Left`} 
            icon={Zap}
            delay={0.3}
            gradient="bg-emerald-600"
          />
          <DashboardCard 
-           title="Total Success" 
+           title="Tasks Completed" 
            value={`${stats.totalTasks} Done`} 
            icon={CheckSquare}
            delay={0.4}
@@ -109,15 +118,29 @@ const UserDashboard = () => {
          />
       </div>
 
+      {/* Achievement Widget Snippet */}
+      {nextReward && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mx-1 flex items-center justify-between gap-4 group">
+           <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center shrink-0"><Trophy size={18}/></div>
+              <div className="overflow-hidden">
+                 <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1 italic">Target Near!</p>
+                 <p className="text-[10px] font-black text-slate-800 uppercase italic truncate">Get {nextReward.targetValue - nextReward.currentProgress} more to claim Rs {nextReward.rewardAmount}!</p>
+              </div>
+           </div>
+           <Link to="/user/achievements" className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center active:scale-90 transition-all shadow-md group-hover:bg-indigo-600"><ChevronRight size={14}/></Link>
+        </motion.div>
+      )}
+
       {/* Modern Compact Streak */}
       <StreakWidget />
 
       {/* Menu Actions */}
       <div className="grid grid-cols-4 gap-2">
          <ActionTile to="/user/work" icon={ClipboardList} label="Work" color="text-indigo-500" />
-         <ActionTile to="/user/team" icon={Network} label="Team" color="text-emerald-500" />
+         <ActionTile to="/user/achievements" icon={Trophy} label="Bonus" color="text-amber-500" />
          <ActionTile to="/user/wallet/withdraw" icon={Wallet} label="Payout" color="text-rose-500" />
-         <ActionTile to="/user/history" icon={HistoryIcon} label="Log" color="text-slate-500" />
+         <ActionTile to="/user/history" icon={HistoryIcon} label="History" color="text-slate-500" />
       </div>
 
       <div className="pt-1">
@@ -129,7 +152,7 @@ const UserDashboard = () => {
                <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center">
                   <Zap size={14} fill="currentColor" className="text-sky-400" />
                </div>
-               <span className="font-black text-[8px] uppercase tracking-[0.2em] italic">Access Work Protocol</span>
+               <span className="font-black text-[8px] uppercase tracking-[0.2em] italic">Open Daily Work Hub</span>
             </div>
             <ChevronRight size={14} />
          </Link>

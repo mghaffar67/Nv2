@@ -2,15 +2,16 @@
 import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import { 
-  Palette, 
-  Image as ImageIcon,
-  Lock,
+  FileText, 
+  Search, 
+  Puzzle, 
+  Database,
   ChevronRight
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion } from 'framer-motion';
 
-const SettingsLink = ({ to, label, icon: Icon }: { to: string; label: string; icon: any }) => {
+const ConfigLink = ({ to, label, icon: Icon }: { to: string; label: string; icon: any }) => {
   return (
     <NavLink 
       to={to} 
@@ -27,20 +28,21 @@ const SettingsLink = ({ to, label, icon: Icon }: { to: string; label: string; ic
   );
 };
 
-const SettingsLayout = () => {
+const ConfigLayout = () => {
   return (
     <div className="space-y-6 animate-fade-in max-w-7xl mx-auto px-1.5 pb-20">
       <div className="px-2">
-         <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase italic leading-none">System <span className="text-indigo-600">Settings.</span></h1>
-         <p className="text-slate-400 font-bold uppercase tracking-widest text-[8px] mt-2 italic">General controls and brand management</p>
+         <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase italic leading-none">Admin <span className="text-indigo-600">Config.</span></h1>
+         <p className="text-slate-400 font-bold uppercase tracking-widest text-[8px] mt-2 italic">Developer tools and page editing</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-3">
           <div className="flex lg:flex-col gap-2 overflow-x-auto no-scrollbar py-1">
-            <SettingsLink to="/admin/settings/general" label="Core System" icon={Lock} />
-            <SettingsLink to="/admin/settings/branding" label="Branding" icon={ImageIcon} />
-            <SettingsLink to="/admin/settings/appearance" label="Themes" icon={Palette} />
+            <ConfigLink to="/admin/config/page-editor" label="Edit Pages" icon={FileText} />
+            <ConfigLink to="/admin/config/seo" label="SEO Settings" icon={Search} />
+            <ConfigLink to="/admin/config/integration" label="Popups & Code" icon={Puzzle} />
+            <ConfigLink to="/admin/config/database" label="Database Connection" icon={Database} />
           </div>
         </div>
 
@@ -52,4 +54,4 @@ const SettingsLayout = () => {
   );
 };
 
-export default SettingsLayout;
+export default ConfigLayout;

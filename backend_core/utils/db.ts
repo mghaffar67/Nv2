@@ -12,7 +12,8 @@ const KEYS = {
   PAGES: 'noor_pages_db',
   CONFIG: 'noor_config',
   INTEGRATIONS: 'noor_integrations_db',
-  PAGE_CONTENTS: 'noor_page_contents_db'
+  PAGE_CONTENTS: 'noor_page_contents_db',
+  REWARDS: 'noor_rewards_db'
 };
 
 const isNode = typeof window === 'undefined';
@@ -93,6 +94,9 @@ export const dbNode = {
   
   getTasks: () => getFromStore(KEYS.TASKS, INITIAL_TASKS),
   saveTasks: (tasks: any[]) => saveToStore(KEYS.TASKS, tasks),
+
+  getRewards: () => getFromStore(KEYS.REWARDS, []),
+  saveRewards: (data: any[]) => saveToStore(KEYS.REWARDS, data),
 
   // INTEGRATION HUB REGISTRY
   getIntegrations: () => getFromStore(KEYS.INTEGRATIONS, []),

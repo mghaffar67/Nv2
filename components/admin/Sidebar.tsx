@@ -3,27 +3,87 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   Home, Users, Briefcase, Wallet, Settings, 
-  LogOut, Shield, Zap, Inbox, BarChart3, Clock
+  LogOut, Shield, Zap, Inbox, BarChart3, Clock,
+  ChevronDown, ShieldAlert, FileText, Search, Puzzle, Database, Trophy
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
 import { useAuth } from '../../context/AuthContext';
 import { useConfig } from '../../context/ConfigContext';
 
-const SidebarNavItem = ({ to, icon: Icon, label, isOpen, active, badge, themeColor }: any) => (
-  <Link to={to} className={clsx(
-    "flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 mb-1.5 overflow-hidden", 
-    active ? "bg-slate-950 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50"
-  )}>
-    <div className="flex-shrink-0 w-5 flex justify-center">
-      <Icon size={18} style={active ? { color: themeColor } : { color: 'inherit' }} />
+const SidebarNavItem = ({ to, icon: Icon, label, isOpen, active, badge, themeColor, children }: any) => {
+  const [isSubOpen, setIsSubOpen] = useState(false);
+  const hasChildren = children && children.length > 0;
+
+  useEffect(() => {
+    if (active && hasChildren) setIsSubOpen(true);
+  }, [active, hasChildren]);
+
+  return (
+    <div className="mb-1">
+      <div className="relative group">
+        {hasChildren ? (
+          <button
+            onClick={() => setIsSubOpen(!isSubOpen)}
+            className={clsx(
+              "w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 overflow-hidden",
+              active ? "bg-slate-950 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50"
+            )}
+          >
+            <div className="flex-shrink-0 w-5 flex justify-center">
+              <Icon size={18} style={active ? { color: themeColor } : { color: 'inherit' }} />
+            </div>
+            <span className={clsx("font-bold text-[9px] uppercase tracking-widest whitespace-nowrap transition-all duration-300", isOpen ? "opacity-100" : "opacity-0 w-0")}>
+              {label}
+            </span>
+            {isOpen && (
+              <ChevronDown size={12} className={clsx("ml-auto transition-transform", isSubOpen && "rotate-180")} />
+            )}
+          </button>
+        ) : (
+          <Link to={to} className={clsx(
+            "flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 overflow-hidden", 
+            active ? "bg-slate-950 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50"
+          )}>
+            <div className="flex-shrink-0 w-5 flex justify-center">
+              <Icon size={18} style={active ? { color: themeColor } : { color: 'inherit' }} />
+            </div>
+            <span className={clsx("font-bold text-[9px] uppercase tracking-widest whitespace-nowrap transition-all duration-300", isOpen ? "opacity-100" : "opacity-0 w-0")}>
+              {label}
+            </span>
+            {isOpen && badge > 0 && (
+              <span className="ml-auto min-w-[18px] h-[18px] text-white text-[8px] font-black rounded-full flex items-center justify-center ring-2 ring-white shadow-md px-1" style={{ backgroundColor: themeColor }}>{badge}</span>
+            )}
+          </Link>
+        )}
+      </div>
+
+      <AnimatePresence>
+        {hasChildren && isSubOpen && isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="pl-12 pr-2 space-y-1 mt-1"
+          >
+            {children.map((child: any) => (
+              <Link
+                key={child.to}
+                to={child.to}
+                className={clsx(
+                  "block py-2 text-[8px] font-black uppercase tracking-widest transition-all",
+                  useLocation().pathname === child.to ? "text-indigo-600" : "text-slate-400 hover:text-slate-600"
+                )}
+              >
+                {child.label}
+              </Link>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
-    <span className={clsx("font-bold text-[9px] uppercase tracking-widest whitespace-nowrap transition-all duration-300", isOpen ? "opacity-100" : "opacity-0 w-0")}>{label}</span>
-    {isOpen && badge > 0 && (
-      <span className="ml-auto min-w-[18px] h-[18px] text-white text-[8px] font-black rounded-full flex items-center justify-center ring-2 ring-white shadow-md px-1" style={{ backgroundColor: themeColor }}>{badge}</span>
-    )}
-  </Link>
-);
+  );
+};
 
 export const Sidebar = ({ isOpen, onToggle, isMobileOpen, onMobileClose }: any) => {
   const { logout } = useAuth();
@@ -43,9 +103,39 @@ export const Sidebar = ({ isOpen, onToggle, isMobileOpen, onMobileClose }: any) 
       setCounts({ requests: reqCount, tasks: taskCount });
     };
     syncBadges();
-    window.addEventListener('noor_badge_update', syncBadges);
-    return () => window.removeEventListener('noor_badge_update', syncBadges);
+    window.addEventListener('noor_db_update', syncBadges);
+    return () => window.removeEventListener('noor_db_update', syncBadges);
   }, []);
+
+  const adminMenu = [
+    { to: '/admin/dashboard', icon: Home, label: 'Dashboard' },
+    { to: '/admin/requests', icon: Inbox, label: 'Requests Hub', badge: counts.requests },
+    { to: '/admin/users', icon: Users, label: 'Members' },
+    { to: '/admin/rewards', icon: Trophy, label: 'Reward Engine' },
+    { to: '/admin/tasks', icon: Briefcase, label: 'Daily Tasks', badge: counts.tasks },
+    { to: '/admin/finance', icon: BarChart3, label: 'Global Ledger' },
+    { 
+      to: '/admin/advanced', 
+      icon: ShieldAlert, 
+      label: 'Advanced Settings',
+      children: [
+        { to: '/admin/advanced/page-editor', label: 'Edit Pages' },
+        { to: '/admin/advanced/seo', label: 'SEO Settings' },
+        { to: '/admin/advanced/integration', label: 'Third Party' },
+        { to: '/admin/advanced/database', label: 'System DB' }
+      ]
+    },
+    { 
+      to: '/admin/settings', 
+      icon: Settings, 
+      label: 'Basic Settings',
+      children: [
+        { to: '/admin/settings/general', label: 'Core System' },
+        { to: '/admin/settings/branding', label: 'Branding' },
+        { to: '/admin/settings/appearance', label: 'Themes' }
+      ]
+    }
+  ];
 
   return (
     <>
@@ -62,12 +152,19 @@ export const Sidebar = ({ isOpen, onToggle, isMobileOpen, onMobileClose }: any) 
         </div>
 
         <nav className="flex-grow px-3 mt-2 space-y-0.5 overflow-y-auto no-scrollbar">
-           <SidebarNavItem to="/admin/dashboard" icon={Home} label="Dashboard" isOpen={isOpen || isMobileOpen} active={location.pathname === '/admin/dashboard'} themeColor={config.theme.primaryColor} />
-           <SidebarNavItem to="/admin/requests" icon={Inbox} label="Requests Hub" isOpen={isOpen || isMobileOpen} active={location.pathname === '/admin/requests'} badge={counts.requests} themeColor={config.theme.primaryColor} />
-           <SidebarNavItem to="/admin/users" icon={Users} label="Members" isOpen={isOpen || isMobileOpen} active={location.pathname === '/admin/users'} themeColor={config.theme.primaryColor} />
-           <SidebarNavItem to="/admin/tasks" icon={Briefcase} label="Daily Tasks" isOpen={isOpen || isMobileOpen} active={location.pathname === '/admin/tasks'} badge={counts.tasks} themeColor={config.theme.primaryColor} />
-           <SidebarNavItem to="/admin/finance" icon={BarChart3} label="Global Ledger" isOpen={isOpen || isMobileOpen} active={location.pathname === '/admin/finance'} themeColor={config.theme.primaryColor} />
-           <SidebarNavItem to="/admin/settings" icon={Settings} label="System Node" isOpen={isOpen || isMobileOpen} active={location.pathname.startsWith('/admin/settings')} themeColor={config.theme.primaryColor} />
+           {adminMenu.map((item) => (
+             <SidebarNavItem 
+               key={item.label}
+               to={item.to}
+               icon={item.icon}
+               label={item.label}
+               isOpen={isOpen || isMobileOpen}
+               active={location.pathname.startsWith(item.to)}
+               badge={item.badge}
+               themeColor={config.theme.primaryColor}
+               children={item.children}
+             />
+           ))}
         </nav>
 
         <div className="p-4 mt-auto">

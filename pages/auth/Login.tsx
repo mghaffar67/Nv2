@@ -22,7 +22,7 @@ const Login = () => {
     try {
       await login(form.email, form.password);
     } catch (err: any) {
-      setError(err.message || 'Authentication failed.');
+      setError(err.message || 'Login failed.');
     } finally {
       setLoading(false);
     }
@@ -51,8 +51,8 @@ const Login = () => {
             >
               <Zap size={24} fill="currentColor" />
             </div>
-            <h1 className="text-xl font-black tracking-tight text-slate-900 uppercase italic">Partner <span style={{ color: 'var(--color-primary)' }}>Portal.</span></h1>
-            <p className="text-[7px] font-bold uppercase tracking-[0.3em] text-slate-400 mt-1.5 italic">Authorized Node Login</p>
+            <h1 className="text-xl font-black tracking-tight text-slate-900 uppercase italic">Partner <span style={{ color: 'var(--color-primary)' }}>Login.</span></h1>
+            <p className="text-[7px] font-bold uppercase tracking-[0.3em] text-slate-400 mt-1.5 italic">Sign in to your account</p>
           </div>
 
           {error && (
@@ -66,11 +66,11 @@ const Login = () => {
 
           <form onSubmit={handleSubmit} className="space-y-3.5">
             <div className="space-y-1">
-              <label className="text-[7px] font-black uppercase tracking-widest text-slate-400 ml-2 italic">Access Identity</label>
+              <label className="text-[7px] font-black uppercase tracking-widest text-slate-400 ml-2 italic">Email / Phone Number</label>
               <div className="relative">
                 <Mail size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
                 <input 
-                  type="text" required placeholder="Email or Phone"
+                  type="text" required placeholder="example@mail.com"
                   className="w-full h-11 pl-11 pr-4 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-none transition-all focus:bg-white focus:ring-4 focus:ring-indigo-50/50"
                   onChange={e => setForm({...form, email: e.target.value})}
                 />
@@ -78,7 +78,7 @@ const Login = () => {
             </div>
             
             <div className="space-y-1">
-              <label className="text-[7px] font-black uppercase tracking-widest text-slate-400 ml-2 italic">Security Key</label>
+              <label className="text-[7px] font-black uppercase tracking-widest text-slate-400 ml-2 italic">Login Password</label>
               <div className="relative">
                 <Lock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
                 <input 
@@ -95,17 +95,17 @@ const Login = () => {
               className="w-full h-12 rounded-2xl font-black text-[9px] uppercase tracking-[0.2em] shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all mt-4 disabled:opacity-50 text-white"
               style={{ backgroundColor: 'var(--color-primary)' }}
             >
-              {loading ? <Loader2 className="animate-spin" size={16} /> : <>Initialize Session <ChevronRight size={14} /></>}
+              {loading ? <Loader2 className="animate-spin" size={16} /> : <>Login Now <ChevronRight size={14} /></>}
             </button>
           </form>
 
           <div className="mt-6 pt-5 border-t border-slate-50 flex flex-col gap-4">
              <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => demoLogin('admin')} className="h-9 bg-slate-900 text-white rounded-lg text-[7px] font-black uppercase tracking-widest active:scale-95 shadow-md">Admin Node</button>
-                <button onClick={() => demoLogin('user')} className="h-9 bg-white border border-slate-100 text-slate-500 rounded-lg text-[7px] font-black uppercase tracking-widest active:scale-95">Partner Node</button>
+                <button onClick={() => demoLogin('admin')} className="h-9 bg-slate-900 text-white rounded-lg text-[7px] font-black uppercase tracking-widest active:scale-95 shadow-md">Demo Admin</button>
+                <button onClick={() => demoLogin('user')} className="h-9 bg-white border border-slate-100 text-slate-500 rounded-lg text-[7px] font-black uppercase tracking-widest active:scale-95">Demo User</button>
              </div>
              <p className="text-center text-[8px] font-bold uppercase tracking-widest text-slate-400 italic">
-                New Associate? <Link to="/register" className="font-black" style={{ color: 'var(--color-primary)' }}>Join Network</Link>
+                No account? <Link to="/register" className="font-black" style={{ color: 'var(--color-primary)' }}>Create One</Link>
              </p>
           </div>
         </div>
@@ -113,7 +113,7 @@ const Login = () => {
 
       <Link to="/" className="mt-8 flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-all group">
          <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-         <span className="text-[8px] font-black uppercase tracking-widest">Back to Main Hub</span>
+         <span className="text-[8px] font-black uppercase tracking-widest">Back to Home</span>
       </Link>
     </div>
   );

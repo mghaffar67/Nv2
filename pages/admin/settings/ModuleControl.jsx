@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useConfig } from '../../../context/ConfigContext';
 import { 
@@ -7,7 +8,8 @@ import {
   ShieldAlert, 
   Zap, 
   ArrowDownCircle,
-  LogIn
+  LogIn,
+  Trophy
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
@@ -74,6 +76,13 @@ const ModuleControl = () => {
           icon={LogIn}
           isActive={config.modules.demoLoginEnabled}
           onToggle={() => handleToggle('demoLoginEnabled')}
+        />
+        <ToggleCard 
+          title="Rewards Hub"
+          description="Achievement Bonus"
+          icon={Trophy}
+          isActive={config.modules.rewardsEnabled}
+          onToggle={() => handleToggle('rewardsEnabled')}
         />
         <ToggleCard 
           title="Deposits"

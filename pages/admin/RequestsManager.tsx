@@ -33,7 +33,7 @@ const RequestCard = ({ item, type, onApprove, onReject, onViewProof, processing 
           </div>
         </div>
         <div className="bg-amber-50 px-2 py-0.5 rounded-lg text-[7px] font-black uppercase text-amber-600 border border-amber-100 flex items-center gap-1">
-          <Clock size={8} /> Queue
+          <Clock size={8} /> Pending
         </div>
       </div>
 
@@ -52,7 +52,7 @@ const RequestCard = ({ item, type, onApprove, onReject, onViewProof, processing 
 
         <div className="bg-slate-50 p-3 rounded-xl space-y-1.5 border border-slate-100">
            <div className="flex justify-between items-center">
-              <span className="text-[7px] font-black text-slate-400 uppercase">{isDeposit ? 'TRX ID' : 'ACCOUNT'}</span>
+              <span className="text-[7px] font-black text-slate-400 uppercase">{isDeposit ? 'TRX ID' : 'ACCOUNT NO.'}</span>
               <div className="flex items-center gap-1.5">
                 <span className="text-[8px] font-mono font-black text-slate-700">{isDeposit ? (item.trxId || '---') : item.accountNumber}</span>
                 <button onClick={() => { navigator.clipboard.writeText(isDeposit ? item.trxId : item.accountNumber); }} className="text-slate-300 hover:text-indigo-500 transition-colors"><Copy size={10} /></button>
@@ -81,7 +81,7 @@ const RequestCard = ({ item, type, onApprove, onReject, onViewProof, processing 
            disabled={processing === item.id}
            className="flex-grow h-10 bg-slate-950 text-white rounded-xl font-black text-[8px] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
          >
-           {processing === item.id ? <RefreshCw size={12} className="animate-spin" /> : <><Check size={12} className="text-emerald-400" /> AUTHORIZE</>}
+           {processing === item.id ? <RefreshCw size={12} className="animate-spin" /> : <><Check size={12} className="text-emerald-400" /> APPROVE</>}
          </button>
          <button 
            onClick={() => onReject(item)} 
@@ -128,7 +128,6 @@ const RequestHub = () => {
 
     setProcessingId(item.id);
     try {
-      // Use unified action endpoint
       await api.post('/admin/finance/requests/manage', { 
         transactionId: item.id, 
         userId: item.userId, 
@@ -137,7 +136,6 @@ const RequestHub = () => {
         reason 
       });
       
-      // Notify badge listeners
       window.dispatchEvent(new Event('noor_badge_update'));
       await fetchData();
     } catch (e: any) { 
@@ -168,10 +166,10 @@ const RequestHub = () => {
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 p-2">
         <div>
           <h1 className="text-xl md:text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
-            Request <span className="text-indigo-600">Hub.</span>
+            Requests <span className="text-indigo-600">Queue.</span>
           </h1>
           <p className="text-slate-400 font-bold uppercase text-[7px] md:text-[9px] tracking-[0.2em] mt-1.5 flex items-center gap-1.5">
-            <Zap size={10} className="text-indigo-500" /> Pending Queue Control Center
+            <Zap size={10} className="text-indigo-500" /> Verify user transactions
           </p>
         </div>
         
@@ -181,7 +179,7 @@ const RequestHub = () => {
                 {activeTab === 'deposit' ? <TrendingUp size={16}/> : <TrendingDown size={16}/>}
               </div>
               <div>
-                <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Queue Depth</p>
+                <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Queue Value</p>
                 <p className="text-sm font-black text-slate-900 leading-none">PKR {stats.volume.toLocaleString()}</p>
               </div>
            </div>
@@ -198,7 +196,7 @@ const RequestHub = () => {
          <div className="lg:col-span-8 relative">
             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
             <input 
-              type="text" placeholder="Filter by Name, Phone or TRX..." 
+              type="text" placeholder="Search by Name, Phone..." 
               value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
               className="w-full h-12 pl-12 pr-4 bg-white border border-slate-100 rounded-2xl font-bold text-[11px] outline-none shadow-sm focus:ring-4 focus:ring-indigo-50/50 transition-all placeholder:text-slate-300" 
             />
@@ -210,7 +208,7 @@ const RequestHub = () => {
         {loading ? (
            <div className="py-20 text-center flex flex-col items-center gap-3">
               <RefreshCw className="animate-spin text-slate-200" size={32} />
-              <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest italic">Syncing Central Database...</p>
+              <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest italic">Loading Records...</p>
            </div>
         ) : filteredData.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4 px-1">
@@ -233,18 +231,10 @@ const RequestHub = () => {
              <div className="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-inner">
                 <CheckSquare size={32} className="text-slate-200" />
              </div>
-             <h4 className="text-slate-900 font-black uppercase text-[10px] tracking-widest">Queue Clear</h4>
-             <p className="text-slate-300 font-bold uppercase text-[7px] tracking-[0.3em] mt-1 italic">Waiting for new system requests</p>
+             <h4 className="text-slate-900 font-black uppercase text-[10px] tracking-widest">No Pending Requests</h4>
+             <p className="text-slate-300 font-bold uppercase text-[7px] tracking-[0.3em] mt-1 italic">Waiting for new activity</p>
           </div>
         )}
-      </div>
-
-      {/* 4. CONTEXTUAL INFORMATION */}
-      <div className="p-5 bg-indigo-50 rounded-[32px] border border-indigo-100 flex items-start gap-4 mx-1">
-         <ShieldCheck size={20} className="text-indigo-600 shrink-0" />
-         <p className="text-[9px] text-indigo-700 font-bold uppercase leading-relaxed tracking-wider">
-            Protocol: Authorized agents must verify "TRX ID" on official bank portal before confirming deposits. Payouts are non-reversible once authorized.
-         </p>
       </div>
 
       <ProofModal isOpen={!!selectedProof} onClose={() => setSelectedProof(null)} imageUrl={selectedProof || ''} />

@@ -12,24 +12,23 @@ import { pageController } from '../controllers/pageController';
  */
 export const pluginLoader = {
   loadPlugins: (app: any) => {
-    console.log("🚀 Initializing Noor Modular Architecture...");
+    console.log("🚀 Initializing Noor Advanced Architecture...");
 
     // Register Modular Plugins
-    // Fix: Corrected named imports to use default exports (routers) and mounted them via app.use()
     app.use('/api/auth', authRoutes);
     app.use('/api/finance', financeRoutes);
 
-    // Register Legacy/Controller based routes (To be refactored in future steps)
+    // Register Advanced/Controller based routes
     const controllers = [
       { name: 'AdminFinance', prefix: '/api/admin/finance', controller: adminFinanceController },
-      { name: 'Work', prefix: '/api/work', controller: workController },
-      { name: 'System', prefix: '/api/system', controller: pageController }
+      { name: 'WorkHub', prefix: '/api/work', controller: workController },
+      { name: 'AdvancedSettings', prefix: '/api/system', controller: pageController }
     ];
 
     controllers.forEach(item => {
-      console.log(`✅ [${item.name} Controller] Loaded at ${item.prefix}`);
+      console.log(`✅ [${item.name} Node] Loaded at ${item.prefix}`);
     });
 
-    console.log("🌟 Modular Core Synchronized.");
+    console.log("🌟 Advanced Core Synchronized.");
   }
 };

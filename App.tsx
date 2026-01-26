@@ -20,7 +20,10 @@ import UsersManager from './pages/admin/UsersManager';
 import FinanceManager from './pages/admin/finance/FinanceManager';
 import WorkManager from './pages/admin/WorkManager';
 import RequestsManager from './pages/admin/RequestsManager';
+import RewardManager from './pages/admin/RewardManager';
 import SettingsLayout from './pages/admin/settings/SettingsLayout';
+import AdvancedLayout from './pages/admin/advanced/AdvancedLayout';
+import AdvancedStats from './pages/admin/advanced/AdvancedStats';
 import CoreSettings from './pages/admin/settings/Settings';
 import BrandingSettings from './pages/admin/settings/BrandingSettings';
 import AppearanceSettings from './pages/admin/settings/AppearanceSettings';
@@ -30,6 +33,7 @@ import IntegrationHub from './pages/admin/settings/IntegrationHub';
 import PageEditor from './pages/admin/settings/PageEditor';
 import UserDashboard from './pages/user/UserDashboard';
 import DailyWork from './pages/user/DailyWork';
+import RewardHub from './pages/user/RewardHub';
 import Plans from './pages/user/Plans';
 import PlanHistory from './pages/user/PlanHistory';
 import MyTeam from './pages/user/MyTeam';
@@ -63,6 +67,7 @@ const App: React.FC = () => (
               <Route index element={<Navigate to="/user/dashboard" replace />} />
               <Route path="dashboard" element={<UserDashboard />} />
               <Route path="work" element={<DailyWork />} />
+              <Route path="achievements" element={<RewardHub />} />
               <Route path="team" element={<MyTeam />} />
               <Route path="wallet" element={<Wallet />} />
               <Route path="wallet/withdraw" element={<Withdraw />} />
@@ -81,6 +86,7 @@ const App: React.FC = () => (
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="users" element={<UsersManager />} />
+              <Route path="rewards" element={<RewardManager />} />
               <Route path="finance" element={<FinanceManager />} />
               <Route path="tasks" element={<WorkManager />} />
               <Route path="requests" element={<RequestsManager />} />
@@ -92,9 +98,9 @@ const App: React.FC = () => (
                  <Route path="appearance" element={<AppearanceSettings />} />
               </Route>
 
-              {/* NEW REORGANIZED CONFIGURATION NODE */}
-              <Route path="config">
-                 <Route index element={<Navigate to="page-editor" replace />} />
+              <Route path="advanced" element={<AdvancedLayout />}>
+                 <Route index element={<Navigate to="analytics" replace />} />
+                 <Route path="analytics" element={<AdvancedStats />} />
                  <Route path="page-editor" element={<PageEditor />} />
                  <Route path="seo" element={<SEOManager />} />
                  <Route path="integration" element={<IntegrationHub />} />

@@ -9,6 +9,8 @@ export const analyticsController = {
   getSystemReports: async (req: any, res: any) => {
     try {
       const users = dbNode.getUsers();
+      const allTasks = dbNode.getTasks();
+      const allRewards = dbNode.getRewards() || [];
       const today = new Date().toISOString().split('T')[0];
       
       let totalDeposits = 0;
@@ -16,6 +18,12 @@ export const analyticsController = {
       let totalLiability = 0;
       let usersJoinedToday = 0;
       let activePlanUsers = 0;
+      
+      // Module Specific Stats
+      let totalTasksCompleted = 0;
+      let tasksCompletedToday = 0;
+      let totalRewardsClaimed = 0;
+      let totalRewardBonusPaid = 0;
 
       // 7-Day Trend Logic
       const trendMap: Record<string, { date: string, deposit: number, withdraw: number }> = {};
@@ -35,7 +43,22 @@ export const analyticsController = {
         if (user.createdAt?.startsWith(today)) usersJoinedToday++;
         if (user.currentPlan && user.currentPlan !== 'None') activePlanUsers++;
 
-        // 3. Financial Totals
+        // 3. Task Stats
+        if (user.workSubmissions) {
+          user.workSubmissions.forEach((s: any) => {
+            if (s.status === 'approved') {
+              totalTasksCompleted++;
+              if (s.timestamp?.startsWith(today)) tasksCompletedToday++;
+            }
+          });
+        }
+
+        // 4. Reward Stats
+        if (user.claimedRewards) {
+          totalRewardsClaimed += user.claimedRewards.length;
+        }
+
+        // 5. Financial Totals
         if (user.transactions) {
           user.transactions.forEach((t: any) => {
             if (t.status === 'approved') {
@@ -48,6 +71,8 @@ export const analyticsController = {
               } else if (t.type === 'withdraw') {
                 totalWithdrawals += amt;
                 if (trendMap[tDate]) trendMap[tDate].withdraw += amt;
+              } else if (t.type === 'reward') {
+                totalRewardBonusPaid += amt;
               }
             }
           });
@@ -64,12 +89,25 @@ export const analyticsController = {
           totalDeposits,
           totalWithdrawals,
           netProfit,
-          totalLiability
+          totalLiability,
+          totalRewardBonusPaid
         },
         users: {
           totalUsers: users.length,
           joinedToday: usersJoinedToday,
           activePremium: activePlanUsers
+        },
+        modules: {
+          rewards: {
+            totalAvailable: allRewards.length,
+            activeAvailable: allRewards.filter((r: any) => r.isActive).length,
+            totalClaims: totalRewardsClaimed
+          },
+          tasks: {
+            totalInventory: allTasks.length,
+            completionsAllTime: totalTasksCompleted,
+            completionsToday: tasksCompletedToday
+          }
         },
         trends: trendData,
         timestamp: new Date().toISOString()

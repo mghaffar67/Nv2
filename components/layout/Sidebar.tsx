@@ -19,7 +19,9 @@ import {
   Search,
   Puzzle,
   FileText,
-  Inbox
+  Inbox,
+  ShieldAlert,
+  Trophy
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
@@ -34,41 +36,43 @@ const NavItem = ({ item, active, badge, isOpen, toggleSub, themeColor }: any) =>
 
   return (
     <div className="mb-0.5">
-      <button
-        onClick={() => hasSub ? toggleSub(item.label) : null}
-        className={clsx(
-          "w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all relative group",
-          active && !hasSub ? "bg-slate-950 text-white shadow-md" : "text-slate-500 hover:bg-slate-50"
-        )}
-      >
-        {!hasSub ? (
-          <Link to={item.to} className="absolute inset-0 z-10" />
-        ) : null}
-        
-        <div className="relative shrink-0">
-          <item.icon size={15} style={active ? { color: themeColor } : {}} />
-          {badge > 0 && (
-            <motion.div 
-              animate={{ scale: [1, 1.2, 1] }} 
-              transition={{ repeat: Infinity, duration: 1.5 }}
-              className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-rose-500 rounded-full border-2 border-white flex items-center justify-center text-[5px] font-black text-white shadow-sm"
-            >
-              {badge}
-            </motion.div>
+      <div className="relative group">
+        <button
+          onClick={() => hasSub ? toggleSub(item.label) : null}
+          className={clsx(
+            "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative",
+            active && !hasSub ? "bg-slate-950 text-white shadow-md" : "text-slate-500 hover:bg-slate-50"
           )}
-        </div>
+        >
+          {!hasSub ? (
+            <Link to={item.to} className="absolute inset-0 z-10" />
+          ) : null}
+          
+          <div className="relative shrink-0">
+            <item.icon size={15} style={active ? { color: themeColor } : {}} />
+            {badge > 0 && (
+              <motion.div 
+                animate={{ scale: [1, 1.2, 1] }} 
+                transition={{ repeat: Infinity, duration: 1.5 }}
+                className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-rose-500 rounded-full border-2 border-white flex items-center justify-center text-[5px] font-black text-white shadow-sm"
+              >
+                {badge}
+              </motion.div>
+            )}
+          </div>
 
-        <span className="font-black text-[8px] uppercase tracking-widest flex-grow text-left ml-0.5">
-          {item.label}
-        </span>
+          <span className="font-black text-[8px] uppercase tracking-widest flex-grow text-left ml-0.5">
+            {item.label}
+          </span>
 
-        {hasSub && (
-          <ChevronDown 
-            size={9} 
-            className={clsx("transition-transform duration-300 opacity-30", isSubOpen && "rotate-180")} 
-          />
-        )}
-      </button>
+          {hasSub && (
+            <ChevronDown 
+              size={9} 
+              className={clsx("transition-transform duration-300 opacity-30", isSubOpen && "rotate-180")} 
+            />
+          )}
+        </button>
+      </div>
 
       <AnimatePresence>
         {hasSub && isSubOpen && (
@@ -83,8 +87,8 @@ const NavItem = ({ item, active, badge, isOpen, toggleSub, themeColor }: any) =>
                 key={child.label}
                 to={child.to}
                 className={clsx(
-                  "flex items-center justify-between py-1.5 px-2 rounded-lg text-[6.5px] font-black uppercase tracking-widest transition-all",
-                  location.pathname.startsWith(child.to) ? "bg-indigo-50 text-indigo-600" : "text-slate-400 hover:text-slate-600"
+                  "flex items-center justify-between py-2 px-3 rounded-lg text-[6.5px] font-black uppercase tracking-widest transition-all",
+                  location.pathname === child.to ? "bg-indigo-50 text-indigo-600" : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
                 )}
               >
                 <span>{child.label}</span>
@@ -118,39 +122,46 @@ export const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose?: () => 
     }
   }, [user?.role]);
 
+  useEffect(() => {
+    if (location.pathname.includes('/admin/advanced')) setOpenSub('Advanced Settings');
+    else if (location.pathname.includes('/admin/settings')) setOpenSub('Basic Settings');
+  }, [location.pathname]);
+
   const isAdmin = user?.role === 'admin';
   
   const menuStructure = isAdmin ? [
     { label: 'Overview', to: '/admin/dashboard', icon: LayoutDashboard },
     { label: 'Requests Hub', to: '/admin/requests', icon: Inbox, badge: stats.total },
-    { label: 'Member List', to: '/admin/users', icon: Users },
-    { label: 'Daily Work', to: '/admin/tasks', icon: Briefcase },
-    { label: 'Global Ledger', to: '/admin/finance', icon: History },
+    { label: 'Members', to: '/admin/users', icon: Users },
+    { label: 'Reward Engine', to: '/admin/rewards', icon: Trophy },
+    { label: 'Daily Tasks', to: '/admin/tasks', icon: Briefcase },
+    { label: 'Financials', to: '/admin/finance', icon: History },
     { 
-      label: 'Configuration', 
-      icon: Sliders,
-      children: [
-        { label: 'Page Editor', to: '/admin/config/page-editor' },
-        { label: 'Search Engine', to: '/admin/config/seo' },
-        { label: 'Connection Hub', to: '/admin/config/integration' },
-        { label: 'Database Node', to: '/admin/config/database' }
-      ]
-    },
-    { 
-      label: 'Settings', 
+      label: 'Basic Settings', 
       icon: Settings,
       children: [
-        { label: 'Global System', to: '/admin/settings/general' },
-        { label: 'Company Brand', to: '/admin/settings/branding' },
+        { label: 'General', to: '/admin/settings/general' },
+        { label: 'Branding', to: '/admin/settings/branding' },
         { label: 'Appearance', to: '/admin/settings/appearance' }
       ]
     },
+    { 
+      label: 'Advanced Settings', 
+      icon: ShieldAlert,
+      children: [
+        { label: 'Edit Pages', to: '/admin/advanced/page-editor' },
+        { label: 'SEO Settings', to: '/admin/advanced/seo' },
+        { label: 'Third Party', to: '/admin/advanced/integration' },
+        { label: 'Database', to: '/admin/advanced/database' }
+      ]
+    }
   ] : [
-    { label: 'Home', to: '/user/dashboard', icon: LayoutDashboard },
-    { label: 'Work', to: '/user/work', icon: Briefcase },
+    { label: 'Dashboard', to: '/user/dashboard', icon: LayoutDashboard },
+    { label: 'Daily Work', to: '/user/work', icon: Briefcase },
+    { label: 'Bonus Hub', to: '/user/achievements', icon: Trophy },
     { label: 'My Wallet', to: '/user/wallet', icon: Wallet },
-    { label: 'Network', to: '/user/team', icon: Users },
-    { label: 'Profile', to: '/user/settings', icon: UserCircle },
+    { label: 'My Team', to: '/user/team', icon: Users },
+    { label: 'My Profile', to: '/user/settings', icon: UserCircle },
   ];
 
   return (
@@ -162,7 +173,7 @@ export const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose?: () => 
         <div className="w-7 h-7 bg-slate-950 rounded-lg flex items-center justify-center shadow-lg text-white">
           <Zap size={14} fill="currentColor" style={{ color: config.theme.primaryColor }} />
         </div>
-        <h2 className="text-[11px] font-black tracking-tighter text-slate-950 italic uppercase">Noor<span style={{ color: config.theme.primaryColor }}>HQ.</span></h2>
+        <h2 className="text-[11px] font-black tracking-tighter text-slate-950 italic uppercase">Noor<span style={{ color: config.theme.primaryColor }}>V3</span></h2>
       </div>
 
       <nav className="flex-grow px-2 overflow-y-auto no-scrollbar py-3">
@@ -181,7 +192,7 @@ export const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose?: () => 
 
       <div className="p-3 mt-auto border-t border-slate-50">
         <button onClick={logout} className="w-full h-9 rounded-xl text-rose-500 bg-rose-50/50 hover:bg-rose-500 hover:text-white transition-all font-black text-[7px] uppercase tracking-widest flex items-center justify-center gap-2">
-          <LogOut size={12} /> Log Out
+          <LogOut size={12} /> Sign Out
         </button>
       </div>
     </aside>
