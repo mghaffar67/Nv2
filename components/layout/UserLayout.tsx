@@ -43,34 +43,33 @@ export const UserLayout = () => {
 
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-      <div className="flex-grow flex flex-col min-w-0 lg:ml-64 transition-all duration-300">
+      <div className="flex-grow flex flex-col min-w-0 lg:ml-48 transition-all duration-300">
         
-        <header className="h-16 flex items-center justify-between px-4 bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-[80] lg:hidden">
+        <header className="h-14 flex items-center justify-between px-4 bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-[80] lg:hidden">
            <div className="flex items-center gap-3">
-              <button onClick={() => setIsSidebarOpen(true)} className="p-2.5 bg-slate-950 text-white rounded-xl shadow-lg active:scale-95">
-                <Menu size={20} />
+              <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-slate-950 text-white rounded-lg shadow-lg active:scale-95">
+                <Menu size={18} />
               </button>
-              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg">
-                <Zap size={16} fill="currentColor" />
+              <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg">
+                <Zap size={14} fill="currentColor" />
               </div>
            </div>
            
            <div className="flex items-center gap-3">
-              <Link to="/user/settings" className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center font-black text-slate-600 italic">
+              <Link to="/user/settings" className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center font-black text-xs text-slate-600 italic">
                 {user?.name?.charAt(0) || 'U'}
               </Link>
            </div>
         </header>
 
-        <main className="p-3 md:p-8 flex-grow">
-           <div className="max-w-5xl mx-auto">
+        <main className="p-3 md:p-6 flex-grow">
+           <div className="max-w-4xl mx-auto">
               <Outlet />
            </div>
         </main>
 
-        {/* ENHANCED CONTEXTUAL STATUS BAR */}
-        <footer className="hidden lg:flex px-8 py-4 bg-white border-t border-slate-100 justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest h-14">
-           <div className="flex items-center gap-6">
+        <footer className="hidden lg:flex px-6 py-3 bg-white border-t border-slate-100 justify-between items-center text-[9px] font-black text-slate-400 uppercase tracking-widest h-12">
+           <div className="flex items-center gap-4">
               <span className="flex items-center gap-2">
                  <ShieldCheck size={12} className="text-indigo-500" /> Identity Node: {user?.id?.slice(-8)}
               </span>
@@ -90,8 +89,8 @@ export const UserLayout = () => {
               )}
            </div>
            <span className="flex items-center gap-2">
-             <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> 
-             Registry: Fully Synchronized
+             <div className="w-1 h-1 rounded-full bg-green-500 animate-pulse" /> 
+             Registry Sync: OK
            </span>
         </footer>
       </div>
