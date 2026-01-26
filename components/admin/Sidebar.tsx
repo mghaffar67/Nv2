@@ -110,31 +110,30 @@ export const Sidebar = ({ isOpen, onToggle, isMobileOpen, onMobileClose }: any) 
 
   const adminMenu = [
     { to: '/admin/dashboard', icon: Home, label: 'Dashboard' },
-    { to: '/admin/analytics', icon: LineChart, label: 'Analytics' },
     { to: '/admin/requests', icon: Inbox, label: 'Requests Hub', badge: counts.requests },
     { to: '/admin/users', icon: Users, label: 'Members' },
     { to: '/admin/rewards', icon: Trophy, label: 'Reward Hub' },
     { to: '/admin/tasks', icon: Briefcase, label: 'Daily Tasks', badge: counts.tasks },
-    { to: '/admin/finance', icon: BarChart3, label: 'Finance' },
+    { to: '/admin/finance', icon: BarChart3, label: 'Finance Hub' },
     { 
       to: '/admin/advanced', 
       icon: ShieldAlert, 
       label: 'Advanced Settings',
       children: [
-        { to: '/admin/advanced/page-editor', label: 'Edit Pages' },
-        { to: '/admin/advanced/seo', label: 'SEO Settings' },
-        { to: '/admin/advanced/integration', label: 'Integration' },
+        { to: '/admin/advanced/global-cms', label: 'Global CMS' },
+        { to: '/admin/advanced/page-editor', label: 'Page Content' },
+        { to: '/admin/advanced/seo', label: 'SEO Config' },
+        { to: '/admin/advanced/integration', label: 'Integrations' },
         { to: '/admin/advanced/database', label: 'System DB' }
       ]
     },
     { 
       to: '/admin/settings', 
       icon: Settings, 
-      label: 'Basic Settings',
+      label: 'System Config',
       children: [
-        { to: '/admin/settings/general', label: 'Core System' },
-        { to: '/admin/settings/branding', label: 'Branding' },
-        { to: '/admin/settings/appearance', label: 'Themes' }
+        { to: '/admin/settings/general', label: 'Branding' },
+        { to: '/admin/settings/appearance', label: 'Theme Logic' }
       ]
     }
   ];
@@ -161,7 +160,7 @@ export const Sidebar = ({ isOpen, onToggle, isMobileOpen, onMobileClose }: any) 
                icon={item.icon}
                label={item.label}
                isOpen={isOpen || isMobileOpen}
-               active={location.pathname.startsWith(item.to)}
+               active={location.pathname === item.to || (item.children && item.children.some((c:any) => location.pathname === c.to))}
                badge={item.badge}
                themeColor={config.theme.primaryColor}
                children={item.children}

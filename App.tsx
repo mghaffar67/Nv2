@@ -16,7 +16,6 @@ import Support from './pages/Support';
 import LivePayouts from './pages/public/LivePayouts';
 import DynamicPage from './pages/public/DynamicPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
-import Analytics from './pages/admin/Analytics';
 import UsersManager from './pages/admin/UsersManager';
 import FinanceManager from './pages/admin/finance/FinanceManager';
 import WorkManager from './pages/admin/WorkManager';
@@ -88,7 +87,6 @@ const App: React.FC = () => (
             }>
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="analytics" element={<Analytics />} />
               <Route path="users" element={<UsersManager />} />
               <Route path="rewards" element={<RewardManager />} />
               <Route path="finance" element={<FinanceManager />} />

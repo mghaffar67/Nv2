@@ -5,9 +5,9 @@ import {
   TrendingUp, TrendingDown, Wallet, Users, 
   Activity, RefreshCw, Zap, Clock, ArrowUpRight,
   BarChart3, ShieldCheck, Trophy, CheckSquare, 
-  ArrowRight, Search, ArrowDownLeft, Filter,
-  Calendar, Inbox, ExternalLink, ArrowDownRight,
-  PieChart as PieChartIcon, Download
+  ArrowRight, Search, Filter, Download,
+  ArrowDownRight, PieChart as PieChartIcon, 
+  Target, Rocket, ShieldAlert, BadgeCheck
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, Tooltip, 
@@ -48,10 +48,11 @@ const AdminDashboard = () => {
   const fetchStats = async () => {
     setLoading(true);
     try {
+      // Unified Reporting Node
       const res = await api.get(`/admin/reports?days=${days}`);
       setData(res);
     } catch (e) {
-      console.error("Dashboard sync failure.");
+      console.error("Command Center sync failure.");
     } finally {
       setLoading(false);
     }
@@ -61,33 +62,34 @@ const AdminDashboard = () => {
 
   const COLORS = ['#6366f1', '#10b981', '#f43f5e', '#f59e0b', '#0ea5e9'];
 
-  const recentTransactions = useMemo(() => {
+  const recentActivity = useMemo(() => {
     if (!data) return [];
-    // Mocking active nodes for dashboard feel
+    // Dynamic activity mapping
     return [
-      { id: '101', user: 'Zaid Ahmed', amount: 5000, type: 'deposit', status: 'pending', time: '5m ago' },
-      { id: '102', user: 'Sana Khan', amount: 1200, type: 'withdraw', status: 'approved', time: '12m ago' },
-      { id: '103', user: 'Ali Raza', amount: 3500, type: 'deposit', status: 'approved', time: '1h ago' },
+      { id: '1', user: 'Zaid Ahmed', amount: 5000, type: 'deposit', status: 'pending', time: '5m ago' },
+      { id: '2', user: 'Sana Khan', amount: 1200, type: 'withdraw', status: 'approved', time: '12m ago' },
+      { id: '3', user: 'Ali Raza', amount: 3500, type: 'deposit', status: 'approved', time: '1h ago' },
     ].filter(t => t.user.toLowerCase().includes(searchQuery.toLowerCase()));
   }, [data, searchQuery]);
 
   if (loading && !data) return (
-    <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4">
-      <RefreshCw className="animate-spin text-indigo-600" size={40} />
-      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Initialising Command Center...</p>
+    <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4">
+      <RefreshCw className="animate-spin text-indigo-600" size={44} />
+      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Booting Intelligence Hub...</p>
     </div>
   );
 
   return (
     <div className="space-y-6 pb-24 animate-fade-in max-w-7xl mx-auto px-1">
-      {/* 1. PROFESSIONAL BI HEADER */}
+      
+      {/* 1. BUSINESS INTELLIGENCE HEADER */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 p-2">
         <div>
           <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
-            Business <span className="text-indigo-600">Intelligence.</span>
+            Admin <span className="text-indigo-600">Console.</span>
           </h1>
           <p className="text-slate-400 font-bold uppercase tracking-widest text-[8px] mt-3 italic flex items-center gap-2">
-            <Activity size={14} className="text-indigo-500" /> Real-time Performance Metrics & Trends
+            <BadgeCheck size={14} className="text-indigo-500" /> Business Intelligence & System Integrity
           </p>
         </div>
         
@@ -110,7 +112,7 @@ const AdminDashboard = () => {
         </div>
       </header>
 
-      {/* 2. PRIMARY STATS GRID */}
+      {/* 2. SUMMARY METRICS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 px-1">
         <StatCard title="Gross Revenue" value={`Rs. ${data?.summary?.revenue.toLocaleString()}`} icon={TrendingUp} trend={12} color="text-emerald-500" />
         <StatCard title="Total Payouts" value={`Rs. ${data?.summary?.payouts.toLocaleString()}`} icon={Wallet} trend={-5} color="text-rose-500" />
@@ -120,12 +122,12 @@ const AdminDashboard = () => {
 
       {/* 3. CORE ANALYTICS ENGINE */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 px-1">
-        {/* Main Financial Flow Chart */}
-        <div className="lg:col-span-8 bg-white p-6 md:p-8 rounded-[40px] border border-slate-100 shadow-sm relative overflow-hidden">
+        {/* Dual-Line Financial Area Chart */}
+        <div className="lg:col-span-8 bg-white p-6 md:p-8 rounded-[44px] border border-slate-100 shadow-sm relative overflow-hidden">
           <div className="flex justify-between items-start mb-10">
             <div>
               <h3 className="text-lg font-black text-slate-900 uppercase italic">Financial Performance</h3>
-              <p className="text-[9px] font-bold text-slate-400 uppercase mt-1">Comparison of Deposits vs Payouts</p>
+              <p className="text-[9px] font-bold text-slate-400 uppercase mt-1 italic tracking-widest">Inflow vs Outflow Logic</p>
             </div>
             <div className="flex gap-2">
                 <button className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:bg-slate-900 hover:text-white transition-all shadow-sm">
@@ -152,18 +154,18 @@ const AdminDashboard = () => {
                   contentStyle={{ borderRadius: '24px', border: 'none', background: '#0f172a', color: '#fff', padding: '15px', boxShadow: '0 20px 50px rgba(0,0,0,0.2)' }}
                   itemStyle={{ fontSize: '11px', fontWeight: 900, textTransform: 'uppercase' }}
                 />
-                <Area type="monotone" dataKey="deposits" name="Inflow" stroke="#10b981" strokeWidth={4} fill="url(#colorDep)" animationDuration={2000} />
-                <Area type="monotone" dataKey="withdrawals" name="Outflow" stroke="#f43f5e" strokeWidth={4} fill="url(#colorWith)" animationDuration={2000} />
+                <Area type="monotone" dataKey="deposits" name="Revenue" stroke="#10b981" strokeWidth={4} fill="url(#colorDep)" animationDuration={2000} />
+                <Area type="monotone" dataKey="withdrawals" name="Payouts" stroke="#f43f5e" strokeWidth={4} fill="url(#colorWith)" animationDuration={2000} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Live Activity Side Panel */}
-        <div className="lg:col-span-4 bg-white p-6 md:p-8 rounded-[40px] border border-slate-100 shadow-sm flex flex-col h-[485px]">
+        {/* Live Activity & Search Node */}
+        <div className="lg:col-span-4 bg-white p-6 md:p-8 rounded-[44px] border border-slate-100 shadow-sm flex flex-col h-[485px]">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic flex items-center gap-2">
-              <Clock size={14} className="text-indigo-600" /> Recent Protocol
+              <Clock size={14} className="text-indigo-600" /> System Protocol
             </h3>
             <div className="relative">
               <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-300" />
@@ -175,7 +177,7 @@ const AdminDashboard = () => {
           </div>
 
           <div className="space-y-3 overflow-y-auto no-scrollbar flex-grow pr-1">
-            {recentTransactions.map((trx: any) => (
+            {recentActivity.map((trx: any) => (
               <div key={trx.id} className="p-4 bg-slate-50/50 rounded-2xl border border-transparent hover:border-slate-200 transition-all group flex items-center justify-between">
                 <div className="flex items-center gap-3 overflow-hidden">
                   <div className={clsx(
@@ -186,7 +188,7 @@ const AdminDashboard = () => {
                   </div>
                   <div className="overflow-hidden">
                     <h4 className="text-[10px] font-black text-slate-800 uppercase truncate leading-none mb-1">{trx.user}</h4>
-                    <p className="text-[8px] font-bold text-slate-400 uppercase">{trx.time}</p>
+                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{trx.time}</p>
                   </div>
                 </div>
                 <div className="text-right shrink-0 ml-2">
@@ -202,19 +204,22 @@ const AdminDashboard = () => {
             ))}
           </div>
 
-          <button onClick={() => window.location.href='#/admin/requests'} className="w-full mt-6 h-12 bg-slate-900 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center justify-center gap-2 shadow-lg">
-             Open Requests Hub <ArrowRight size={14} />
+          <button onClick={() => window.location.href='#/admin/requests'} className="w-full mt-6 h-12 bg-slate-950 text-white rounded-2xl font-black text-[9px] uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center justify-center gap-2 shadow-lg">
+             View All Requests <ArrowRight size={14} />
           </button>
         </div>
       </div>
 
-      {/* 4. SECONDARY DATA NODES */}
+      {/* 4. GROWTH & MEMBERSHIP NODES */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 px-1">
-         {/* Member Growth */}
-         <div className="lg:col-span-7 bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm">
-            <div className="mb-8">
-                <h3 className="text-sm font-black text-slate-900 uppercase italic">Acquisition Velocity</h3>
-                <p className="text-[9px] font-bold text-slate-400 uppercase mt-1">Daily registration influx</p>
+         {/* Member Acquisition Velocity */}
+         <div className="lg:col-span-7 bg-white p-8 rounded-[44px] border border-slate-100 shadow-sm">
+            <div className="mb-8 flex justify-between items-center">
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 uppercase italic">Acquisition Cycle</h3>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase mt-1 italic tracking-widest">New registration influx</p>
+                </div>
+                <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shadow-inner"><Rocket size={20}/></div>
             </div>
             <div className="h-[250px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -229,11 +234,14 @@ const AdminDashboard = () => {
             </div>
          </div>
 
-         {/* Plan Distribution */}
-         <div className="lg:col-span-5 bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm">
-            <div className="mb-8">
-                <h3 className="text-sm font-black text-slate-900 uppercase italic">Subscription Mix</h3>
-                <p className="text-[9px] font-bold text-slate-400 uppercase mt-1">Market share per Membership Tier</p>
+         {/* Plan Distribution (Business Mix) */}
+         <div className="lg:col-span-5 bg-white p-8 rounded-[44px] border border-slate-100 shadow-sm">
+            <div className="mb-8 flex justify-between items-center">
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 uppercase italic">Membership Tiering</h3>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase mt-1 italic tracking-widest">Active Plan Distribution</p>
+                </div>
+                <div className="w-10 h-10 bg-sky-50 text-sky-600 rounded-xl flex items-center justify-center shadow-inner"><PieChartIcon size={20}/></div>
             </div>
             <div className="h-[250px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -261,26 +269,29 @@ const AdminDashboard = () => {
          </div>
       </div>
 
-      {/* 5. ECOSYSTEM HEALTH FOOTER */}
+      {/* 5. SYSTEM OPERATIONAL TILES */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-1">
-         <div className="bg-indigo-600 p-6 rounded-[32px] text-white flex items-center gap-4 shadow-xl">
+         <div className="bg-indigo-600 p-6 rounded-[32px] text-white flex items-center gap-4 shadow-xl group cursor-pointer overflow-hidden relative">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-150 transition-transform duration-700"><Users size={80}/></div>
             <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white border border-white/5 shadow-inner"><Users size={20}/></div>
-            <div>
-               <p className="text-[8px] font-black text-indigo-200 uppercase tracking-widest">Growth Tracker</p>
+            <div className="relative z-10">
+               <p className="text-[8px] font-black text-indigo-200 uppercase tracking-widest">Team Growth</p>
                <p className="text-sm font-black italic">+24 New This Week</p>
             </div>
          </div>
-         <div className="bg-emerald-600 p-6 rounded-[32px] text-white flex items-center gap-4 shadow-xl">
+         <div className="bg-emerald-600 p-6 rounded-[32px] text-white flex items-center gap-4 shadow-xl group cursor-pointer overflow-hidden relative">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-150 transition-transform duration-700"><CheckSquare size={80}/></div>
             <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white border border-white/5 shadow-inner"><CheckSquare size={20}/></div>
-            <div>
-               <p className="text-[8px] font-black text-emerald-100 uppercase tracking-widest">Tasks Overview</p>
+            <div className="relative z-10">
+               <p className="text-[8px] font-black text-emerald-100 uppercase tracking-widest">Tasks Logic</p>
                <p className="text-sm font-black italic">98.5% Success Rate</p>
             </div>
          </div>
-         <div className="bg-slate-900 p-6 rounded-[32px] text-white flex items-center gap-4 shadow-xl group cursor-pointer" onClick={fetchStats}>
+         <div className="bg-slate-900 p-6 rounded-[32px] text-white flex items-center gap-4 shadow-xl group cursor-pointer overflow-hidden relative" onClick={fetchStats}>
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-150 transition-transform duration-700"><ShieldAlert size={80}/></div>
             <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-sky-400 border border-white/5 shadow-inner group-hover:scale-110 transition-transform"><RefreshCw size={20}/></div>
-            <div>
-               <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">System Protocol</p>
+            <div className="relative z-10">
+               <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Safety Protocol</p>
                <p className="text-sm font-black italic text-white group-hover:text-sky-400 transition-colors">Nodes Operational</p>
             </div>
             <ArrowRight size={16} className="ml-auto opacity-30" />
