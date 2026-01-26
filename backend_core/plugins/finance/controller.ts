@@ -2,6 +2,10 @@
 import { dbNode } from '../../utils/db';
 import { distributeCommission } from '../../utils/commissionHelper';
 
+/**
+ * Noor Official V3 - Advanced Financial Controller
+ * Consolidated activation logic for high-speed ledger sync.
+ */
 export const financePluginController = {
   getHistory: async (req: any, res: any) => {
     try {
@@ -62,13 +66,12 @@ export const financePluginController = {
     const minLimit = config.financeSettings.minWithdraw || 500;
     const maxLimit = config.financeSettings.maxWithdraw || 50000;
 
-    // Hardened Security Validation
     if (amt < minLimit) return res.status(400).json({ message: `Minimum withdrawal is PKR ${minLimit}.` });
     if (amt > maxLimit) return res.status(400).json({ message: `Maximum withdrawal is PKR ${maxLimit}.` });
     if ((user.balance || 0) < amt) return res.status(400).json({ message: 'Insufficient liquidity in wallet.' });
 
     const newTrx = {
-      id: `WD-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+      id: `WD-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
       userId: user.id,
       type: 'withdraw',
       amount: amt,
@@ -80,7 +83,6 @@ export const financePluginController = {
       timestamp: new Date().toISOString()
     };
 
-    // Atomic Deduct
     const newBalance = user.balance - amt;
     const trx = user.transactions || [];
     trx.unshift(newTrx);
@@ -90,28 +92,88 @@ export const financePluginController = {
   },
 
   activatePlan: async (req: any, res: any) => {
-    const { planId, method } = req.body;
-    const user = dbNode.findUserById(req.user.id);
-    if (!user) return res.status(404).json({ message: "User not found." });
+    try {
+      const { planId, method, trxId, proofImage, senderNumber } = req.body;
+      const user = dbNode.findUserById(req.user.id);
+      if (!user) return res.status(404).json({ message: "User not found." });
 
-    const priceMap: Record<string, number> = { 'BASIC': 500, 'STANDARD': 1000, 'GOLD ELITE': 1500, 'DIAMOND': 5000 };
-    const normalized = planId.replace(' PLAN', '').toUpperCase();
-    const price = priceMap[normalized] || 0;
-
-    if (method === 'wallet') {
-      if ((user.balance || 0) < price) return res.status(400).json({ message: "Low balance." });
+      const priceMap: Record<string, number> = { 
+        'BASIC': 500, 
+        'STANDARD': 1000, 
+        'GOLD ELITE': 1500, 
+        'DIAMOND': 5000 
+      };
       
-      const newBalance = (user.balance || 0) - price;
-      const expiry = new Date();
-      expiry.setDate(expiry.getDate() + 30);
+      const normalized = planId.replace(' PLAN', '').toUpperCase();
+      const price = priceMap[normalized] || 0;
 
-      const history = user.purchaseHistory || [];
-      history.unshift({ id: Date.now().toString(), planId: normalized, amount: price, method: 'wallet', status: 'active', date: new Date().toISOString() });
+      if (method === 'wallet') {
+        const currentBalance = Number(user.balance) || 0;
+        if (currentBalance < price) return res.status(400).json({ message: "Insufficient account balance." });
+        
+        const newBalance = currentBalance - price;
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + 30);
 
-      dbNode.updateUser(user.id, { balance: newBalance, currentPlan: normalized, planExpiry: expiry.toISOString(), purchaseHistory: history });
-      distributeCommission(user.id, price);
-      return res.status(200).json({ success: true, message: "Station Activated." });
+        const purchaseRecord = {
+          id: `PH-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+          planId: normalized,
+          amount: price,
+          method: 'wallet',
+          status: 'active',
+          date: new Date().toISOString()
+        };
+
+        const history = user.purchaseHistory || [];
+        history.unshift(purchaseRecord);
+
+        dbNode.updateUser(user.id, { 
+          balance: newBalance, 
+          currentPlan: normalized, 
+          planExpiry: expiry.toISOString(), 
+          purchaseHistory: history 
+        });
+
+        // Referral commission logic
+        distributeCommission(user.id, price);
+        
+        return res.status(200).json({ 
+          success: true, 
+          message: "Station Activated Successfully.",
+          config: dbNode.getConfig()
+        });
+      }
+
+      if (method === 'direct') {
+        if (!trxId || !proofImage) {
+          return res.status(400).json({ message: "Audit Protocol: TRX ID and Screenshot required." });
+        }
+
+        const requestRecord = {
+          id: `REQ-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+          planId: normalized,
+          amount: price,
+          method: 'direct',
+          status: 'pending',
+          trxId,
+          senderNumber,
+          proofImage,
+          date: new Date().toISOString()
+        };
+
+        const history = user.purchaseHistory || [];
+        history.unshift(requestRecord);
+
+        dbNode.updateUser(user.id, { purchaseHistory: history });
+        return res.status(201).json({ 
+          success: true, 
+          message: "Activation packet submitted for audit." 
+        });
+      }
+
+      return res.status(400).json({ message: "Invalid activation protocol." });
+    } catch (err) {
+      return res.status(500).json({ message: "Internal server error during activation." });
     }
-    return res.status(400).json({ message: "Invalid method." });
   }
 };

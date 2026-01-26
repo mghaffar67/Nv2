@@ -30,7 +30,7 @@ export const adminPluginController = {
     }
   },
 
-  // 2. PROCESS REQUEST ACTION (REFINED)
+  // 2. PROCESS REQUEST ACTION (REFINED & CONSOLIDATED)
   processRequestAction: async (req: any, res: any) => {
     const { transactionId, userId, action, type, reason } = req.body;
     
@@ -38,7 +38,7 @@ export const adminPluginController = {
       const user = dbNode.findUserById(userId);
       if (!user) return res.status(404).json({ message: "Member node not found." });
 
-      const trxIndex = user.transactions.findIndex((t: any) => t.id === transactionId);
+      const trxIndex = (user.transactions || []).findIndex((t: any) => t.id === transactionId);
       if (trxIndex === -1) return res.status(404).json({ message: "Voucher record missing." });
 
       const transaction = user.transactions[trxIndex];
@@ -65,7 +65,7 @@ export const adminPluginController = {
         if (type === 'withdraw') {
           user.balance = (Number(user.balance) || 0) + amount;
           
-          // Log refund in transaction history
+          // Log refund in transaction history for transparency
           const refundLog = {
             id: `REF-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
             type: 'reward',
@@ -83,6 +83,7 @@ export const adminPluginController = {
       dbNode.updateUser(userId, { balance: user.balance, transactions: user.transactions });
       return res.status(200).json({ success: true, message: "Ledger Synchronized." });
     } catch (err) {
+      console.error("Ledger Node Failure:", err);
       return res.status(500).json({ message: "Critical Logic Error during process." });
     }
   }

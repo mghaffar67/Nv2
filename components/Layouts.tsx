@@ -32,13 +32,13 @@ const NavItem = ({ to, label, icon: Icon, active, collapsed }: any) => (
   <Link 
     to={to} 
     className={clsx(
-      "flex items-center gap-4 px-4 py-3 rounded-xl transition-all relative group mb-1",
-      active ? "bg-indigo-600 text-white shadow-lg" : "text-slate-400 hover:text-slate-900"
+      "flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative group mb-1",
+      active ? "bg-indigo-600 text-white shadow-md" : "text-slate-400 hover:text-slate-900"
     )}
   >
-    <Icon size={18} className={clsx("shrink-0", active ? "text-white" : "group-hover:text-slate-900")} />
+    <Icon size={16} className={clsx("shrink-0", active ? "text-white" : "group-hover:text-slate-900")} />
     {!collapsed && (
-      <span className="font-bold text-[11px] uppercase tracking-widest">{label}</span>
+      <span className="font-bold text-[9px] uppercase tracking-widest">{label}</span>
     )}
   </Link>
 );
@@ -54,7 +54,7 @@ const BottomNav = () => {
   ];
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-100 px-1 py-1.5 z-[100] flex justify-around items-center safe-bottom shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] h-16">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-100 px-1 py-1 z-[100] flex justify-around items-center safe-bottom shadow-[0_-5px_20px_-10px_rgba(0,0,0,0.1)] h-14">
       {navItems.map((item) => {
         const isActive = location.pathname === item.to;
         return (
@@ -62,12 +62,12 @@ const BottomNav = () => {
             key={item.to} 
             to={item.to} 
             className={clsx(
-              "flex flex-col items-center justify-center gap-0.5 transition-all relative px-2 py-1 rounded-2xl min-w-[50px]",
+              "flex flex-col items-center justify-center gap-0 transition-all relative px-2 py-0.5 rounded-xl min-w-[45px]",
               isActive ? "text-indigo-600" : "text-slate-400"
             )}
           >
-            <item.icon size={18} strokeWidth={isActive ? 3 : 2} />
-            <span className="text-[7px] font-black uppercase tracking-widest mt-0.5">{item.label}</span>
+            <item.icon size={16} strokeWidth={isActive ? 3 : 2} />
+            <span className="text-[6px] font-black uppercase tracking-widest mt-0.5">{item.label}</span>
             {isActive && (
                <motion.div layoutId="bottomActive" className="absolute -top-1 w-1 h-1 rounded-full bg-indigo-600" />
             )}
@@ -88,19 +88,19 @@ export const UserLayout = () => {
   }, [location]);
 
   return (
-    <div className="min-h-screen bg-[#f8f9fc] flex overflow-x-hidden w-full">
+    <div className="min-h-screen bg-[#f8f9fc] flex w-full">
       
       {/* Desktop Sidebar */}
       <aside className={clsx(
-        "fixed inset-y-0 left-0 bg-white border-r border-slate-100 flex flex-col z-[70] transition-all duration-300 w-[240px]",
+        "fixed inset-y-0 left-0 bg-white border-r border-slate-100 flex flex-col z-[70] transition-all duration-300 w-60",
         "max-lg:hidden"
       )}>
-        <div className="flex items-center gap-3 px-8 h-20 shrink-0">
+        <div className="flex items-center gap-2.5 px-8 h-20 shrink-0">
           <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg"><Zap size={16} fill="currentColor" /></div>
-          <h2 className="text-lg font-black tracking-tight text-slate-800 italic">Noor<span className="text-indigo-500">.</span></h2>
+          <h2 className="text-base font-black tracking-tighter text-slate-800 italic uppercase">Noor<span className="text-indigo-500">.</span></h2>
         </div>
 
-        <nav className="flex-grow px-4 overflow-y-auto no-scrollbar space-y-1 mt-4">
+        <nav className="flex-grow px-4 overflow-y-auto no-scrollbar space-y-0.5 mt-2">
            <NavItem to="/user/dashboard" label="Home" icon={LayoutDashboard} active={location.pathname === '/user/dashboard'} />
            <NavItem to="/user/work" label="Daily Tasks" icon={Briefcase} active={location.pathname === '/user/work'} />
            <NavItem to="/user/wallet" label="My Wallet" icon={WalletIcon} active={location.pathname === '/user/wallet'} />
@@ -111,34 +111,34 @@ export const UserLayout = () => {
         </nav>
 
         <div className="p-4 mt-auto">
-           <button onClick={logout} className="w-full flex items-center gap-4 px-4 py-4 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all">
-             <LogOut size={18} />
-             <span className="font-bold text-[11px] uppercase tracking-widest">Sign Out</span>
+           <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all">
+             <LogOut size={16} />
+             <span className="font-bold text-[9px] uppercase tracking-widest">Sign Out</span>
            </button>
         </div>
       </aside>
 
       {/* Main Workspace */}
-      <div className="flex-grow flex flex-col min-h-screen lg:ml-[240px] transition-all w-full max-w-full overflow-x-hidden">
+      <div className="flex-grow flex flex-col min-h-screen lg:ml-60 transition-all w-full max-w-full">
         
-        <header className="h-14 md:h-16 flex items-center justify-between px-4 md:px-6 bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-50/50 w-full">
-           <div className="flex items-center gap-4">
-              <div className="w-8 h-8 bg-slate-900 rounded-xl flex items-center justify-center text-sky-400 lg:hidden shadow-lg"><Zap size={14} fill="currentColor" /></div>
-              <h1 className="text-[8px] md:text-sm font-black uppercase tracking-[0.2em] text-slate-400">Noor <span className="text-slate-900 italic">V3</span></h1>
+        <header className="h-14 md:h-16 flex items-center justify-between px-4 md:px-6 bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-slate-100 w-full">
+           <div className="flex items-center gap-3">
+              <div className="w-7 h-7 bg-slate-900 rounded-lg flex items-center justify-center text-sky-400 lg:hidden shadow-lg"><Zap size={14} fill="currentColor" /></div>
+              <h1 className="text-[7px] md:text-sm font-black uppercase tracking-[0.2em] text-slate-400">Noor <span className="text-slate-900 italic">V3</span></h1>
            </div>
 
-           <div className="flex items-center gap-2 md:gap-5">
+           <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
-                 <p className="text-xs font-black text-slate-800 leading-none mb-1">{user?.name || 'User'}</p>
-                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Partner</p>
+                 <p className="text-[10px] font-black text-slate-800 leading-none mb-1">{user?.name || 'User'}</p>
+                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Authorized Partner</p>
               </div>
-              <div className="w-8 h-8 md:w-9 md:h-9 rounded-lg md:rounded-xl bg-slate-900 flex items-center justify-center text-white text-[10px] md:sm font-black italic shadow-lg border border-white/10">
+              <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white text-[10px] font-black italic shadow-lg">
                 {user?.name?.charAt(0) || 'U'}
               </div>
            </div>
         </header>
 
-        <main className="p-2 md:p-4 pb-24 lg:pb-4 w-full max-w-full overflow-x-hidden flex-grow">
+        <main className="p-2 md:p-6 pb-20 lg:pb-6 w-full max-w-full flex-grow">
            <Outlet />
         </main>
 
@@ -149,23 +149,23 @@ export const UserLayout = () => {
 };
 
 export const Navbar = () => (
-  <nav className="bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-6 py-3.5 flex justify-between items-center sticky top-0 z-50">
-    <div className="flex items-center gap-2 md:gap-3">
-      <div className="w-7 h-7 md:w-8 md:h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-black italic shadow-lg">N</div>
-      <span className="font-black text-base md:text-lg tracking-tighter text-slate-800">Noor<span className="text-indigo-500">Official</span></span>
+  <nav className="bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-6 py-3 flex justify-between items-center sticky top-0 z-50 h-14 md:h-16">
+    <div className="flex items-center gap-2">
+      <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-black italic shadow-lg text-sm">N</div>
+      <span className="font-black text-sm md:text-base tracking-tighter text-slate-800 uppercase italic">Noor<span className="text-indigo-500">Official</span></span>
     </div>
     <Link 
       to="/login" 
-      className="bg-slate-950 text-white px-6 py-2.5 rounded-xl font-black text-[10px] md:text-xs uppercase tracking-widest transition-all hover:bg-indigo-600 hover:shadow-[0_10px_40px_-10px_rgba(99,102,241,0.5)] active:scale-95 flex items-center gap-2 group"
+      className="bg-slate-950 text-white px-5 py-2 rounded-xl font-black text-[9px] md:text-xs uppercase tracking-widest transition-all hover:bg-indigo-600 active:scale-95 flex items-center gap-2 group"
     >
       Login 
-      <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+      <ChevronRight size={12} className="group-hover:translate-x-1 transition-transform" />
     </Link>
   </nav>
 );
 
 export const PublicLayout = () => (
-  <div className="min-h-screen flex flex-col bg-[#f8f9fb] w-full overflow-x-hidden">
+  <div className="min-h-screen flex flex-col bg-[#f8f9fb] w-full">
     <Navbar />
     <main className="flex-grow">
       <Outlet />
@@ -184,7 +184,7 @@ export const AdminLayout = () => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen bg-[#f8f9fb] overflow-x-hidden flex w-full">
+    <div className="min-h-screen bg-[#f8f9fb] flex w-full">
       <Sidebar 
         isOpen={isSidebarOpen} 
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)} 
@@ -193,26 +193,26 @@ export const AdminLayout = () => {
       />
       
       <div className={clsx(
-        "flex-grow flex flex-col min-h-screen transition-all duration-500 ease-in-out w-full", 
-        isSidebarOpen ? "lg:ml-[240px]" : "lg:ml-[80px]"
+        "flex-grow flex flex-col min-h-screen transition-all duration-500 w-full", 
+        isSidebarOpen ? "lg:ml-60" : "lg:ml-20"
       )}>
-        <header className="h-14 md:h-16 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center px-4 md:px-6 justify-between sticky top-0 z-40">
+        <header className="h-14 md:h-16 bg-white/90 backdrop-blur-md border-b border-slate-100 flex items-center px-4 md:px-6 justify-between sticky top-0 z-40">
            <button 
              onClick={() => setIsMobileSidebarOpen(true)} 
-             className="lg:hidden p-2 bg-slate-950 text-white rounded-xl shadow-lg active:scale-95"
+             className="lg:hidden p-2 bg-slate-950 text-white rounded-lg shadow-lg active:scale-95"
            >
-             <Menu size={18} />
+             <Menu size={16} />
            </button>
            <div className="flex items-center gap-3">
-              <span className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Command Hub</span>
+              <span className="text-[7px] md:text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">Command Hub</span>
            </div>
            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 md:w-9 md:h-9 bg-slate-900 rounded-xl flex items-center justify-center text-sky-400 shadow-xl border border-white/5">
-                <User size={16} />
+              <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-sky-400 shadow-lg">
+                <User size={14} />
               </div>
            </div>
         </header>
-        <main className="p-2 md:p-4 max-w-full overflow-x-hidden pb-12 w-full">
+        <main className="p-2 md:p-6 max-w-full pb-10 w-full">
           <Outlet />
         </main>
       </div>

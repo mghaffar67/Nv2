@@ -8,6 +8,7 @@ import { adminPluginController } from '../backend_core/plugins/admin/controller'
 import { systemPluginController } from '../backend_core/plugins/system/controller';
 import { settingsController } from '../backend_core/plugins/system/settingsController';
 import { integrationController } from '../backend_core/plugins/system/integrationController';
+import { pageContentController } from '../backend_core/plugins/system/pageContentController';
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -25,7 +26,7 @@ export const api = {
       params: {} as any,
       query: {} as any,
       user: getAuthenticatedUser(),
-      file: data?.logo ? { path: data.logo } : null, // Mock file injection
+      file: data?.logo ? { path: data.logo } : null, 
       headers: { authorization: `Bearer ${localStorage.getItem('noor_token')}` }
     };
 
@@ -39,15 +40,22 @@ export const api = {
       }
     };
 
-    // Extract params for mock routing
     const parts = endpoint.split('/');
     if (parts.length > 3) {
+      req.params.pageKey = parts[parts.length - 1];
       req.params.id = parts[parts.length - 2];
     }
 
     try {
+      // PAGE CONTENT DYNAMIC HUB
+      if (endpoint.startsWith('/system/page-content/') && method === 'GET') await pageContentController.getPageContent(req, res);
+      else if (endpoint === '/system/page-content' && method === 'POST') await pageContentController.updatePageContent(req, res);
+
+      // ADMIN CONSOLIDATED FINANCE HUB
+      else if (endpoint === '/admin/finance/requests/manage' && method === 'POST') await adminPluginController.processRequestAction(req, res);
+      
       // INTEGRATION HUB
-      if (endpoint === '/system/public/integrations' && method === 'GET') await integrationController.getPublicIntegrations(req, res);
+      else if (endpoint === '/system/public/integrations' && method === 'GET') await integrationController.getPublicIntegrations(req, res);
       else if (endpoint === '/system/integrations' && method === 'GET') await integrationController.getAllIntegrations(req, res);
       else if (endpoint === '/system/integrations' && method === 'POST') await integrationController.saveIntegration(req, res);
       else if (endpoint.includes('/toggle') && method === 'PATCH') {
@@ -75,8 +83,9 @@ export const api = {
       else if (endpoint === '/finance/history' && method === 'GET') await financePluginController.getHistory(req, res);
       else if (endpoint === '/finance/withdraw' && method === 'POST') await financePluginController.withdrawReq(req, res);
       else if (endpoint === '/finance/deposit' && method === 'POST') await financePluginController.depositReq(req, res);
+      else if (endpoint === '/finance/activate-plan' && method === 'POST') await financePluginController.activatePlan(req, res);
 
-      // ADMIN FINANCE (HUB)
+      // ADMIN FINANCE
       else if (endpoint === '/admin/finance/deposits' && method === 'GET') await financeController.getAllDeposits(req, res);
       else if (endpoint === '/admin/finance/withdrawals' && method === 'GET') await financeController.getAllWithdrawals(req, res);
       else if (endpoint === '/admin/reports' && method === 'GET') await analyticsController.getSystemReports(req, res);
@@ -93,13 +102,13 @@ export const api = {
     }
   },
 
-  get: (e: string) => api.handleRequest('GET', e),
-  post: (e: string, d: any) => api.handleRequest('POST', e, d),
-  put: (e: string, d: any) => api.handleRequest('PUT', e, d),
-  patch: (e: string, d?: any) => api.handleRequest('PATCH', e, d),
-  upload: (e: string, fd: FormData, method: string = 'POST') => {
+  get(e: string) { return this.handleRequest('GET', e); },
+  post(e: string, d: any) { return this.handleRequest('POST', e, d); },
+  put(e: string, d: any) { return this.handleRequest('PUT', e, d); },
+  patch(e: string, d?: any) { return this.handleRequest('PATCH', e, d); },
+  upload(e: string, fd: FormData, method: string = 'POST') {
     const data: any = {};
     fd.forEach((v, k) => { data[k] = v; });
-    return api.handleRequest(method, e, data);
+    return this.handleRequest(method, e, data);
   }
 };

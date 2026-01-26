@@ -25,9 +25,9 @@ import CoreSettings from './pages/admin/settings/Settings';
 import BrandingSettings from './pages/admin/settings/BrandingSettings';
 import AppearanceSettings from './pages/admin/settings/AppearanceSettings';
 import SEOManager from './pages/admin/settings/SEOManager';
-import CMSEditor from './pages/admin/settings/CMSEditor';
 import DatabaseManager from './pages/admin/settings/DatabaseManager';
 import IntegrationHub from './pages/admin/settings/IntegrationHub';
+import PageEditor from './pages/admin/settings/PageEditor';
 import UserDashboard from './pages/user/UserDashboard';
 import DailyWork from './pages/user/DailyWork';
 import Plans from './pages/user/Plans';
@@ -90,10 +90,15 @@ const App: React.FC = () => (
                  <Route path="general" element={<CoreSettings />} />
                  <Route path="branding" element={<BrandingSettings />} />
                  <Route path="appearance" element={<AppearanceSettings />} />
-                 <Route path="database" element={<DatabaseManager />} />
+              </Route>
+
+              {/* NEW REORGANIZED CONFIGURATION NODE */}
+              <Route path="config">
+                 <Route index element={<Navigate to="page-editor" replace />} />
+                 <Route path="page-editor" element={<PageEditor />} />
                  <Route path="seo" element={<SEOManager />} />
-                 <Route path="cms" element={<CMSEditor />} />
-                 <Route path="integrations" element={<IntegrationHub />} />
+                 <Route path="integration" element={<IntegrationHub />} />
+                 <Route path="database" element={<DatabaseManager />} />
               </Route>
             </Route>
 

@@ -4,6 +4,7 @@ import { systemPluginController } from './controller';
 import { seoController } from './seoController';
 import { settingsController } from './settingsController';
 import { integrationController } from './integrationController';
+import { pageContentController } from './pageContentController';
 import { authMiddleware } from '../auth/middleware';
 import { uploadMiddleware } from '../../middleware/upload';
 
@@ -16,10 +17,14 @@ const router = express.Router();
 router.get('/settings', systemPluginController.getSettings);
 router.get('/public/seo', seoController.getPublicSEO);
 router.get('/public/integrations', integrationController.getPublicIntegrations);
+router.get('/page-content/:pageKey', pageContentController.getPageContent);
 
 // Admin Restricted Write Protocols
 router.put('/settings', authMiddleware, systemPluginController.updateSettings);
 router.put('/seo', authMiddleware, seoController.updateSEO);
+
+// Page Content Node Management
+router.post('/page-content', authMiddleware, pageContentController.updatePageContent);
 
 // Integration Hub Management (Admin Only)
 router.get('/integrations', authMiddleware, integrationController.getAllIntegrations);
