@@ -4,7 +4,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   Home, Users, Briefcase, Wallet, Settings, 
   LogOut, Shield, Zap, Inbox, BarChart3, Clock,
-  ChevronDown, ShieldAlert, FileText, Search, Puzzle, Database, Trophy
+  ChevronDown, ShieldAlert, FileText, Search, Puzzle, Database, Trophy,
+  LineChart
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
@@ -109,11 +110,12 @@ export const Sidebar = ({ isOpen, onToggle, isMobileOpen, onMobileClose }: any) 
 
   const adminMenu = [
     { to: '/admin/dashboard', icon: Home, label: 'Dashboard' },
+    { to: '/admin/analytics', icon: LineChart, label: 'Analytics' },
     { to: '/admin/requests', icon: Inbox, label: 'Requests Hub', badge: counts.requests },
     { to: '/admin/users', icon: Users, label: 'Members' },
-    { to: '/admin/rewards', icon: Trophy, label: 'Reward Engine' },
+    { to: '/admin/rewards', icon: Trophy, label: 'Reward Hub' },
     { to: '/admin/tasks', icon: Briefcase, label: 'Daily Tasks', badge: counts.tasks },
-    { to: '/admin/finance', icon: BarChart3, label: 'Global Ledger' },
+    { to: '/admin/finance', icon: BarChart3, label: 'Finance' },
     { 
       to: '/admin/advanced', 
       icon: ShieldAlert, 
@@ -121,7 +123,7 @@ export const Sidebar = ({ isOpen, onToggle, isMobileOpen, onMobileClose }: any) 
       children: [
         { to: '/admin/advanced/page-editor', label: 'Edit Pages' },
         { to: '/admin/advanced/seo', label: 'SEO Settings' },
-        { to: '/admin/advanced/integration', label: 'Third Party' },
+        { to: '/admin/advanced/integration', label: 'Integration' },
         { to: '/admin/advanced/database', label: 'System DB' }
       ]
     },

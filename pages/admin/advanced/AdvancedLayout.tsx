@@ -2,13 +2,9 @@
 import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import { 
-  FileText, 
-  Search, 
-  Puzzle, 
-  Database,
-  ShieldAlert,
-  ChevronRight,
-  BarChart3
+  FileText, Search, Puzzle, Database, 
+  ShieldAlert, ChevronRight, BarChart3, Target,
+  Layout
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion } from 'framer-motion';
@@ -16,7 +12,9 @@ import { motion } from 'framer-motion';
 const AdvancedLayout = () => {
   const subLinks = [
     { to: "/admin/advanced/analytics", label: "Module Analytics", icon: BarChart3 },
+    { to: "/admin/advanced/global-cms", label: "Global Content", icon: Layout },
     { to: "/admin/advanced/page-editor", label: "Edit Pages", icon: FileText },
+    { to: "/admin/advanced/campaigns", label: "Campaign Hub", icon: Target },
     { to: "/admin/advanced/seo", label: "SEO Settings", icon: Search },
     { to: "/admin/advanced/integration", label: "Third Party", icon: Puzzle },
     { to: "/admin/advanced/database", label: "System DB", icon: Database }

@@ -9,6 +9,8 @@ import { systemPluginController } from '../backend_core/plugins/system/controlle
 import { settingsController } from '../backend_core/plugins/system/settingsController';
 import { integrationController } from '../backend_core/plugins/system/integrationController';
 import { pageContentController } from '../backend_core/plugins/system/pageContentController';
+import { contentController } from '../backend_core/plugins/system/contentController';
+import { rewardController } from '../backend_core/plugins/reward/controller';
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -40,61 +42,74 @@ export const api = {
       }
     };
 
-    const parts = endpoint.split('/');
-    if (parts.length > 3) {
-      req.params.pageKey = parts[parts.length - 1];
-      req.params.id = parts[parts.length - 2];
+    const parts = endpoint.split('?');
+    const baseEndpoint = parts[0];
+    if (parts[1]) {
+      const qParams = new URLSearchParams(parts[1]);
+      qParams.forEach((v, k) => { req.query[k] = v; });
     }
 
-    try {
-      // PAGE CONTENT DYNAMIC HUB
-      if (endpoint.startsWith('/system/page-content/') && method === 'GET') await pageContentController.getPageContent(req, res);
-      else if (endpoint === '/system/page-content' && method === 'POST') await pageContentController.updatePageContent(req, res);
+    const pathParts = baseEndpoint.split('/');
 
-      // ADMIN CONSOLIDATED FINANCE HUB
-      else if (endpoint === '/admin/finance/requests/manage' && method === 'POST') await adminPluginController.processRequestAction(req, res);
+    try {
+      // NEW: REWARDS ENDPOINTS
+      if (baseEndpoint === '/rewards/admin/list' && method === 'GET') await rewardController.getRewards(req, res);
+      else if (baseEndpoint === '/rewards/admin/stats' && method === 'GET') await rewardController.getStats(req, res);
+      else if (baseEndpoint === '/rewards/admin/save' && method === 'POST') await rewardController.saveReward(req, res);
+      else if (baseEndpoint.startsWith('/rewards/admin/') && method === 'DELETE') {
+         req.params.id = pathParts[pathParts.length - 1];
+         await rewardController.deleteReward(req, res);
+      }
+      else if (baseEndpoint === '/rewards/my-achievements' && method === 'GET') await rewardController.getUserAchievements(req, res);
+      else if (baseEndpoint === '/rewards/claim' && method === 'POST') await rewardController.claimReward(req, res);
+
+      // SITE CONTENT CMS HANDLER
+      else if (baseEndpoint.startsWith('/system/site-content/') && method === 'GET') {
+        req.params.slug = pathParts[pathParts.length - 1];
+        await contentController.getContentBySlug(req, res);
+      }
+      else if (baseEndpoint === '/system/site-content' && method === 'POST') await contentController.updateContent(req, res);
+
+      // PAGE CONTENT DYNAMIC HUB
+      else if (baseEndpoint.startsWith('/system/page-content/') && method === 'GET') await pageContentController.getPageContent(req, res);
+      else if (baseEndpoint === '/system/page-content' && method === 'POST') await pageContentController.updatePageContent(req, res);
+
+      // ADMIN FINANCE HUB
+      else if (baseEndpoint === '/admin/finance/requests/manage' && method === 'POST') await adminPluginController.processRequestAction(req, res);
       
       // INTEGRATION HUB
-      else if (endpoint === '/system/public/integrations' && method === 'GET') await integrationController.getPublicIntegrations(req, res);
-      else if (endpoint === '/system/integrations' && method === 'GET') await integrationController.getAllIntegrations(req, res);
-      else if (endpoint === '/system/integrations' && method === 'POST') await integrationController.saveIntegration(req, res);
-      else if (endpoint.includes('/toggle') && method === 'PATCH') {
-        req.params.id = parts[parts.length - 2];
-        await integrationController.toggleStatus(req, res);
-      }
-      else if (endpoint.startsWith('/system/integrations/') && method === 'DELETE') {
-        req.params.id = parts[parts.length - 1];
-        await integrationController.deleteIntegration(req, res);
-      }
-
+      else if (baseEndpoint === '/system/public/integrations' && method === 'GET') await integrationController.getPublicIntegrations(req, res);
+      else if (baseEndpoint === '/system/integrations' && method === 'GET') await integrationController.getAllIntegrations(req, res);
+      else if (baseEndpoint === '/system/integrations' && method === 'POST') await integrationController.saveIntegration(req, res);
+      
       // SYSTEM & BRANDING
-      else if (endpoint === '/system/company-profile' && method === 'PUT') await settingsController.updateCompanyProfile(req, res);
-      else if (endpoint === '/system/settings' && method === 'GET') await systemPluginController.getSettings(req, res);
+      else if (baseEndpoint === '/system/company-profile' && method === 'PUT') await settingsController.updateCompanyProfile(req, res);
+      else if (baseEndpoint === '/system/settings' && method === 'GET') await systemPluginController.getSettings(req, res);
       
       // ADMIN SPECIFIC
-      else if (endpoint === '/admin/pending-stats' && method === 'GET') await adminPluginController.getPendingStats(req, res);
+      else if (baseEndpoint === '/admin/pending-stats' && method === 'GET') await adminPluginController.getPendingStats(req, res);
+      else if (baseEndpoint === '/admin/reports' && method === 'GET') await analyticsController.getSystemReports(req, res);
       
       // AUTH & SYSTEM
-      else if (endpoint === '/auth/login' && method === 'POST') await authPluginController.login(req, res);
-      else if (endpoint === '/auth/register' && method === 'POST') await authPluginController.register(req, res);
-      else if (endpoint === '/auth/team' && method === 'GET') await authPluginController.getTeam(req, res);
+      else if (baseEndpoint === '/auth/login' && method === 'POST') await authPluginController.login(req, res);
+      else if (baseEndpoint === '/auth/register' && method === 'POST') await authPluginController.register(req, res);
+      else if (baseEndpoint === '/auth/team' && method === 'GET') await authPluginController.getTeam(req, res);
       
       // USER FINANCE
-      else if (endpoint === '/finance/history' && method === 'GET') await financePluginController.getHistory(req, res);
-      else if (endpoint === '/finance/withdraw' && method === 'POST') await financePluginController.withdrawReq(req, res);
-      else if (endpoint === '/finance/deposit' && method === 'POST') await financePluginController.depositReq(req, res);
-      else if (endpoint === '/finance/activate-plan' && method === 'POST') await financePluginController.activatePlan(req, res);
+      else if (baseEndpoint === '/finance/history' && method === 'GET') await financePluginController.getHistory(req, res);
+      else if (baseEndpoint === '/finance/withdraw' && method === 'POST') await financePluginController.withdrawReq(req, res);
+      else if (baseEndpoint === '/finance/deposit' && method === 'POST') await financePluginController.depositReq(req, res);
+      else if (baseEndpoint === '/finance/activate-plan' && method === 'POST') await financePluginController.activatePlan(req, res);
 
       // ADMIN FINANCE
-      else if (endpoint === '/admin/finance/deposits' && method === 'GET') await financeController.getAllDeposits(req, res);
-      else if (endpoint === '/admin/finance/withdrawals' && method === 'GET') await financeController.getAllWithdrawals(req, res);
-      else if (endpoint === '/admin/reports' && method === 'GET') await analyticsController.getSystemReports(req, res);
+      else if (baseEndpoint === '/admin/finance/deposits' && method === 'GET') await financeController.getAllDeposits(req, res);
+      else if (baseEndpoint === '/admin/finance/withdrawals' && method === 'GET') await financeController.getAllWithdrawals(req, res);
       
       // WORK
-      else if (endpoint === '/work/tasks' && method === 'GET') await workPluginController.getTasks(req, res);
-      else if (endpoint === '/work/complete' && method === 'POST') await workPluginController.completeTask(req, res);
+      else if (baseEndpoint === '/work/tasks' && method === 'GET') await workPluginController.getTasks(req, res);
+      else if (baseEndpoint === '/work/complete' && method === 'POST') await workPluginController.completeTask(req, res);
 
-      if (statusCode >= 400) throw new Error(responseData?.message || 'Identity Node Error');
+      if (statusCode >= 400) throw new Error(responseData?.message || 'System Content Error');
       return responseData;
     } catch (err: any) {
       console.error(`[API ERROR] ${endpoint}`, err);

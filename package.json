@@ -8,6 +8,7 @@
     "build": "npm install && vite build && cd backend_core && npm install",
     "start": "NODE_ENV=production ts-node backend_core/server.ts",
     "dev": "concurrently \"ts-node-dev backend_core/server.ts\" \"vite\"",
+    "test:integrity": "node backend_core/scripts/test_flow.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
@@ -24,7 +25,8 @@
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.5.2",
     "canvas-confetti": "^1.9.3",
-    "recharts": "^2.15.0"
+    "recharts": "^2.15.0",
+    "date-fns": "^4.1.0"
   },
   "devDependencies": {
     "concurrently": "^8.2.0",

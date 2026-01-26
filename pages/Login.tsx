@@ -2,18 +2,23 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useConfig } from '../context/ConfigContext';
+import { useSiteContent } from '../hooks/useSiteContent';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Zap, Loader2, ChevronRight, 
-  Lock, User, ArrowLeft, AlertCircle, 
-  LogIn as LoginIcon, ShieldCheck, UserCheck, Mail
+  Lock, ArrowLeft, AlertCircle, 
+  Mail, ShieldCheck, User
 } from 'lucide-react';
 
 const Login = () => {
   const { login, demoLogin, loading: authLoading, user } = useAuth();
   const { config } = useConfig();
   const navigate = useNavigate();
+  
+  // 1. DYNAMIC CMS CONTENT FETCH
+  const { content, loading: cmsLoading } = useSiteContent('auth_login');
+  
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -35,20 +40,40 @@ const Login = () => {
     }
   };
 
+  const pageData = content?.hero_section || {
+    title: "Member Portal.",
+    subtitle: "Authorized Access Only",
+    side_img: null
+  };
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 bg-[#fcfdfe] relative font-sans overflow-hidden">
       
-      {/* Floating Orbs */}
+      {/* Background Decor */}
       <div className="absolute top-[-10%] left-[-10%] w-[400px] h-[400px] bg-indigo-500/5 blur-[120px] rounded-full" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-sky-500/5 blur-[120px] rounded-full" />
 
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }} 
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-[380px] z-10"
-      >
-        <div className="bg-white rounded-[44px] border border-slate-100 shadow-[0_30px_70px_-20px_rgba(0,0,0,0.08)] p-8 md:p-12 relative overflow-hidden">
-          
+      <div className="w-full max-w-[800px] grid grid-cols-1 lg:grid-cols-2 bg-white rounded-[44px] shadow-[0_30px_70px_-20px_rgba(0,0,0,0.08)] border border-slate-100 overflow-hidden z-10">
+        
+        {/* Visual Side (CMS Controlled) */}
+        <div className="hidden lg:block relative bg-slate-900">
+           <img 
+             src={pageData.side_img || "https://images.unsplash.com/photo-1556761175-b413da4baf72?q=80&w=800"} 
+             className="absolute inset-0 w-full h-full object-cover opacity-50" 
+             alt="Access"
+           />
+           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
+           <div className="absolute bottom-10 left-10 right-10">
+              <div className="w-12 h-12 bg-sky-500 rounded-2xl flex items-center justify-center text-white mb-4 shadow-xl shadow-sky-500/20">
+                 <ShieldCheck size={28} />
+              </div>
+              <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter leading-none mb-2">Secure Hub Entry</h2>
+              <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Powered by Noor V3 Advanced Infrastructure</p>
+           </div>
+        </div>
+
+        {/* Login Form Side */}
+        <div className="p-8 md:p-12 relative">
           <div className="text-center mb-10">
             <div 
               className="w-16 h-16 rounded-[26px] flex items-center justify-center mx-auto mb-6 shadow-2xl text-white transform -rotate-3"
@@ -57,9 +82,9 @@ const Login = () => {
               <Zap size={32} fill="currentColor" />
             </div>
             <h1 className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">
-              Member <span style={{ color: config.theme.primaryColor }}>Portal.</span>
+              {pageData.title}
             </h1>
-            <p className="text-slate-400 text-[9px] font-bold uppercase tracking-[0.3em] mt-2">Authorized Access Only</p>
+            <p className="text-slate-400 text-[9px] font-bold uppercase tracking-[0.3em] mt-2">{pageData.subtitle}</p>
           </div>
 
           <AnimatePresence mode="wait">
@@ -75,13 +100,13 @@ const Login = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4 italic">Email / ID Node</label>
+               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4 italic">Email / Phone ID</label>
                <div className="relative">
                   <Mail size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" />
                   <input 
                     value={identifier} onChange={e => setIdentifier(e.target.value)} 
-                    className="w-full h-14 pl-14 pr-6 bg-slate-50/50 border border-slate-100 rounded-2xl font-bold text-sm text-slate-900 outline-none focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all shadow-inner placeholder:text-slate-300" 
-                    placeholder="Enter email or phone" required 
+                    className="w-full h-14 pl-14 pr-6 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-sm text-slate-900 outline-none focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all shadow-inner" 
+                    placeholder="example@mail.com" required 
                   />
                </div>
             </div>
@@ -92,7 +117,7 @@ const Login = () => {
                   <Lock size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" />
                   <input 
                     type="password" value={password} onChange={e => setPassword(e.target.value)} 
-                    className="w-full h-14 pl-14 pr-6 bg-slate-50/50 border border-slate-100 rounded-2xl font-bold text-sm text-slate-900 outline-none focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all shadow-inner placeholder:text-slate-300" 
+                    className="w-full h-14 pl-14 pr-6 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-sm text-slate-900 outline-none focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all shadow-inner" 
                     placeholder="••••••••" required 
                   />
                </div>
@@ -104,7 +129,7 @@ const Login = () => {
               className="w-full h-16 text-white rounded-[26px] font-black text-[11px] uppercase tracking-[0.3em] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 mt-6 disabled:opacity-50"
               style={{ backgroundColor: config.theme.primaryColor }}
             >
-              {authLoading ? <Loader2 size={24} className="animate-spin" /> : <>Access Account <ChevronRight size={18} /></>}
+              {authLoading ? <Loader2 size={24} className="animate-spin" /> : <>Access Hub <ChevronRight size={18} /></>}
             </button>
           </form>
 
@@ -114,7 +139,7 @@ const Login = () => {
                   <ShieldCheck size={14} className="text-sky-400" /> Admin Probe
                 </button>
                 <button onClick={() => demoLogin('user')} className="h-11 bg-white border border-slate-100 text-slate-600 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-sm flex items-center justify-center gap-2">
-                  <User size={14} className="text-indigo-500" /> Partner Access
+                  <User size={14} className="text-indigo-500" /> Member Access
                 </button>
              </div>
              
@@ -123,11 +148,11 @@ const Login = () => {
              </p>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       <Link to="/" className="fixed top-8 left-8 flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-all group">
          <div className="p-2 bg-white rounded-lg border border-slate-100 shadow-sm group-hover:-translate-x-1 transition-transform"><ArrowLeft size={16} /></div>
-         <span className="text-[9px] font-black uppercase tracking-widest">Platform Exit</span>
+         <span className="text-[9px] font-black uppercase tracking-widest">Exit Portal</span>
       </Link>
     </div>
   );

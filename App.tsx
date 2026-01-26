@@ -16,6 +16,7 @@ import Support from './pages/Support';
 import LivePayouts from './pages/public/LivePayouts';
 import DynamicPage from './pages/public/DynamicPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import Analytics from './pages/admin/Analytics';
 import UsersManager from './pages/admin/UsersManager';
 import FinanceManager from './pages/admin/finance/FinanceManager';
 import WorkManager from './pages/admin/WorkManager';
@@ -31,6 +32,8 @@ import SEOManager from './pages/admin/settings/SEOManager';
 import DatabaseManager from './pages/admin/settings/DatabaseManager';
 import IntegrationHub from './pages/admin/settings/IntegrationHub';
 import PageEditor from './pages/admin/settings/PageEditor';
+import CampaignManager from './pages/admin/settings/CampaignManager';
+import GlobalEditor from './pages/admin/cms/GlobalEditor'; // New CMS Component
 import UserDashboard from './pages/user/UserDashboard';
 import DailyWork from './pages/user/DailyWork';
 import RewardHub from './pages/user/RewardHub';
@@ -85,6 +88,7 @@ const App: React.FC = () => (
             }>
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="analytics" element={<Analytics />} />
               <Route path="users" element={<UsersManager />} />
               <Route path="rewards" element={<RewardManager />} />
               <Route path="finance" element={<FinanceManager />} />
@@ -102,6 +106,8 @@ const App: React.FC = () => (
                  <Route index element={<Navigate to="analytics" replace />} />
                  <Route path="analytics" element={<AdvancedStats />} />
                  <Route path="page-editor" element={<PageEditor />} />
+                 <Route path="global-cms" element={<GlobalEditor />} /> {/* Linked CMS Editor */}
+                 <Route path="campaigns" element={<CampaignManager />} />
                  <Route path="seo" element={<SEOManager />} />
                  <Route path="integration" element={<IntegrationHub />} />
                  <Route path="database" element={<DatabaseManager />} />

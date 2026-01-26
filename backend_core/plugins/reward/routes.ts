@@ -7,6 +7,7 @@ const router = express.Router();
 
 // Admin Endpoints
 router.get('/admin/list', authMiddleware, rewardController.getRewards);
+router.get('/admin/stats', authMiddleware, rewardController.getStats);
 router.post('/admin/save', authMiddleware, rewardController.saveReward);
 router.delete('/admin/:id', authMiddleware, rewardController.deleteReward);
 
