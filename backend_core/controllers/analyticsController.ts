@@ -9,21 +9,47 @@ export const analyticsController = {
   getSystemReports: async (req: any, res: any) => {
     try {
       const users = dbNode.getUsers();
-      const days = parseInt(req.query.days) || 7;
+      const days = parseInt(req.query.days as string) || 7;
       
       const today = new Date();
+      const todayStr = format(today, 'yyyy-MM-dd');
       const startDate = subDays(today, days - 1);
       
-      // 1. Generate Date Range for empty slots
       const dateRange = eachDayOfInterval({ start: startDate, end: today });
 
-      // 2. Financial Aggregation (Revenue/Payouts)
       let totalRevenue = 0;
       let totalPayouts = 0;
-      let totalBonusPaid = 0;
+      
+      // Task specific metrics
+      let totalUserEarnings = 0;
+      let todayUserEarnings = 0;
+      let totalTasksCompleted = 0;
+      let pendingTasksCount = 0;
+
+      users.forEach((u: any) => {
+        // Task aggregations
+        (u.workSubmissions || []).forEach((s: any) => {
+          if (s.status === 'pending') pendingTasksCount++;
+          if (s.status === 'approved') {
+            totalTasksCompleted++;
+            totalUserEarnings += Number(s.reward || 0);
+            const sDate = s.timestamp?.split('T')[0];
+            if (sDate === todayStr) {
+              todayUserEarnings += Number(s.reward || 0);
+            }
+          }
+        });
+
+        // Transaction aggregations
+        (u.transactions || []).forEach((t: any) => {
+          if (t.status === 'approved') {
+            if (t.type === 'deposit') totalRevenue += Number(t.amount || 0);
+            else if (t.type === 'withdraw') totalPayouts += Number(t.amount || 0);
+          }
+        });
+      });
 
       const financeTrend = dateRange.map(date => {
-        const dateStr = format(date, 'yyyy-MM-dd');
         let dailyDeposit = 0;
         let dailyWithdraw = 0;
 
@@ -31,17 +57,10 @@ export const analyticsController = {
           (u.transactions || []).forEach((t: any) => {
             if (t.status === 'approved') {
               const tDate = t.date || t.timestamp?.split('T')[0];
-              const amt = Number(t.amount) || 0;
-
               if (isSameDay(new Date(tDate), date)) {
-                if (t.type === 'deposit') dailyDeposit += amt;
-                if (t.type === 'withdraw') dailyWithdraw += amt;
+                if (t.type === 'deposit') dailyDeposit += Number(t.amount || 0);
+                if (t.type === 'withdraw') dailyWithdraw += Number(t.amount || 0);
               }
-              
-              // Global totals
-              if (t.type === 'deposit') totalRevenue += amt;
-              else if (t.type === 'withdraw') totalPayouts += amt;
-              else if (t.type === 'reward') totalBonusPaid += amt;
             }
           });
         });
@@ -53,7 +72,6 @@ export const analyticsController = {
         };
       });
 
-      // 3. Member Acquisition Aggregation
       const memberGrowth = dateRange.map(date => {
         const count = users.filter((u: any) => isSameDay(new Date(u.createdAt), date)).length;
         return {
@@ -62,7 +80,6 @@ export const analyticsController = {
         };
       });
 
-      // 4. Plan Distribution (Donut Chart)
       const planMap: Record<string, number> = {};
       users.forEach((u: any) => {
         const plan = u.currentPlan || 'Unsubscribed';
@@ -79,8 +96,11 @@ export const analyticsController = {
           revenue: totalRevenue,
           payouts: totalPayouts,
           profit: totalRevenue - totalPayouts,
-          bonusTotal: totalBonusPaid,
-          totalMembers: users.length
+          totalMembers: users.length,
+          totalUserEarnings,
+          todayUserEarnings,
+          totalTasksCompleted,
+          pendingTasksCount
         },
         charts: {
           finance: financeTrend,

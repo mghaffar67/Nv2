@@ -8,7 +8,7 @@ const ENRICHED_TASKS = [
   ...INITIAL_TASKS,
   { id: 'TASK-AMZ-001', title: 'Viral Network Expansion', reward: 500, category: 'social_media', plan: 'DIAMOND', instruction: 'Post a 1-minute video about Noor V3 on TikTok and tag us.', isActive: true },
   { id: 'TASK-AMZ-002', title: 'Premium Article Hub', reward: 250, category: 'content_creation', plan: 'GOLD ELITE', instruction: 'Write a 200-word positive review on your blog or forum.', isActive: true },
-  { id: 'TASK-TST-001', title: 'Beta Node Testing: V4 UI', reward: 150, category: 'verification', plan: 'STANDARD', instruction: 'Test the new navigation menu and report any lag in PKR sync.', isActive: true },
+  { id: 'TASK-TST-001', title: 'Beta Node Testing: V4 UI', reward: 150, category: 'verification', plan: 'STANDARD', instruction: 'Explore the new navigation menu and check if the PKR balance syncs smoothly. To finish: 1. Take a clear screenshot of the dashboard menu. 2. Use the upload button below to select your screenshot. 3. Click Submit to send it for verification.', isActive: true },
   { id: 'TASK-TST-002', title: 'EasyPaisa API Probe', reward: 80, category: 'verification', plan: 'BASIC', instruction: 'Simulate a deposit sequence and screenshot the receipt window.', isActive: true }
 ];
 
