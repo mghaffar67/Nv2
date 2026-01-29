@@ -32,7 +32,10 @@ import DatabaseManager from './pages/admin/settings/DatabaseManager';
 import IntegrationHub from './pages/admin/settings/IntegrationHub';
 import PageEditor from './pages/admin/settings/PageEditor';
 import CampaignManager from './pages/admin/settings/CampaignManager';
-import GlobalEditor from './pages/admin/cms/GlobalEditor'; // New CMS Component
+import GlobalEditor from './pages/admin/cms/GlobalEditor'; 
+import TeamManagement from './pages/admin/settings/TeamManagement'; 
+import RolePermissions from './pages/admin/settings/RolePermissions'; 
+
 import UserDashboard from './pages/user/UserDashboard';
 import DailyWork from './pages/user/DailyWork';
 import RewardHub from './pages/user/RewardHub';
@@ -98,13 +101,15 @@ const App: React.FC = () => (
                  <Route path="general" element={<CoreSettings />} />
                  <Route path="branding" element={<BrandingSettings />} />
                  <Route path="appearance" element={<AppearanceSettings />} />
+                 <Route path="team" element={<TeamManagement />} />
+                 <Route path="roles" element={<RolePermissions />} />
               </Route>
 
               <Route path="advanced" element={<AdvancedLayout />}>
                  <Route index element={<Navigate to="analytics" replace />} />
                  <Route path="analytics" element={<AdvancedStats />} />
                  <Route path="page-editor" element={<PageEditor />} />
-                 <Route path="global-cms" element={<GlobalEditor />} /> {/* Linked CMS Editor */}
+                 <Route path="global-cms" element={<GlobalEditor />} />
                  <Route path="campaigns" element={<CampaignManager />} />
                  <Route path="seo" element={<SEOManager />} />
                  <Route path="integration" element={<IntegrationHub />} />

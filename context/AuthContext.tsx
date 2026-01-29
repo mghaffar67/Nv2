@@ -7,11 +7,15 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'manager';
   phone: string;
   balance: number;
   referralCode: string;
   currentPlan: string | null;
+  avatar?: string;
+  lastCheckIn?: string;
+  streak?: number;
+  isBanned?: boolean;
 }
 
 interface AuthContextType {
@@ -30,22 +34,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // STABLE SESSION RESTORATION
+  // SECURE SESSION RECOVERY PROTOCOL (For Vercel Deployment)
   useLayoutEffect(() => {
-    const token = localStorage.getItem('noor_token');
-    const savedUser = localStorage.getItem('noor_user');
-    
-    if (token && savedUser) {
-      try {
-        const parsed = JSON.parse(savedUser);
-        setUser(parsed);
-      } catch (e) {
-        console.error("Session corrupted detected. Purging.");
-        localStorage.removeItem('noor_token');
-        localStorage.removeItem('noor_user');
+    const recoverSession = async () => {
+      const token = localStorage.getItem('noor_token');
+      const cachedUserStr = localStorage.getItem('noor_user');
+      
+      if (token && cachedUserStr) {
+        try {
+          const parsedUser = JSON.parse(cachedUserStr);
+          // Redundancy check: Sync user state with master database to ensure up-to-date data
+          const masterDb = JSON.parse(localStorage.getItem('noor_v3_master_registry') || '[]');
+          const liveUser = masterDb.find((u: any) => u.id === parsedUser.id);
+          
+          if (liveUser) {
+            const { password: _, ...safeUser } = liveUser;
+            setUser(safeUser);
+            localStorage.setItem('noor_user', JSON.stringify(safeUser));
+          } else {
+            setUser(parsedUser);
+          }
+        } catch (e) {
+          console.error("Session recovery failed.");
+          localStorage.removeItem('noor_token');
+          localStorage.removeItem('noor_user');
+        }
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+    recoverSession();
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -54,24 +71,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const data = await api.post('/auth/login', { email: email.trim(), password });
       
       if (data && data.token && data.user) {
-        // 1. SAVE TO STORAGE FIRST
         localStorage.setItem('noor_token', data.token);
         localStorage.setItem('noor_user', JSON.stringify(data.user));
-        
-        // 2. UPDATE REACT STATE
         setUser(data.user);
         
-        // 3. NAVIGATE AFTER STATE IS COMMITTED
         const target = data.user.role === 'admin' ? '/admin/dashboard' : '/user/dashboard';
-        
         setLoading(false);
         navigate(target, { replace: true });
-      } else {
-        throw new Error("Invalid response from auth node.");
       }
     } catch (error: any) {
       setLoading(false);
-      throw new Error(error.message || 'Login failed.');
+      throw new Error(error.message || 'Identity verification failed.');
     }
   };
 
@@ -88,12 +98,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error: any) {
       setLoading(false);
-      throw new Error(error.message || 'Identity creation failed.');
+      throw new Error(error.message || 'Account creation failed.');
     }
   };
 
   const demoLogin = async (role: 'user' | 'admin') => {
-    const email = role === 'admin' ? 'admin@noor.com' : 'user@noor.com';
+    const email = role === 'admin' ? 'admin@noor.com' : 'ghaffar@mail.com';
     const password = role === 'admin' ? 'admin123' : 'user123';
     await login(email, password);
   };
@@ -102,7 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     localStorage.removeItem('noor_token');
     localStorage.removeItem('noor_user');
-    navigate('/', { replace: true }); // Logout to Landing
+    navigate('/login', { replace: true });
   };
 
   return (
@@ -114,6 +124,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) throw new Error('useAuth must be used within AuthProvider');
+  if (context === undefined) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
