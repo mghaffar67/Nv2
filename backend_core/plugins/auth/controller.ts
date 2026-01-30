@@ -32,14 +32,19 @@ export const authPluginController = {
         return res.status(400).json({ message: 'Email/Phone pehle se registered hai.' });
       }
 
+      // Referral Code Protocol: Consistent unique hashing
+      const namePart = (name || 'USR').substring(0, 3).toUpperCase().replace(/\s/g, '');
+      const uniqueSuffix = Math.floor(1000 + Math.random() * 8999);
+      const generatedRef = `${namePart}-${uniqueSuffix}`;
+
       const newUser = {
         id: `USR-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
         name, email, phone, password,
         role: 'user',
         balance: 0,
         currentPlan: 'None',
-        referralCode: `REF-${Math.floor(100000 + Math.random() * 800000)}`,
-        referredBy: referralCode || null,
+        referralCode: generatedRef,
+        referredBy: referralCode?.trim() || null,
         transactions: [],
         completedTasksToday: [],
         workSubmissions: [],
