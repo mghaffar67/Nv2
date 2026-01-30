@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../utils/api';
@@ -16,6 +15,8 @@ interface User {
   lastCheckIn?: string;
   streak?: number;
   isBanned?: boolean;
+  workSubmissions?: any[];
+  transactions?: any[];
 }
 
 interface AuthContextType {
@@ -34,7 +35,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // SECURE SESSION RECOVERY PROTOCOL (For Vercel Deployment)
   useLayoutEffect(() => {
     const recoverSession = async () => {
       const token = localStorage.getItem('noor_token');
@@ -43,14 +43,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (token && cachedUserStr) {
         try {
           const parsedUser = JSON.parse(cachedUserStr);
-          // Redundancy check: Sync user state with master database to ensure up-to-date data
-          const masterDb = JSON.parse(localStorage.getItem('noor_v3_master_registry') || '[]');
-          const liveUser = masterDb.find((u: any) => u.id === parsedUser.id);
-          
-          if (liveUser) {
-            const { password: _, ...safeUser } = liveUser;
-            setUser(safeUser);
-            localStorage.setItem('noor_user', JSON.stringify(safeUser));
+          // Sync with master database to get current balances/stats
+          const masterDbStr = localStorage.getItem('noor_v3_master_registry');
+          if (masterDbStr) {
+            const masterDb = JSON.parse(masterDbStr);
+            const liveUser = masterDb.find((u: any) => u.id === parsedUser.id);
+            
+            if (liveUser) {
+              const { password: _, ...safeUser } = liveUser;
+              setUser(safeUser);
+            } else {
+              setUser(parsedUser);
+            }
           } else {
             setUser(parsedUser);
           }

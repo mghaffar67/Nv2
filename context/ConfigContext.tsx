@@ -11,6 +11,8 @@ const defaultConfig: GlobalConfig = {
   appName: "Noor V3",
   currency: "PKR",
   maintenanceMode: false,
+  // Add missing submissionMode to satisfy the GlobalConfig interface requirements
+  submissionMode: 'auto_pdf',
   broadcastMessage: "Welcome to Noor! Withdrawals take 24 hours to process.",
   branding: {
     companyName: "Noor",

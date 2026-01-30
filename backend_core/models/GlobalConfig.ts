@@ -1,8 +1,8 @@
-
 export const GlobalConfigSchema = {
   appName: { type: String, default: "Noor Official" },
   currency: { type: String, default: "PKR" },
   maintenanceMode: { type: Boolean, default: false },
+  submissionMode: { type: String, default: "auto_pdf" }, // Added: single_image, multi_image, auto_pdf
   theme: {
     primaryColor: { type: String, default: "#0EA5E9" },
     secondaryColor: { type: String, default: "#6366F1" },

@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Zap, CheckCircle2, Clock, Eye, Edit3, Trash2, X, Filter, RefreshCw, Briefcase, FileText } from 'lucide-react';
+// Add Image as ImageIcon to fixing the missing import error
+import { Plus, Zap, CheckCircle2, Clock, Eye, Edit3, Trash2, X, Filter, RefreshCw, Briefcase, FileText, FileDown, Image as ImageIcon } from 'lucide-react';
 import { clsx } from 'clsx';
 import { workController } from '../../backend_core/controllers/workController';
 import { dbNode } from '../../backend_core/utils/db';
 import TaskFormModal from '../../components/admin/TaskFormModal';
-import { ImageModal } from '../../components/ui/ImageModal';
 
 const CATEGORIES = [
   { id: 'all', label: 'All Work' },
@@ -15,6 +15,39 @@ const CATEGORIES = [
   { id: 'content_creation', label: 'Article/Text' },
   { id: 'verification', label: 'Review Work' }
 ];
+
+const ProofViewerModal = ({ isOpen, onClose, proof }: any) => {
+  if (!proof) return null;
+  const isPDF = proof.startsWith('data:application/pdf');
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" />
+           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-4xl bg-white rounded-[44px] shadow-2xl overflow-hidden flex flex-col h-[85vh]">
+              <div className="p-6 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                 <div className="flex items-center gap-3">
+                   <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white"><Eye size={20}/></div>
+                   <h3 className="font-black text-slate-800 uppercase tracking-tight">Audit Evidence Node</h3>
+                 </div>
+                 <button onClick={onClose} className="p-2 hover:bg-rose-50 hover:text-rose-500 rounded-full transition-all"><X size={20}/></button>
+              </div>
+              <div className="flex-grow bg-slate-100 p-4 overflow-hidden">
+                 {isPDF ? (
+                   <iframe src={proof} className="w-full h-full rounded-2xl" title="PDF Proof" />
+                 ) : (
+                   <div className="w-full h-full flex items-center justify-center overflow-auto p-4">
+                      <img src={proof} className="max-w-full rounded-2xl shadow-xl" alt="Proof" />
+                   </div>
+                 )}
+              </div>
+           </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
 
 const WorkManager = () => {
   const [activeTab, setActiveTab] = useState<'manage' | 'review'>('manage');
@@ -30,9 +63,9 @@ const WorkManager = () => {
     setLoading(true);
     try {
       const taskRes = dbNode.getTasks();
-      setTasks(taskRes || []);
+      setTasks(Array.isArray(taskRes) ? taskRes : []);
       const subsRes = await new Promise<any[]>(r => workController.getAllSubmissions({}, { status: () => ({ json: r }) }));
-      setSubmissions(subsRes || []);
+      setSubmissions(Array.isArray(subsRes) ? subsRes : []);
     } finally {
       setLoading(false);
     }
@@ -50,6 +83,7 @@ const WorkManager = () => {
   };
 
   const filteredTasks = useMemo(() => {
+    if (!Array.isArray(tasks)) return [];
     if (activeCategory === 'all') return tasks;
     return tasks.filter(t => t.category === activeCategory);
   }, [tasks, activeCategory]);
@@ -110,7 +144,7 @@ const WorkManager = () => {
           </motion.div>
         ) : (
           <motion.div key="review" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 mx-1">
-             {submissions.filter(s => s.status === 'pending').map(sub => (
+             {(Array.isArray(submissions) ? submissions : []).filter(s => s.status === 'pending').map(sub => (
                <div key={sub.id} className="bg-white p-5 rounded-[32px] border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5">
                   <div className="flex items-center gap-4 overflow-hidden">
                      <div className="w-12 h-12 bg-slate-900 text-sky-400 rounded-xl flex items-center justify-center font-black italic shadow-lg shrink-0 text-lg">{sub.userName?.charAt(0)}</div>
@@ -120,9 +154,9 @@ const WorkManager = () => {
                      </div>
                   </div>
                   <div className="flex items-center gap-4 shrink-0 md:border-l md:pl-6 border-slate-50">
-                     <button onClick={() => setSelectedProof(sub.userAnswer)} className="w-16 h-12 bg-slate-50 rounded-xl overflow-hidden border border-slate-100 hover:border-sky-400 transition-all group relative shadow-inner">
-                        <img src={sub.userAnswer} className="w-full h-full object-cover opacity-50 group-hover:opacity-100" />
-                        <div className="absolute inset-0 flex items-center justify-center text-slate-900 group-hover:text-sky-600"><Eye size={16}/></div>
+                     <button onClick={() => setSelectedProof(sub.userAnswer)} className="h-12 px-6 bg-slate-50 rounded-xl border border-slate-100 hover:border-sky-400 transition-all group flex items-center gap-2 text-[10px] font-black uppercase text-slate-500">
+                        {sub.userAnswer?.startsWith('data:application/pdf') ? <FileDown size={16} /> : <ImageIcon size={16} />}
+                        View Proof
                      </button>
                      <p className="text-xs font-black text-emerald-600 italic">Rs {sub.reward}</p>
                   </div>
@@ -137,7 +171,7 @@ const WorkManager = () => {
       </AnimatePresence>
 
       <TaskFormModal isOpen={isTaskModalOpen} onClose={() => setIsTaskModalOpen(false)} task={selectedTask} onUpdate={fetchData} />
-      <ImageModal isOpen={!!selectedProof} onClose={() => setSelectedProof(null)} imageUrl={selectedProof || ''} />
+      <ProofViewerModal isOpen={!!selectedProof} onClose={() => setSelectedProof(null)} proof={selectedProof} />
     </div>
   );
 };

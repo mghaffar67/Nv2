@@ -46,6 +46,7 @@ export interface GlobalConfig {
   appName: string;
   currency: string;
   maintenanceMode: boolean;
+  submissionMode: 'single_image' | 'multi_image' | 'auto_pdf';
   broadcastMessage: string;
   branding: BrandingConfig;
   financeSettings: FinanceSettings;

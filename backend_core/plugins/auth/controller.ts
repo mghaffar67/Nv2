@@ -66,7 +66,6 @@ export const authPluginController = {
     return res.status(200).json({ user: safe });
   },
 
-  // Added updateProfile to handle identity updates and avatar uploads
   updateProfile: async (req: any, res: any) => {
     try {
       const { name, phone } = req.body;
@@ -86,7 +85,6 @@ export const authPluginController = {
     }
   },
 
-  // Added changePassword to handle security key updates
   changePassword: async (req: any, res: any) => {
     try {
       const { oldPassword, newPassword } = req.body;
@@ -110,13 +108,24 @@ export const authPluginController = {
     if (!user) return res.status(404).json({ message: "Identity node missing." });
 
     const all = dbNode.getUsers();
+    
+    // Level 1: Users referred directly by current user
     const t1 = all.filter((u: any) => u.referredBy === user.referralCode);
     const t1Codes = t1.map((u: any) => u.referralCode);
-    const t2 = all.filter((u: any) => t1Codes.includes(u.referredBy));
+    
+    // Level 2: Users referred by Level 1 members
+    const t2 = all.filter((u: any) => t1Codes.length > 0 && t1Codes.includes(u.referredBy));
     const t2Codes = t2.map((u: any) => u.referralCode);
-    const t3 = all.filter((u: any) => t2Codes.includes(u.referredBy));
+    
+    // Level 3: Users referred by Level 2 members
+    const t3 = all.filter((u: any) => t2Codes.length > 0 && t2Codes.includes(u.referredBy));
 
     const sanitize = (l: any[]) => l.map(u => ({ id: u.id, name: u.name, currentPlan: u.currentPlan }));
-    return res.status(200).json({ t1: sanitize(t1), t2: sanitize(t2), t3: sanitize(t3) });
+    
+    return res.status(200).json({ 
+      t1: sanitize(t1), 
+      t2: sanitize(t2), 
+      t3: sanitize(t3) 
+    });
   }
 };
