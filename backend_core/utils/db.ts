@@ -3,8 +3,8 @@ import { INITIAL_USERS, INITIAL_TASKS, INITIAL_CONFIG } from '../../src/data/moc
 
 const ENRICHED_TASKS = [
   ...INITIAL_TASKS,
-  { id: 'TASK-AMZ-001', title: 'Viral Expansion', reward: 500, category: 'social_media', plan: 'DIAMOND', instruction: 'Post a TikTok review of our platform and tag @NoorOfficial.', isActive: true },
-  { id: 'TASK-TST-001', title: 'System Security Audit', reward: 150, category: 'verification', plan: 'STANDARD', instruction: 'Test the withdrawal logic and screenshot any error logs.', isActive: true }
+  { id: 'TASK-AMZ-001', title: 'Viral Expansion', reward: 500, category: 'social_media', plan: 'DIAMOND', instruction: 'Post a TikTok review of our platform and tag @NoorOfficial.', isActive: true, validityDays: 30, timeLimitSeconds: 1200 },
+  { id: 'TASK-TST-001', title: 'System Security Audit', reward: 150, category: 'verification', plan: 'STANDARD', instruction: 'Test the withdrawal logic and screenshot any error logs.', isActive: true, validityDays: 15, timeLimitSeconds: 600 }
 ];
 
 const KEYS = {
@@ -22,13 +22,14 @@ const isNode = typeof window === 'undefined';
 const pruneMasterRegistry = (users: any[]) => {
   return users.map(user => ({
     ...user,
-    workSubmissions: (user.workSubmissions || []).slice(0, 15).map((s: any) => ({
+    // Evidence strings (Base64 PDF/Images) can be large. Increased limit to 2MB to prevent corruption.
+    workSubmissions: (user.workSubmissions || []).slice(0, 20).map((s: any) => ({
       ...s,
-      userAnswer: s.userAnswer?.length > 5000 ? s.userAnswer.substring(0, 2000) + "...[PRUNED]" : s.userAnswer
+      userAnswer: s.userAnswer?.length > 2000000 ? s.userAnswer.substring(0, 2000000) + "...[PRUNED]" : s.userAnswer
     })),
-    transactions: (user.transactions || []).slice(0, 25).map((t: any) => ({
+    transactions: (user.transactions || []).slice(0, 30).map((t: any) => ({
       ...t,
-      proofImage: t.proofImage?.length > 5000 ? t.proofImage.substring(0, 2000) + "...[PRUNED]" : t.proofImage
+      proofImage: t.proofImage?.length > 2000000 ? t.proofImage.substring(0, 2000000) + "...[PRUNED]" : t.proofImage
     }))
   }));
 };

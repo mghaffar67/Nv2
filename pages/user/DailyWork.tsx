@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -7,7 +8,7 @@ import {
   ChevronRight, Play, FileCheck, Info,
   Target, FileText, ListChecks, Smartphone,
   XCircle, AlertCircle, Flame, Lock, Trophy, BarChart3,
-  ArrowUpRight, Sparkles
+  ArrowUpRight, Sparkles, Timer, Calendar
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Link, useNavigate } from 'react-router-dom';
@@ -16,6 +17,32 @@ import { api } from '../../utils/api';
 import { clsx } from 'clsx';
 import { SubmissionModal } from '../../components/user/SubmissionModal';
 import StreakWidget from '../../components/user/StreakWidget';
+
+const TaskTimer = ({ seconds, onComplete }: { seconds: number, onComplete: () => void }) => {
+  const [timeLeft, setTimeLeft] = useState(seconds);
+
+  useEffect(() => {
+    if (timeLeft <= 0) {
+      onComplete();
+      return;
+    }
+    const timer = setInterval(() => setTimeLeft(t => t - 1), 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft, onComplete]);
+
+  const formatTime = (s: number) => {
+    const mins = Math.floor(s / 60);
+    const secs = s % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="flex items-center gap-2 px-3 py-1.5 bg-rose-50 text-rose-600 rounded-full border border-rose-100">
+       <Timer size={14} className="animate-pulse" />
+       <span className="text-[10px] font-black font-mono">{formatTime(timeLeft)}</span>
+    </div>
+  );
+};
 
 const DailyWork = () => {
   const { user } = useAuth();
@@ -124,7 +151,7 @@ const DailyWork = () => {
              ) : tasks.length > 0 ? tasks.map((task) => (
                 <div key={task.id} className="relative group">
                    <div className={clsx(
-                     "bg-white p-6 rounded-[36px] border transition-all flex flex-col h-[210px]",
+                     "bg-white p-6 rounded-[36px] border transition-all flex flex-col h-[230px]",
                      task.myStatus === 'completed' ? "border-emerald-200 bg-emerald-50/10" : "border-slate-100 shadow-sm hover:shadow-lg"
                    )}>
                       <div className="flex justify-between items-start mb-4">
@@ -133,7 +160,14 @@ const DailyWork = () => {
                          </div>
                          <div className="text-right">
                             <p className="text-base font-black text-slate-900 italic leading-none mb-1">Rs {task.reward}</p>
-                            <span className="text-[7px] font-black uppercase bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-md border border-indigo-100 italic">{task.plan}</span>
+                            <div className="flex flex-col items-end gap-1">
+                               <span className="text-[7px] font-black uppercase bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-md border border-indigo-100 italic">{task.plan}</span>
+                               {task.validityDays && (
+                                 <span className="text-[6px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                    <Calendar size={8} /> {task.validityDays} Days Left
+                                 </span>
+                               )}
+                            </div>
                          </div>
                       </div>
                       <h4 className="text-[11px] font-black text-slate-800 uppercase italic mb-2 truncate">{task.title}</h4>
@@ -145,12 +179,17 @@ const DailyWork = () => {
                               <CheckCircle2 size={12} /> Verified
                            </div>
                          ) : (
-                           <button 
-                             onClick={() => setActiveTask(task)}
-                             className="h-9 px-5 bg-slate-950 text-white rounded-xl font-black text-[8px] uppercase tracking-widest transition-all shadow-lg active:scale-95"
-                           >
-                              Start
-                           </button>
+                           <div className="flex items-center gap-3">
+                              <button 
+                                onClick={() => setActiveTask(task)}
+                                className="h-9 px-5 bg-slate-950 text-white rounded-xl font-black text-[8px] uppercase tracking-widest transition-all shadow-lg active:scale-95"
+                              >
+                                Start
+                              </button>
+                              {activeTask?.id === task.id && task.timeLimitSeconds && (
+                                <TaskTimer seconds={task.timeLimitSeconds} onComplete={() => { alert("Session Expired!"); setActiveTask(null); }} />
+                              )}
+                           </div>
                          )}
                          <span className="text-[7px] font-bold text-slate-200 uppercase">#{task.id.slice(-4)}</span>
                       </div>

@@ -1,10 +1,11 @@
+
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Upload, Camera, FileText, CheckCircle2, 
   Loader2, ShieldCheck, Image as ImageIcon,
   AlertCircle, ChevronRight, FileUp, Sparkles, Plus, Trash2,
-  ListChecks, Info, FileCheck
+  ListChecks, Info, FileCheck, Timer
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { clsx } from 'clsx';
@@ -53,8 +54,12 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
 
       if (config.submissionMode === 'auto_pdf') {
         setStatus('processing');
+        // Initialize PDF in A4
         const doc = new jsPDF('p', 'mm', 'a4');
         const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 10;
+        const availableWidth = pageWidth - (margin * 2);
         
         for (let i = 0; i < files.length; i++) {
           if (i > 0) doc.addPage();
@@ -65,9 +70,13 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
             reader.readAsDataURL(files[i].file);
           });
 
-          const margin = 10;
-          const availableWidth = pageWidth - (margin * 2);
-          doc.addImage(imgData, 'JPEG', margin, margin, availableWidth, 0, undefined, 'FAST');
+          // Aspect Ratio Calculation to fit image perfectly in A4 width
+          doc.addImage(imgData, 'JPEG', margin, margin, availableWidth, 0, undefined, 'MEDIUM');
+          
+          // Add watermark
+          doc.setFontSize(8);
+          doc.setTextColor(150);
+          doc.text(`Noor Official V3 - Task ${task?.id} - UID: ${Date.now()}`, margin, pageHeight - 5);
         }
         
         finalPayload = doc.output('datauristring');
@@ -90,7 +99,7 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
       onClose();
     } catch (err) {
       console.error(err);
-      alert("Submission failed. Please try again.");
+      alert("Submission Error: Check file sizes and try again.");
     } finally {
       setLoading(false);
     }
@@ -110,7 +119,7 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
                   </div>
                   <div>
                     <h3 className="text-lg font-black uppercase italic tracking-tight leading-none mb-1">Submit Proof</h3>
-                    <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest italic">Verification System</p>
+                    <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest italic">Encrypted Submission Tunnel</p>
                   </div>
                </div>
                <button onClick={onClose} className="p-2.5 bg-white rounded-full text-slate-300 hover:text-rose-500 border border-slate-100 shadow-sm transition-all"><X size={20}/></button>
@@ -119,14 +128,14 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
             <div className="p-8 overflow-y-auto no-scrollbar space-y-8 flex-grow">
                <div className="bg-indigo-50/50 p-6 rounded-[32px] border border-indigo-100 space-y-4">
                   <h4 className="text-[10px] font-black text-indigo-900 uppercase tracking-widest flex items-center gap-2">
-                     <ListChecks size={16} /> Instructions
+                     <ListChecks size={16} /> Final Audit Checklist
                   </h4>
                   <p className="text-[11px] font-bold text-indigo-700 italic">"{task?.instruction}"</p>
                </div>
 
                <div className="space-y-5">
                   <div className="flex justify-between items-end px-2">
-                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Files ({files.length}/{config.submissionMode === 'single_image' ? 1 : 10})</label>
+                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Verification Artifacts ({files.length}/{config.submissionMode === 'single_image' ? 1 : 10})</label>
                      {config.submissionMode !== 'single_image' && (
                        <button onClick={() => fileInputRef.current?.click()} className="text-[9px] font-black text-indigo-600 uppercase flex items-center gap-1.5 hover:underline">
                           <Plus size={12} /> Add More
@@ -166,7 +175,7 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
                {loading && (
                  <div className="space-y-3">
                    <div className="flex justify-between items-center px-1">
-                      <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">{status === 'processing' ? 'Encrypting PDF...' : 'Syncing Hub...'}</span>
+                      <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">{status === 'processing' ? 'Generating Secure PDF Registry...' : 'Syncing with Mainframe...'}</span>
                    </div>
                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
                       <motion.div 
@@ -189,7 +198,7 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
                   ) : (
                     <>
                       <ShieldCheck size={26} className="text-sky-400" />
-                      {config.submissionMode === 'auto_pdf' ? 'Generate & Submit' : 'Confirm Submission'}
+                      {config.submissionMode === 'auto_pdf' ? 'Finish PDF & Submit' : 'Confirm Submission'}
                     </>
                   )}
                </button>
