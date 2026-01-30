@@ -2,7 +2,7 @@ export const GlobalConfigSchema = {
   appName: { type: String, default: "Noor Official" },
   currency: { type: String, default: "PKR" },
   maintenanceMode: { type: Boolean, default: false },
-  submissionMode: { type: String, default: "auto_pdf" }, // Added: single_image, multi_image, auto_pdf
+  submissionMode: { type: String, default: "auto_pdf" },
   theme: {
     primaryColor: { type: String, default: "#0EA5E9" },
     secondaryColor: { type: String, default: "#6366F1" },
@@ -13,14 +13,20 @@ export const GlobalConfigSchema = {
   financeSettings: {
     minWithdraw: { type: Number, default: 500 },
     maxWithdraw: { type: Number, default: 50000 },
-    referralRequiredForWithdraw: { type: Boolean, default: false },
+    referralRequirementActive: { type: Boolean, default: false },
+    requiredReferralCount: { type: Number, default: 2 },
     withdrawFeePercent: { type: Number, default: 10 }
   },
   modules: {
-    deposit: { type: Boolean, default: true },
-    withdraw: { type: Boolean, default: true },
-    register: { type: Boolean, default: true },
-    isChatSupportActive: { type: Boolean, default: true },
+    isMaintenanceMode: { type: Boolean, default: false },
+    allowRegistration: { type: Boolean, default: true },
+    allowDemoLogin: { type: Boolean, default: true },
+    enableDeposits: { type: Boolean, default: true },
+    enableWithdrawals: { type: Boolean, default: true },
+    enableDailyTasks: { type: Boolean, default: true },
+    enableReferralSystem: { type: Boolean, default: true },
+    showPopups: { type: Boolean, default: true },
+    enableDailyCheckIn: { type: Boolean, default: true },
     allowTaskSubmission: { type: Boolean, default: true }
   },
   streakRewards: { 
@@ -32,9 +38,5 @@ export const GlobalConfigSchema = {
     description: { type: String, default: "Noor Official V3 is a premium Pakistani platform for online earning." },
     keywords: { type: String, default: "online earning pakistan, easypaisa earning, jazzcash earning" }
   },
-  appearance: {
-    heroTitle: { type: String, default: "Start Earning Daily From Your Home." },
-    heroSubtitle: { type: String, default: "Join the most trusted platform in Pakistan." },
-    heroSlides: { type: Array, default: [] }
-  }
+  popups: { type: Array, default: [] }
 };

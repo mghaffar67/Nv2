@@ -31,7 +31,10 @@ const Plans = () => {
       spread: 70,
       origin: { y: 0.7 }
     });
+    // The modal will return the updated user from backend, but success UI is shown here
     setShowSuccess(plan);
+    // Reload local user data
+    window.dispatchEvent(new Event('noor_db_update'));
   };
 
   if (showSuccess) {

@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   Home, Users, Briefcase, Wallet, Settings, 
   LogOut, Shield, Zap, Inbox, BarChart3, Clock,
   ChevronDown, ShieldAlert, FileText, Search, Puzzle, Database, Trophy,
-  LineChart
+  LineChart, Sliders
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
@@ -120,10 +119,11 @@ export const Sidebar = ({ isOpen, onToggle, isMobileOpen, onMobileClose }: any) 
       icon: ShieldAlert, 
       label: 'Advanced Settings',
       children: [
+        { to: '/admin/advanced/modules', label: 'Feature Control' },
+        { to: '/admin/advanced/campaigns', label: 'Unified Campaigns' },
         { to: '/admin/advanced/global-cms', label: 'Global CMS' },
         { to: '/admin/advanced/page-editor', label: 'Page Content' },
         { to: '/admin/advanced/seo', label: 'SEO Config' },
-        { to: '/admin/advanced/integration', label: 'Integrations' },
         { to: '/admin/advanced/database', label: 'System DB' }
       ]
     },
@@ -168,9 +168,13 @@ export const Sidebar = ({ isOpen, onToggle, isMobileOpen, onMobileClose }: any) 
            ))}
         </nav>
 
-        <div className="p-4 mt-auto">
-          <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-3 text-rose-500 bg-rose-50/50 rounded-2xl font-bold text-[9px] uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all shadow-sm">
-            <LogOut size={16} /> {(isOpen || isMobileOpen) && "Logout"}
+        {/* FIXED LOGOUT FOOTER: Never scrolls away, always visible */}
+        <div className="p-4 bg-white border-t border-slate-50 mt-auto shrink-0 z-20">
+          <button 
+            onClick={logout} 
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 text-rose-500 bg-rose-50/50 rounded-2xl font-black text-[9px] uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all shadow-sm active:scale-95"
+          >
+            <LogOut size={16} /> {(isOpen || isMobileOpen) && "Terminate Session"}
           </button>
         </div>
       </aside>
