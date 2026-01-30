@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-// Add Image as ImageIcon to fixing the missing import error
 import { Plus, Zap, CheckCircle2, Clock, Eye, Edit3, Trash2, X, Filter, RefreshCw, Briefcase, FileText, FileDown, Image as ImageIcon } from 'lucide-react';
 import { clsx } from 'clsx';
 import { workController } from '../../backend_core/controllers/workController';
@@ -28,19 +27,27 @@ const ProofViewerModal = ({ isOpen, onClose, proof }: any) => {
            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-4xl bg-white rounded-[44px] shadow-2xl overflow-hidden flex flex-col h-[85vh]">
               <div className="p-6 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
                  <div className="flex items-center gap-3">
-                   <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white"><Eye size={20}/></div>
-                   <h3 className="font-black text-slate-800 uppercase tracking-tight">Audit Evidence Node</h3>
+                   <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white"><FileText size={20}/></div>
+                   <h3 className="font-black text-slate-800 uppercase tracking-tight italic">Proof of Work Audit</h3>
                  </div>
                  <button onClick={onClose} className="p-2 hover:bg-rose-50 hover:text-rose-500 rounded-full transition-all"><X size={20}/></button>
               </div>
-              <div className="flex-grow bg-slate-100 p-4 overflow-hidden">
+              <div className="flex-grow bg-slate-100 p-4 overflow-hidden relative">
                  {isPDF ? (
-                   <iframe src={proof} className="w-full h-full rounded-2xl" title="PDF Proof" />
+                   <iframe src={proof} className="w-full h-full rounded-2xl border-none" title="PDF Document" />
                  ) : (
-                   <div className="w-full h-full flex items-center justify-center overflow-auto p-4">
-                      <img src={proof} className="max-w-full rounded-2xl shadow-xl" alt="Proof" />
+                   <div className="w-full h-full flex items-center justify-center overflow-auto p-4 bg-white rounded-2xl shadow-inner">
+                      <img src={proof} className="max-w-full rounded-lg shadow-lg" alt="Submission Evidence" />
                    </div>
                  )}
+              </div>
+              <div className="p-6 bg-white border-t border-slate-50 flex justify-between items-center">
+                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest italic">System Node: Evidence Verification Mode</p>
+                 <div className="flex gap-4">
+                    <a href={proof} download={`proof-${Date.now()}`} className="h-10 px-6 bg-slate-900 text-white rounded-xl font-black text-[9px] uppercase flex items-center gap-2 shadow-lg hover:bg-indigo-600 transition-all">
+                       <FileDown size={14} /> Download File
+                    </a>
+                 </div>
               </div>
            </motion.div>
         </div>
@@ -92,15 +99,15 @@ const WorkManager = () => {
     <div className="space-y-6 md:space-y-8 pb-24 animate-fade-in max-w-7xl mx-auto px-1.5">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 px-2 pt-4">
          <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase italic leading-none">Task <span className="text-indigo-600">Inventory.</span></h1>
-            <p className="text-slate-400 font-bold uppercase tracking-widest text-[8px] mt-2 italic">Global Work Registry Management</p>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase italic leading-none">Work <span className="text-indigo-600">Dashboard.</span></h1>
+            <p className="text-slate-400 font-bold uppercase tracking-widest text-[8px] mt-2 italic">Global Task Registry Management</p>
          </div>
-         <button onClick={() => { setSelectedTask(null); setIsTaskModalOpen(true); }} className="h-12 px-8 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center gap-2 active:scale-95 transition-all"><Plus size={18}/> New Task</button>
+         <button onClick={() => { setSelectedTask(null); setIsTaskModalOpen(true); }} className="h-12 px-8 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center gap-2 active:scale-95 transition-all"><Plus size={18}/> Add Assignment</button>
       </header>
 
       <div className="flex bg-white p-1.5 rounded-[28px] border border-slate-100 shadow-sm mx-1">
-         <button onClick={() => setActiveTab('manage')} className={clsx("flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'manage' ? "bg-slate-900 text-white shadow-xl" : "text-slate-400 hover:text-slate-900")}>Manager</button>
-         <button onClick={() => setActiveTab('review')} className={clsx("flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative", activeTab === 'review' ? "bg-slate-900 text-white shadow-xl" : "text-slate-400 hover:text-slate-900")}>Reviews Queue</button>
+         <button onClick={() => setActiveTab('manage')} className={clsx("flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'manage' ? "bg-slate-900 text-white shadow-xl" : "text-slate-400 hover:text-slate-900")}>Task Manager</button>
+         <button onClick={() => setActiveTab('review')} className={clsx("flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative", activeTab === 'review' ? "bg-slate-900 text-white shadow-xl" : "text-slate-400 hover:text-slate-900")}>Review Queue</button>
       </div>
 
       <AnimatePresence mode="wait">
@@ -155,8 +162,8 @@ const WorkManager = () => {
                   </div>
                   <div className="flex items-center gap-4 shrink-0 md:border-l md:pl-6 border-slate-50">
                      <button onClick={() => setSelectedProof(sub.userAnswer)} className="h-12 px-6 bg-slate-50 rounded-xl border border-slate-100 hover:border-sky-400 transition-all group flex items-center gap-2 text-[10px] font-black uppercase text-slate-500">
-                        {sub.userAnswer?.startsWith('data:application/pdf') ? <FileDown size={16} /> : <ImageIcon size={16} />}
-                        View Proof
+                        {sub.userAnswer?.startsWith('data:application/pdf') ? <FileText size={16} /> : <ImageIcon size={16} />}
+                        Audit Proof
                      </button>
                      <p className="text-xs font-black text-emerald-600 italic">Rs {sub.reward}</p>
                   </div>

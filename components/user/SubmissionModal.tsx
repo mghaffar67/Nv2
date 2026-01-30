@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -33,8 +34,7 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
       preview: URL.createObjectURL(file)
     }));
 
-    // Protocol: Multi-image or PDF allows 5, Single allows 1
-    const limit = config.submissionMode === 'single_image' ? 1 : 5;
+    const limit = config.submissionMode === 'single_image' ? 1 : 10;
     setFiles(prev => [...prev, ...newFiles].slice(0, limit));
   };
 
@@ -46,16 +46,17 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
   };
 
   const generateAndSubmit = async () => {
-    if (files.length === 0) return alert("Select evidence nodes.");
+    if (files.length === 0) return alert("Please select proof files.");
     
     setLoading(true);
-    
     try {
       let finalPayload = "";
 
       if (config.submissionMode === 'auto_pdf') {
         setStatus('processing');
-        const doc = new jsPDF();
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
         
         for (let i = 0; i < files.length; i++) {
           if (i > 0) doc.addPage();
@@ -66,15 +67,15 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
             reader.readAsDataURL(files[i].file);
           });
 
-          // Aspect ratio logic for clean PDF
-          const pageWidth = doc.internal.pageSize.getWidth();
-          const pageHeight = doc.internal.pageSize.getHeight();
-          doc.addImage(imgData, 'JPEG', 10, 10, pageWidth - 20, 0); // Height auto-calc
+          // Standardized margins and centered placement
+          const margin = 10;
+          const availableWidth = pageWidth - (margin * 2);
+          doc.addImage(imgData, 'JPEG', margin, margin, availableWidth, 0, undefined, 'FAST');
         }
         
         finalPayload = doc.output('datauristring');
-      } else if (config.submissionMode === 'multi_image') {
-        // Simple array logic (simplified for this mock as a combined string/array)
+      } else {
+        // Multi/Single Image Mode uses simple base64 array
         const readers = files.map(f => {
           return new Promise<string>(r => {
              const reader = new FileReader();
@@ -83,14 +84,7 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
           });
         });
         const results = await Promise.all(readers);
-        finalPayload = JSON.stringify(results);
-      } else {
-        // Single Image Mode
-        const reader = new FileReader();
-        finalPayload = await new Promise((resolve) => {
-          reader.onload = () => resolve(reader.result as string);
-          reader.readAsDataURL(files[0].file);
-        });
+        finalPayload = config.submissionMode === 'single_image' ? results[0] : JSON.stringify(results);
       }
 
       setStatus('uploading');
@@ -99,7 +93,8 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
       setStatus('idle');
       onClose();
     } catch (err) {
-      alert("Submission Node Error.");
+      console.error(err);
+      alert("System Error during submission.");
     } finally {
       setLoading(false);
     }
@@ -119,27 +114,26 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
                     <FileUp size={24} />
                   </div>
                   <div>
-                    <h3 className="text-lg font-black uppercase italic tracking-tight leading-none mb-1">Upload Work</h3>
-                    <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest italic">Submit proof to receive earning</p>
+                    <h3 className="text-lg font-black uppercase italic tracking-tight leading-none mb-1">Submit Proof</h3>
+                    <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest italic">Proof of Work (PDF / Images)</p>
                   </div>
                </div>
                <button onClick={onClose} className="p-2.5 bg-white rounded-full text-slate-300 hover:text-rose-500 border border-slate-100 shadow-sm transition-all"><X size={20}/></button>
             </div>
 
             <div className="p-8 overflow-y-auto no-scrollbar space-y-8 flex-grow">
-               
-               <div className="bg-slate-50 p-6 rounded-[32px] border border-slate-100 space-y-4 shadow-inner">
-                  <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
-                     <ListChecks size={16} className="text-indigo-500" /> Standard Instructions
+               <div className="bg-indigo-50/50 p-6 rounded-[32px] border border-indigo-100 space-y-4">
+                  <h4 className="text-[10px] font-black text-indigo-900 uppercase tracking-widest flex items-center gap-2">
+                     <ListChecks size={16} /> Assignment Instructions
                   </h4>
-                  <p className="text-[11px] font-bold text-slate-600 italic">"{task?.instruction}"</p>
+                  <p className="text-[11px] font-bold text-indigo-700 italic">"{task?.instruction}"</p>
                </div>
 
                <div className="space-y-5">
                   <div className="flex justify-between items-end px-2">
-                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Evidence Nodes ({files.length}/{config.submissionMode === 'single_image' ? 1 : 5})</label>
+                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Verification Files ({files.length}/{config.submissionMode === 'single_image' ? 1 : 10})</label>
                      {config.submissionMode !== 'single_image' && (
-                       <button onClick={() => fileInputRef.current?.click()} className="text-[9px] font-black text-indigo-600 uppercase flex items-center gap-1.5 hover:underline transition-all">
+                       <button onClick={() => fileInputRef.current?.click()} className="text-[9px] font-black text-indigo-600 uppercase flex items-center gap-1.5 hover:underline">
                           <Plus size={12} /> Add More
                        </button>
                      )}
@@ -156,7 +150,7 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
                        </motion.div>
                      ))}
 
-                     {(files.length === 0 || (config.submissionMode !== 'single_image' && files.length < 5)) && (
+                     {(files.length === 0 || (config.submissionMode !== 'single_image' && files.length < 10)) && (
                        <div 
                          onClick={() => fileInputRef.current?.click()}
                          className={clsx(
@@ -167,9 +161,7 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
                           <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-200 shadow-md group-hover:text-indigo-500 transition-colors">
                              <Camera size={24} />
                           </div>
-                          <div className="text-center px-4">
-                             <p className="text-[10px] font-black text-slate-900 uppercase italic">{files.length === 0 ? 'Upload Evidence' : 'Add Node'}</p>
-                          </div>
+                          <p className="text-[10px] font-black text-slate-900 uppercase italic">Upload Proof</p>
                        </div>
                      )}
                   </div>
@@ -179,12 +171,11 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
                {loading && (
                  <div className="space-y-3">
                    <div className="flex justify-between items-center px-1">
-                      <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">{status === 'processing' ? 'Generating PDF Document...' : 'Uploading Payload...'}</span>
-                      <span className="text-[9px] font-black text-slate-400 uppercase">Audit Sync</span>
+                      <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">{status === 'processing' ? 'Generating Secure PDF...' : 'Syncing with System...'}</span>
                    </div>
                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
                       <motion.div 
-                        initial={{ width: 0 }} animate={{ width: status === 'processing' ? '40%' : '100%' }}
+                        initial={{ width: 0 }} animate={{ width: status === 'processing' ? '60%' : '100%' }}
                         className="h-full bg-indigo-600"
                       />
                    </div>
@@ -203,7 +194,7 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
                   ) : (
                     <>
                       {config.submissionMode === 'auto_pdf' ? <FileCheck size={26} className="text-sky-400" /> : <ShieldCheck size={26} className="text-sky-400" />}
-                      {config.submissionMode === 'auto_pdf' ? 'Generate PDF & Submit' : 'Verify & Submit'}
+                      {config.submissionMode === 'auto_pdf' ? 'Finish PDF & Submit' : 'Confirm Submission'}
                     </>
                   )}
                </button>

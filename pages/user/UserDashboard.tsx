@@ -38,7 +38,7 @@ const DashboardCard = ({ title, value, icon: Icon, delay, gradient, path, subtex
       <div className="relative z-10 flex items-center justify-between">
         <div className="flex items-center gap-1.5">
            <div className="w-1.5 h-1.5 rounded-full bg-white/40 animate-pulse" />
-           <span className="text-[7px] md:text-[8px] font-black text-white/60 uppercase tracking-widest truncate">{subtext || 'Live Server'}</span>
+           <span className="text-[7px] md:text-[8px] font-black text-white/60 uppercase tracking-widest truncate">{subtext || 'System Live'}</span>
         </div>
         {path && (
           <Link to={path} className="p-1.5 bg-white/10 rounded-lg text-white opacity-0 group-hover:opacity-100 transition-all">
@@ -70,7 +70,6 @@ const UserDashboard = () => {
         .filter((t: any) => (t.type === 'reward' || t.type === 'admin_bonus') && t.date === today)
         .reduce((a: number, b: any) => a + Number(b.amount), 0);
       
-      const actualTasks = taskList?.tasks || [];
       const pendingCount = (user?.workSubmissions || []).filter((s: any) => s.status === 'pending').length;
       
       setStats({
@@ -80,7 +79,7 @@ const UserDashboard = () => {
         teamCount: (teamData.t1?.length || 0) + (teamData.t2?.length || 0) + (teamData.t3?.length || 0)
       });
     } catch (e) {
-      console.error("Dashboard Sync Failed");
+      console.error("System Sync Failed");
     } finally {
       setLoading(false);
     }
@@ -94,9 +93,9 @@ const UserDashboard = () => {
     <div className="w-full pb-24 space-y-6 animate-fade-in max-w-7xl mx-auto px-2">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
          <DashboardCard 
-           title="Wallet Balance" 
+           title="Account Balance" 
            value={`Rs. ${(user?.balance || 0).toLocaleString()}`} 
-           icon={Wallet} delay={0.1} gradient="bg-slate-950" path="/user/wallet"
+           icon={Wallet} delay={0.1} gradient="bg-[#0b0e14]" path="/user/wallet"
          />
          <DashboardCard 
            title="Pending Work" 

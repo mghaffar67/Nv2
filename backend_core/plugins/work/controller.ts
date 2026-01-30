@@ -7,7 +7,7 @@ export const workPluginController = {
   getTasks: async (req: any, res: any) => {
     try {
       const user = dbNode.findUserById(req.user.id);
-      if (!user) return res.status(404).json({ message: "Identity node lost." });
+      if (!user) return res.status(404).json({ message: "Account not found." });
 
       const allTasks = dbNode.getTasks();
       const today = new Date().toISOString().split('T')[0];
@@ -74,7 +74,7 @@ export const workPluginController = {
     try {
       const { taskId, evidence, taskTitle, reward } = req.body;
       const user = dbNode.findUserById(req.user.id);
-      if (!user) return res.status(404).json({ message: "Identity missing." });
+      if (!user) return res.status(404).json({ message: "Account not found." });
 
       const today = new Date().toISOString().split('T')[0];
       
@@ -90,9 +90,9 @@ export const workPluginController = {
         }
       }
 
-      // Aggressive data limitation for browser preview stability
-      const truncatedEvidence = evidence && evidence.length > 2000 
-        ? evidence.substring(0, 1000) + "...[TRUNCATED_FOR_STABILITY]" 
+      // Proof of Work storage logic
+      const truncatedEvidence = evidence && evidence.length > 5000 
+        ? evidence.substring(0, 5000) + "...[TRUNCATED]" 
         : evidence;
 
       const submissionPacket = {
@@ -110,7 +110,6 @@ export const workPluginController = {
       const submissions = user.workSubmissions || [];
       submissions.unshift(submissionPacket);
 
-      // Save to registry with try-catch
       try {
         dbNode.updateUser(user.id, { 
           workSubmissions: submissions,
@@ -118,19 +117,18 @@ export const workPluginController = {
           lastWorkDate: today
         });
       } catch (err: any) {
-        console.error("Internal Registry Write Error:", err);
         return res.status(500).json({ 
-          message: "Registry Full. Please delete some task history or contact admin." 
+          message: "Registry Full. Please clear old history or contact support." 
         });
       }
       
       return res.status(201).json({ 
         success: true, 
-        message: "Task proof submitted successfully.",
+        message: "Proof of Work submitted.",
         streak: newStreak
       });
     } catch (err: any) {
-      return res.status(500).json({ message: "Submission Registry Error." });
+      return res.status(500).json({ message: "Submission System Error." });
     }
   }
 };
