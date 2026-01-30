@@ -35,7 +35,7 @@ const DailyWork = () => {
       setStreak(res.streak || 0);
       setLimits(res.limitInfo || { total: 0, used: 0, remaining: 0 });
     } catch (e) {
-      console.error("Task Center Offline.");
+      console.error("Work Hub error.");
     } finally {
       setLoading(false);
     }
@@ -55,37 +55,34 @@ const DailyWork = () => {
       setActiveTask(null);
       fetchWorkData();
     } catch (err: any) {
-      alert(err.message || "Submission Failed.");
+      alert(err.message || "Sync error.");
     }
   };
 
   return (
     <div className="w-full max-w-5xl mx-auto pb-32 space-y-6 animate-fade-in px-2">
       
-      {/* 1. STREAK & CHECK-IN MODULE */}
+      {/* 1. STREAK & STATS MODULE */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
         <div className="md:col-span-8">
            <section className="bg-slate-950 p-8 rounded-[44px] relative overflow-hidden flex flex-col md:flex-row items-center gap-8 group shadow-2xl border border-white/5 h-full">
-              <div className="absolute top-0 right-0 p-8 opacity-10 scale-150 rotate-12 text-rose-500 pointer-events-none group-hover:rotate-45 transition-transform duration-[3s]"><Flame size={120} /></div>
+              <div className="absolute top-0 right-0 p-8 opacity-10 scale-150 rotate-12 text-indigo-500 pointer-events-none group-hover:rotate-45 transition-transform duration-[3s]"><Zap size={120} /></div>
               
               <div className="relative shrink-0">
                  <motion.div 
-                   animate={{ 
-                     scale: [1, 1.05, 1],
-                     boxShadow: ["0 0 0px rgba(244,63,94,0)", "0 0 30px rgba(244,63,94,0.3)", "0 0 0px rgba(244,63,94,0)"]
-                   }} 
+                   animate={{ scale: [1, 1.05, 1] }} 
                    transition={{ repeat: Infinity, duration: 3 }} 
-                   className="w-20 h-20 bg-rose-600 rounded-[30px] flex flex-col items-center justify-center text-white border-2 border-white/20"
+                   className="w-20 h-20 bg-indigo-600 rounded-[30px] flex flex-col items-center justify-center text-white border-2 border-white/20 shadow-xl shadow-indigo-500/20"
                  >
-                    <Flame size={28} fill="currentColor" />
+                    <Flame size={28} fill="currentColor" className="text-amber-400" />
                     <span className="text-xl font-black italic">{streak}</span>
                  </motion.div>
               </div>
 
               <div className="flex-grow space-y-4 text-center md:text-left">
                  <div>
-                    <h2 className="text-xl md:text-2xl font-black text-white uppercase italic tracking-tighter leading-none">Task Dashboard.</h2>
-                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Complete your daily cycle to receive rewards.</p>
+                    <h2 className="text-xl md:text-2xl font-black text-white uppercase italic tracking-tighter leading-none">Account Workflow.</h2>
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Complete daily tasks to yield system rewards.</p>
                  </div>
                  
                  <div className="grid grid-cols-3 gap-2">
@@ -98,7 +95,7 @@ const DailyWork = () => {
                        <p className="text-xs font-black text-white">{limits.used}</p>
                     </div>
                     <div className="bg-white/5 p-2.5 rounded-2xl border border-white/5 text-center">
-                       <p className="text-[7px] font-black text-slate-500 uppercase mb-1">AVAIL</p>
+                       <p className="text-[7px] font-black text-slate-500 uppercase mb-1">REMAIN</p>
                        <p className="text-xs font-black text-sky-400">{limits.remaining}</p>
                     </div>
                  </div>
@@ -112,8 +109,8 @@ const DailyWork = () => {
 
       {/* 2. TAB CONTROL */}
       <div className="flex bg-white p-1.5 rounded-[28px] border border-slate-100 shadow-sm w-fit gap-1 mx-auto md:mx-0">
-         <button onClick={() => setTab('work')} className={clsx("px-10 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all", tab === 'work' ? "bg-slate-900 text-white shadow-xl" : "text-slate-400")}>Daily Tasks</button>
-         <button onClick={() => setTab('history')} className={clsx("px-10 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all", tab === 'history' ? "bg-slate-900 text-white shadow-xl" : "text-slate-400")}>Proof of Work</button>
+         <button onClick={() => setTab('work')} className={clsx("px-10 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all", tab === 'work' ? "bg-slate-900 text-white shadow-xl" : "text-slate-400")}>Daily Work</button>
+         <button onClick={() => setTab('history')} className={clsx("px-10 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all", tab === 'history' ? "bg-slate-900 text-white shadow-xl" : "text-slate-400")}>Work History</button>
       </div>
 
       <AnimatePresence mode="wait">
@@ -122,9 +119,9 @@ const DailyWork = () => {
              {loading ? (
                <div className="col-span-full py-32 text-center flex flex-col items-center gap-4">
                   <RefreshCw className="animate-spin text-indigo-500" size={40} />
-                  <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Scanning System Registry...</p>
+                  <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Accessing System Registry...</p>
                </div>
-             ) : tasks.map((task) => (
+             ) : tasks.length > 0 ? tasks.map((task) => (
                 <div key={task.id} className="relative group">
                    <div className={clsx(
                      "bg-white p-6 rounded-[36px] border transition-all flex flex-col h-[210px]",
@@ -163,23 +160,23 @@ const DailyWork = () => {
                      <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-[2px] rounded-[36px] flex flex-col items-center justify-center p-6 text-center border-2 border-dashed border-indigo-50">
                         <Lock size={18} className="text-slate-400 mb-2" />
                         <h4 className="text-[10px] font-black text-slate-800 uppercase mb-1">Locked.</h4>
-                        <p className="text-[7px] font-bold text-slate-400 uppercase leading-relaxed mb-3">Upgrade Account to unlock</p>
+                        <p className="text-[7px] font-bold text-slate-400 uppercase leading-relaxed mb-3">Upgrade Account</p>
                         <button onClick={() => navigate('/user/plans')} className="h-8 px-4 bg-indigo-600 text-white rounded-lg font-black text-[7px] uppercase tracking-widest shadow-md">Upgrade</button>
                      </div>
                    )}
                 </div>
-             ))}
+             )) : (
+               <div className="col-span-full py-32 text-center flex flex-col items-center opacity-30">
+                  <Briefcase size={64} className="text-slate-200 mb-6" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em]">No tasks available today.</p>
+               </div>
+             )}
           </motion.div>
         ) : (
           <motion.div key="history" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-3">
-             {loading ? (
-               <div className="py-32 text-center flex flex-col items-center gap-4">
-                  <RefreshCw className="animate-spin text-indigo-500" size={40} />
-                  <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Syncing History...</p>
-               </div>
-             ) : (user?.workSubmissions || []).length > 0 ? (
+             {(user?.workSubmissions || []).length > 0 ? (
                <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden p-2">
-                 <div className="space-y-1">
+                 <div className="divide-y divide-slate-50">
                    {(user?.workSubmissions || []).map((sub: any, idx: number) => (
                       <motion.div 
                         key={idx} 
@@ -196,7 +193,7 @@ const DailyWork = () => {
                                {sub.status === 'approved' ? <CheckCircle2 size={20}/> : sub.status === 'rejected' ? <XCircle size={20}/> : <Clock size={20}/>}
                             </div>
                             <div>
-                               <h4 className="font-black text-slate-800 text-[11px] uppercase truncate max-w-[200px] mb-1">{sub.taskTitle}</h4>
+                               <h4 className="font-black text-slate-800 text-[11px] uppercase truncate max-w-[180px] mb-1">{sub.taskTitle}</h4>
                                <p className="text-[8px] font-bold text-slate-400 uppercase italic">Ref: {sub.id?.slice(-8)} • {new Date(sub.timestamp).toLocaleDateString()}</p>
                             </div>
                          </div>
@@ -216,7 +213,7 @@ const DailyWork = () => {
              ) : (
                <div className="py-32 text-center opacity-30 flex flex-col items-center bg-white rounded-[40px] border border-dashed border-slate-200">
                   <History size={48} className="text-slate-200 mb-6" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em]">History is Empty.</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em]">History Empty.</p>
                </div>
              )}
           </motion.div>

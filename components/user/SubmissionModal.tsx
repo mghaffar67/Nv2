@@ -1,11 +1,10 @@
-
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Upload, Camera, FileText, CheckCircle2, 
   Loader2, ShieldCheck, Image as ImageIcon,
   AlertCircle, ChevronRight, FileUp, Sparkles, Plus, Trash2,
-  ListChecks, Info, Link as LinkIcon, FileCheck
+  ListChecks, Info, FileCheck
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { clsx } from 'clsx';
@@ -56,7 +55,6 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
         setStatus('processing');
         const doc = new jsPDF('p', 'mm', 'a4');
         const pageWidth = doc.internal.pageSize.getWidth();
-        const pageHeight = doc.internal.pageSize.getHeight();
         
         for (let i = 0; i < files.length; i++) {
           if (i > 0) doc.addPage();
@@ -67,7 +65,6 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
             reader.readAsDataURL(files[i].file);
           });
 
-          // Standardized margins and centered placement
           const margin = 10;
           const availableWidth = pageWidth - (margin * 2);
           doc.addImage(imgData, 'JPEG', margin, margin, availableWidth, 0, undefined, 'FAST');
@@ -75,7 +72,6 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
         
         finalPayload = doc.output('datauristring');
       } else {
-        // Multi/Single Image Mode uses simple base64 array
         const readers = files.map(f => {
           return new Promise<string>(r => {
              const reader = new FileReader();
@@ -94,7 +90,7 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
       onClose();
     } catch (err) {
       console.error(err);
-      alert("System Error during submission.");
+      alert("Submission failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -107,7 +103,6 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" />
           
           <motion.div initial={{ scale: 0.95, y: 30, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.95, y: 30, opacity: 0 }} className="relative w-full max-w-xl bg-white rounded-[44px] shadow-2xl overflow-hidden border border-white flex flex-col max-h-[90vh]">
-            
             <div className="p-6 bg-slate-50 border-b border-slate-100 flex justify-between items-center shrink-0">
                <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl">
@@ -115,7 +110,7 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
                   </div>
                   <div>
                     <h3 className="text-lg font-black uppercase italic tracking-tight leading-none mb-1">Submit Proof</h3>
-                    <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest italic">Proof of Work (PDF / Images)</p>
+                    <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest italic">Verification System</p>
                   </div>
                </div>
                <button onClick={onClose} className="p-2.5 bg-white rounded-full text-slate-300 hover:text-rose-500 border border-slate-100 shadow-sm transition-all"><X size={20}/></button>
@@ -124,14 +119,14 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
             <div className="p-8 overflow-y-auto no-scrollbar space-y-8 flex-grow">
                <div className="bg-indigo-50/50 p-6 rounded-[32px] border border-indigo-100 space-y-4">
                   <h4 className="text-[10px] font-black text-indigo-900 uppercase tracking-widest flex items-center gap-2">
-                     <ListChecks size={16} /> Assignment Instructions
+                     <ListChecks size={16} /> Instructions
                   </h4>
                   <p className="text-[11px] font-bold text-indigo-700 italic">"{task?.instruction}"</p>
                </div>
 
                <div className="space-y-5">
                   <div className="flex justify-between items-end px-2">
-                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Verification Files ({files.length}/{config.submissionMode === 'single_image' ? 1 : 10})</label>
+                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Files ({files.length}/{config.submissionMode === 'single_image' ? 1 : 10})</label>
                      {config.submissionMode !== 'single_image' && (
                        <button onClick={() => fileInputRef.current?.click()} className="text-[9px] font-black text-indigo-600 uppercase flex items-center gap-1.5 hover:underline">
                           <Plus size={12} /> Add More
@@ -145,7 +140,7 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
                   )}>
                      {files.map((f, i) => (
                        <motion.div key={i} layout initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="relative aspect-square rounded-[24px] overflow-hidden border-2 border-slate-100 shadow-sm group">
-                          <img src={f.preview} className="w-full h-full object-cover" />
+                          <img src={f.preview} className="w-full h-full object-cover" alt="Proof" />
                           <button onClick={() => removeFile(i)} className="absolute top-2 right-2 w-7 h-7 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg"><Trash2 size={12} /></button>
                        </motion.div>
                      ))}
@@ -161,7 +156,7 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
                           <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-200 shadow-md group-hover:text-indigo-500 transition-colors">
                              <Camera size={24} />
                           </div>
-                          <p className="text-[10px] font-black text-slate-900 uppercase italic">Upload Proof</p>
+                          <p className="text-[10px] font-black text-slate-900 uppercase italic">Select Evidence</p>
                        </div>
                      )}
                   </div>
@@ -171,7 +166,7 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
                {loading && (
                  <div className="space-y-3">
                    <div className="flex justify-between items-center px-1">
-                      <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">{status === 'processing' ? 'Generating Secure PDF...' : 'Syncing with System...'}</span>
+                      <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">{status === 'processing' ? 'Encrypting PDF...' : 'Syncing Hub...'}</span>
                    </div>
                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
                       <motion.div 
@@ -193,8 +188,8 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
                     <Loader2 size={24} className="animate-spin text-sky-400"/>
                   ) : (
                     <>
-                      {config.submissionMode === 'auto_pdf' ? <FileCheck size={26} className="text-sky-400" /> : <ShieldCheck size={26} className="text-sky-400" />}
-                      {config.submissionMode === 'auto_pdf' ? 'Finish PDF & Submit' : 'Confirm Submission'}
+                      <ShieldCheck size={26} className="text-sky-400" />
+                      {config.submissionMode === 'auto_pdf' ? 'Generate & Submit' : 'Confirm Submission'}
                     </>
                   )}
                </button>

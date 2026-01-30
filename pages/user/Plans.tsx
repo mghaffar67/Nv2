@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Award, Zap, ArrowRight, Check, Star, TrendingUp, Diamond, ChevronLeft, CheckCircle2, Rocket, Info, History, Sparkles } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Award, Zap, Star, TrendingUp, Diamond, ChevronLeft, CheckCircle2, History, Info } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import { useAuth } from '../../context/AuthContext';
@@ -43,7 +43,7 @@ const Plans = () => {
             </div>
             <h2 className="text-3xl font-black text-slate-900 uppercase italic">SUCCESS!</h2>
             <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest leading-relaxed">
-              Your {showSuccess.name} Pack is now active. Start your daily tasks to earn rewards.
+              Your {showSuccess.name} Membership is active. Proceed to daily work to start earning.
             </p>
             <button onClick={() => navigate('/user/work')} className="w-full h-14 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all">Start Daily Work</button>
          </motion.div>
@@ -58,13 +58,13 @@ const Plans = () => {
         <Link to="/user/dashboard" className="p-2 bg-white rounded-xl shadow-sm border border-slate-100 text-slate-400 active:scale-90 transition-all">
           <ChevronLeft size={20} />
         </Link>
-        <h1 className="text-lg font-black text-slate-800 uppercase italic tracking-tight">Earning <span className="text-indigo-600">Center.</span></h1>
+        <h1 className="text-lg font-black text-slate-800 uppercase italic tracking-tight">System <span className="text-indigo-600">Membership.</span></h1>
         <Link to="/user/plans/history" className="p-2 bg-white rounded-xl shadow-sm border border-slate-100 text-slate-400 active:scale-90 transition-all">
           <History size={20} />
         </Link>
       </header>
 
-      {/* Account Balance Card - Small & Modern */}
+      {/* Account Balance Card */}
       <div className="bg-[#0b0e14] p-8 rounded-[40px] shadow-2xl relative overflow-hidden mx-1">
          <div className="relative z-10">
             <p className="text-[8px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2 italic">ACCOUNT BALANCE</p>
@@ -80,15 +80,18 @@ const Plans = () => {
          </div>
       </div>
 
-      {/* Plan Grid - Smaller Cards */}
+      {/* Plan Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-1">
-        {PLAN_DATA.map((plan) => {
+        {PLAN_DATA.map((plan, idx) => {
           const isActive = user?.currentPlan === plan.name;
           const Icon = plan.icon;
           
           return (
             <motion.div 
               key={plan.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1 }}
               whileHover={{ y: -5 }}
               className={clsx(
                 "bg-white rounded-[32px] p-6 border transition-all flex flex-col group",
@@ -102,7 +105,7 @@ const Plans = () => {
                   )}>
                     <Icon size={20} />
                   </div>
-                  <h3 className="font-black text-slate-900 text-[10px] uppercase italic tracking-widest">{plan.name} PACK</h3>
+                  <h3 className="font-black text-slate-900 text-[10px] uppercase italic tracking-widest">{plan.name}</h3>
               </div>
 
               <div className="flex-grow space-y-3 mb-6">
@@ -133,11 +136,10 @@ const Plans = () => {
         })}
       </div>
 
-      {/* Info Box */}
       <div className="bg-indigo-50/50 p-6 rounded-[32px] border border-indigo-100 flex gap-4 mx-1 items-center">
          <Info size={20} className="text-indigo-500 shrink-0" />
          <p className="text-[9px] font-bold text-indigo-700 uppercase tracking-widest leading-relaxed">
-           Account Task Agreement: New stations automatically replace current ones. Validity is fixed at 30 production cycles.
+           Agreement: New stations replace current ones. Validity is fixed at 30 production cycles.
          </p>
       </div>
 
