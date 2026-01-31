@@ -4,8 +4,10 @@ import { distributeCommission } from '../../utils/commissionHelper';
 export const financePluginController = {
   getHistory: async (req: any, res: any) => {
     try {
-      const user = dbNode.findUserById(req.user.id);
+      // Fix: Added await to async db call
+      const user = await dbNode.findUserById(req.user.id);
       if (!user) return res.status(404).json({ message: "User account not found." });
+      // Fix: Property access on awaited object
       return res.status(200).json(user.transactions || []);
     } catch (err) {
       return res.status(500).json({ message: "Failed to load history." });
@@ -15,7 +17,8 @@ export const financePluginController = {
   depositReq: async (req: any, res: any) => {
     const { amount, method, trxId, senderNumber, image } = req.body;
     const userId = req.user.id;
-    const user = dbNode.findUserById(userId);
+    // Fix: Added await to async db call
+    const user = await dbNode.findUserById(userId);
 
     if (!user) return res.status(404).json({ message: 'User identity node not found.' });
 
@@ -35,9 +38,11 @@ export const financePluginController = {
     };
 
     try {
+      // Fix: Property access on awaited object
       const currentTrx = user.transactions || [];
       currentTrx.unshift(depositPacket);
-      dbNode.updateUser(userId, { transactions: currentTrx });
+      // Fix: Added await to async db call
+      await dbNode.updateUser(userId, { transactions: currentTrx });
       return res.status(201).json({ success: true, message: 'Deposit request synchronized to ledger.', transaction: depositPacket });
     } catch (err: any) {
       console.error("Critical: Deposit persistence failed.", err.message);
@@ -48,10 +53,12 @@ export const financePluginController = {
   withdrawReq: async (req: any, res: any) => {
     const { amount, gateway, accountNumber, accountTitle } = req.body;
     const userId = req.user.id;
-    const user = dbNode.findUserById(userId);
+    // Fix: Added await to async db call
+    const user = await dbNode.findUserById(userId);
     if (!user) return res.status(404).json({ message: 'Auth session expired.' });
 
     const amt = Number(amount);
+    // Fix: Property access on awaited object
     if ((user.balance || 0) < amt) return res.status(400).json({ message: 'Insufficient balance.' });
 
     const newTrx = {
@@ -67,11 +74,13 @@ export const financePluginController = {
       timestamp: new Date().toISOString()
     };
 
+    // Fix: Property access on awaited object
     const newBalance = (user.balance || 0) - amt;
     const trx = user.transactions || [];
     trx.unshift(newTrx);
     
-    dbNode.updateUser(userId, { balance: newBalance, transactions: trx });
+    // Fix: Added await to async db call
+    await dbNode.updateUser(userId, { balance: newBalance, transactions: trx });
     return res.status(201).json({ success: true, message: 'Withdrawal locked.', newBalance });
   },
 
@@ -79,7 +88,8 @@ export const financePluginController = {
     try {
       const { planId, method, trxId, proofImage, senderNumber } = req.body;
       const userId = req.user.id;
-      const user = dbNode.findUserById(userId);
+      // Fix: Added await to async db call
+      const user = await dbNode.findUserById(userId);
       if (!user) return res.status(404).json({ message: "User not found." });
 
       const priceMap: Record<string, number> = { 'BASIC': 500, 'STANDARD': 1000, 'GOLD ELITE': 1500, 'DIAMOND': 5000 };
@@ -87,11 +97,13 @@ export const financePluginController = {
       const price = priceMap[normalized] || 0;
 
       if (method === 'wallet') {
+        // Fix: Property access on awaited object
         const newBalance = (Number(user.balance) || 0) - price;
         const expiry = new Date();
         expiry.setDate(expiry.getDate() + 30);
 
-        const updatedUser = dbNode.updateUser(userId, { 
+        // Fix: Added await to async db call
+        const updatedUser = await dbNode.updateUser(userId, { 
           balance: newBalance, 
           currentPlan: normalized, 
           planExpiry: expiry.toISOString(),
@@ -120,9 +132,11 @@ export const financePluginController = {
         proofImage,
         date: new Date().toISOString()
       };
+      // Fix: Property access on awaited object
       const history = user.purchaseHistory || [];
       history.unshift(requestRecord);
-      dbNode.updateUser(userId, { purchaseHistory: history });
+      // Fix: Added await to async db call
+      await dbNode.updateUser(userId, { purchaseHistory: history });
       return res.status(201).json({ success: true, message: "Activation pending audit." });
     } catch (err) {
       return res.status(500).json({ message: "Activation failure." });

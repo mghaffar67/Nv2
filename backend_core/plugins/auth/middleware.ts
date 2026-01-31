@@ -1,4 +1,3 @@
-
 import { dbNode } from '../../utils/db';
 
 /**
@@ -29,12 +28,14 @@ export const authMiddleware = async (req: any, res: any, next: any) => {
 
     // Reconstruction of ID (handling IDs that might contain hyphens themselves)
     const userId = parts.slice(2, parts.length - 1).join('-');
-    const user = dbNode.findUserById(userId);
+    // Fix: Added await to async db call
+    const user = await dbNode.findUserById(userId);
 
     if (!user) {
       return res.status(404).json({ message: 'User account not found.' });
     }
 
+    // Fix: Property access on awaited object
     if (user.isBanned) {
       return res.status(403).json({ message: 'This account has been suspended.' });
     }

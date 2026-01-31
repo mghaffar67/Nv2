@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, UserPlus, Shield, ShieldCheck, Mail, Phone, Trash2, Edit3, X, Save, RefreshCw, Key, UserCog, BadgeCheck, ShieldAlert } from 'lucide-react';
@@ -11,10 +10,12 @@ const TeamManagement = () => {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '', role: 'manager' });
   const [loading, setLoading] = useState(false);
 
-  const fetchTeam = () => {
+  // Fix: Made fetchTeam async to await db call
+  const fetchTeam = async () => {
     setLoading(true);
-    const allUsers = dbNode.getUsers();
+    const allUsers = await dbNode.getUsers();
     // Only show Staff and Admins
+    // Fix: allUsers is now the array from awaited promise
     const staff = allUsers.filter((u: any) => u.role === 'admin' || u.role === 'manager');
     setTeam(staff);
     setLoading(false);
@@ -22,7 +23,8 @@ const TeamManagement = () => {
 
   useEffect(() => { fetchTeam(); }, []);
 
-  const handleAdd = (e: React.FormEvent) => {
+  // Fix: Made handleAdd async to await db call
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     const newUser = {
       ...formData,
@@ -34,20 +36,24 @@ const TeamManagement = () => {
       workSubmissions: [],
       purchaseHistory: []
     };
-    const current = dbNode.getUsers();
-    dbNode.saveUsers([...current, newUser]);
+    // Fix: Added await to async db calls
+    const current = await dbNode.getUsers();
+    // Fix: current is now the array from awaited promise
+    await dbNode.saveUsers([...current, newUser]);
     setShowAdd(false);
     setFormData({ name: '', email: '', phone: '', password: '', role: 'manager' });
     fetchTeam();
     alert("Associate Integrated into Staff Registry.");
   };
 
-  const deleteStaff = (id: string) => {
+  const deleteStaff = async (id: string) => {
     const member = team.find(m => m.id === id);
     if (member?.email === 'admin@noor.com') return alert("Root Admin access cannot be revoked!");
     if (!window.confirm("Remove this staff associate from the system hub?")) return;
-    const current = dbNode.getUsers().filter((u: any) => u.id !== id);
-    dbNode.saveUsers(current);
+    // Fix: Added await to async db calls
+    const allUsers = await dbNode.getUsers();
+    const current = allUsers.filter((u: any) => u.id !== id);
+    await dbNode.saveUsers(current);
     fetchTeam();
   };
 

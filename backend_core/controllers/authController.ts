@@ -1,4 +1,3 @@
-
 import { dbRegistry } from '../utils/db';
 
 export const authController = {
@@ -10,21 +9,26 @@ export const authController = {
         return res.status(400).json({ message: 'Email aur Password likhna zaroori hai.' });
       }
 
-      const user = dbRegistry.findUserByIdentifier(email);
+      // Fix: Added await to async db call
+      const user = await dbRegistry.findUserByIdentifier(email);
 
+      // Fix: Property access on awaited object
       if (!user || user.password !== password) {
         return res.status(401).json({ message: 'Ghalat details! Dobara check karen.' });
       }
       
+      // Fix: Property access on awaited object
       if (user.isBanned) {
         return res.status(403).json({ message: 'Aap ka account suspend kar diya gaya hai.' });
       }
 
+      // Fix: Property access on awaited object
       const { password: _, ...sessionUser } = user;
       const timestamp = Date.now();
 
       return res.status(200).json({
         success: true,
+        // Fix: Property access on awaited object
         token: `jwt-noor-${user.id}-${timestamp}`,
         user: sessionUser
       });
@@ -37,7 +41,8 @@ export const authController = {
     try {
       const { name, email, phone, password, referralCode } = req.body;
       
-      if (dbRegistry.findUserByIdentifier(email) || dbRegistry.findUserByIdentifier(phone)) {
+      // Fix: Added await to async db calls
+      if (await dbRegistry.findUserByIdentifier(email) || await dbRegistry.findUserByIdentifier(phone)) {
         return res.status(400).json({ message: 'Ye Email ya Phone pehle se registered hai.' });
       }
 
@@ -57,9 +62,10 @@ export const authController = {
         createdAt: new Date().toISOString()
       };
 
-      const users = dbRegistry.getUsers();
+      // Fix: Added await and proper array management
+      const users = await dbRegistry.getUsers();
       users.push(newUser);
-      dbRegistry.saveUsers(users);
+      await dbRegistry.saveUsers(users);
 
       const { password: _, ...safeUser } = newUser;
       return res.status(201).json({ 

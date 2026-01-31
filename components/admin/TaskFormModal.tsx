@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -48,22 +47,26 @@ const TaskFormModal = ({ isOpen, onClose, task, onUpdate }: TaskFormModalProps) 
   const [preview, setPreview] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      const registry = dbNode.getUsers();
-      setUsers(registry);
-      
-      if (task) {
-        setForm({ ...task });
-        setPreview(task.mediaType === 'image' ? task.mediaUrl : task.mediaType === 'pdf' ? 'pdf_detected' : null);
-      } else {
-        setForm({ 
-          title: '', category: 'verification', mediaType: 'image', mediaUrl: '',
-          requiredLines: 0, reward: 25, plan: 'ANY', instruction: '',
-          assignmentType: 'all', targetUsers: []
-        });
-        setPreview(null);
+    // Fix: Made effect async to await db calls
+    const initModal = async () => {
+      if (isOpen) {
+        const registry = await dbNode.getUsers();
+        setUsers(registry);
+        
+        if (task) {
+          setForm({ ...task });
+          setPreview(task.mediaType === 'image' ? task.mediaUrl : task.mediaType === 'pdf' ? 'pdf_detected' : null);
+        } else {
+          setForm({ 
+            title: '', category: 'verification', mediaType: 'image', mediaUrl: '',
+            requiredLines: 0, reward: 25, plan: 'ANY', instruction: '',
+            assignmentType: 'all', targetUsers: []
+          });
+          setPreview(null);
+        }
       }
-    }
+    };
+    initModal();
   }, [task, isOpen]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'pdf') => {
@@ -97,10 +100,11 @@ const TaskFormModal = ({ isOpen, onClose, task, onUpdate }: TaskFormModalProps) 
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const db = dbNode.getTasks();
+    // Fix: Added await to async db call
+    const db = await dbNode.getTasks();
     const newTask = { 
       ...form, 
       id: task?.id || `TASK-${Math.random().toString(36).substr(2, 4).toUpperCase()}`, 
@@ -111,10 +115,11 @@ const TaskFormModal = ({ isOpen, onClose, task, onUpdate }: TaskFormModalProps) 
       const idx = db.findIndex((t: any) => t.id === task.id);
       if (idx !== -1) db[idx] = newTask;
     } else {
+      // Fix: db is now the array from awaited promise
       db.unshift(newTask);
     }
     
-    dbNode.saveTasks(db);
+    await dbNode.saveTasks(db);
     setTimeout(() => { 
       onUpdate(); 
       onClose(); 

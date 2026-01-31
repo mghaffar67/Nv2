@@ -1,4 +1,3 @@
-
 import { dbNode } from '../../utils/db';
 
 /**
@@ -10,9 +9,11 @@ export const contentController = {
   getContentBySlug: async (req: any, res: any) => {
     try {
       const { slug } = req.params;
-      const db = dbNode.getPageContents(); // Existing DB utility
+      // Fix: Added await to async db call
+      const db = await dbNode.getPageContents(); // Existing DB utility
       
       // If content doesn't exist, return empty section to prevent crash
+      // Fix: db is now the object from awaited promise
       const content = db[slug] || { 
         sections: getDefaultSeed(slug),
         lastUpdated: new Date().toISOString()
@@ -28,9 +29,11 @@ export const contentController = {
   updateContent: async (req: any, res: any) => {
     try {
       const { slug, sections } = req.body;
-      const db = dbNode.getPageContents();
+      // Fix: Added await to async db call
+      const db = await dbNode.getPageContents();
 
       // Deep merge new data with existing to ensure no keys are lost
+      // Fix: db is now the object from awaited promise
       const existingPage = db[slug] || { sections: {} };
       const updatedPage = {
         ...existingPage,
@@ -42,7 +45,8 @@ export const contentController = {
       };
 
       db[slug] = updatedPage;
-      dbNode.savePageContents(db);
+      // Fix: Added await to async db call
+      await dbNode.savePageContents(db);
 
       return res.status(200).json({ 
         success: true, 

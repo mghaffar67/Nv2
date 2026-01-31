@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Users, UserCog, Gem, ShieldCheck, Filter, Search, Smartphone, Wallet
@@ -16,9 +15,10 @@ const UserManager = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const refreshData = () => {
+  // Fix: Made refreshData async to await db call
+  const refreshData = async () => {
     setLoading(true);
-    const list = dbNode.getUsers();
+    const list = await dbNode.getUsers();
     // Filter out Admin and Manager roles from Client User List
     const clientUsers = (list || []).filter((u: any) => u.role === 'user');
     setUsers(clientUsers);

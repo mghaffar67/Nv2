@@ -20,14 +20,14 @@ const SidebarNavItem = ({ to, icon: Icon, label, isOpen, active, badge, themeCol
   }, [active, hasChildren]);
 
   return (
-    <div className="mb-1">
+    <div className="mb-1 shrink-0">
       <div className="relative group">
         {hasChildren ? (
           <button
             onClick={() => setIsSubOpen(!isSubOpen)}
             className={clsx(
               "w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 overflow-hidden",
-              active ? "bg-slate-950 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50"
+              active ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50"
             )}
           >
             <div className="flex-shrink-0 w-5 flex justify-center">
@@ -43,7 +43,7 @@ const SidebarNavItem = ({ to, icon: Icon, label, isOpen, active, badge, themeCol
         ) : (
           <Link to={to} className={clsx(
             "flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 overflow-hidden", 
-            active ? "bg-slate-950 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50"
+            active ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50"
           )}>
             <div className="flex-shrink-0 w-5 flex justify-center">
               <Icon size={18} style={active ? { color: themeColor } : { color: 'inherit' }} />
@@ -117,7 +117,7 @@ export const Sidebar = ({ isOpen, onToggle, isMobileOpen, onMobileClose }: any) 
     { 
       to: '/admin/advanced', 
       icon: ShieldAlert, 
-      label: 'Advanced Settings',
+      label: 'Advanced Hub',
       children: [
         { to: '/admin/advanced/modules', label: 'Feature Control' },
         { to: '/admin/advanced/campaigns', label: 'Unified Campaigns' },
@@ -130,9 +130,9 @@ export const Sidebar = ({ isOpen, onToggle, isMobileOpen, onMobileClose }: any) 
     { 
       to: '/admin/settings', 
       icon: Settings, 
-      label: 'System Config',
+      label: 'Branding Hub',
       children: [
-        { to: '/admin/settings/general', label: 'Branding' },
+        { to: '/admin/settings/general', label: 'Core Branding' },
         { to: '/admin/settings/appearance', label: 'Theme Logic' }
       ]
     }
@@ -144,15 +144,24 @@ export const Sidebar = ({ isOpen, onToggle, isMobileOpen, onMobileClose }: any) 
         {isMobileOpen && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onMobileClose} className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[100] lg:hidden" />}
       </AnimatePresence>
       
-      <aside className={clsx("fixed left-0 top-0 h-screen bg-white border-r border-slate-100 flex flex-col z-[110] transition-all duration-500 ease-in-out", isOpen ? "w-60" : "w-20", "max-lg:fixed max-lg:w-64", isMobileOpen ? "max-lg:translate-x-0" : "max-lg:-translate-x-full")}>
-        <div className="px-6 flex items-center justify-between h-20 shrink-0">
+      <aside className={clsx(
+        "fixed left-0 top-0 h-screen bg-white border-r border-slate-100 flex flex-col z-[110] transition-all duration-500 ease-in-out", 
+        isOpen ? "w-60" : "w-20", 
+        "max-lg:fixed max-lg:w-64", 
+        isMobileOpen ? "max-lg:translate-x-0" : "max-lg:-translate-x-full"
+      )}>
+        {/* TOP BRANDING */}
+        <div className="px-6 flex items-center justify-between h-20 shrink-0 border-b border-slate-50">
           <div className={clsx("flex items-center gap-2.5", !isOpen && !isMobileOpen && "mx-auto")}>
-            <div className="w-8 h-8 bg-slate-950 rounded-xl flex items-center justify-center shadow-xl shrink-0" style={{ color: config.theme.primaryColor }}><Shield size={16} /></div>
-            {(isOpen || isMobileOpen) && <h2 className="font-black text-slate-900 text-base italic tracking-tighter uppercase">NOOR<span style={{ color: config.theme.primaryColor }}>HQ.</span></h2>}
+            <div className="w-9 h-9 bg-slate-950 rounded-xl flex items-center justify-center shadow-xl shrink-0" style={{ color: config.theme.primaryColor }}>
+              <Shield size={18} />
+            </div>
+            {(isOpen || isMobileOpen) && <h2 className="font-black text-slate-900 text-base italic tracking-tighter uppercase leading-none">NOOR<span style={{ color: config.theme.primaryColor }}>HQ.</span></h2>}
           </div>
         </div>
 
-        <nav className="flex-grow px-3 mt-2 space-y-0.5 overflow-y-auto no-scrollbar">
+        {/* MIDDLE SCROLLABLE NAV */}
+        <nav className="flex-grow px-3 py-4 space-y-0.5 overflow-y-auto no-scrollbar">
            {adminMenu.map((item) => (
              <SidebarNavItem 
                key={item.label}
@@ -168,14 +177,25 @@ export const Sidebar = ({ isOpen, onToggle, isMobileOpen, onMobileClose }: any) 
            ))}
         </nav>
 
-        {/* FIXED LOGOUT FOOTER: Never scrolls away, always visible */}
-        <div className="p-4 bg-white border-t border-slate-50 mt-auto shrink-0 z-20">
+        {/* BOTTOM ANCHORED ACTIONS */}
+        <div className="p-4 bg-white border-t border-slate-100 shrink-0 z-20">
           <button 
             onClick={logout} 
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 text-rose-500 bg-rose-50/50 rounded-2xl font-black text-[9px] uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all shadow-sm active:scale-95"
+            className={clsx(
+              "w-full flex items-center justify-center gap-3 px-4 py-3 text-rose-500 bg-rose-50/50 rounded-2xl font-black text-[9px] uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all shadow-sm active:scale-95 group",
+              !isOpen && !isMobileOpen && "px-0"
+            )}
           >
-            <LogOut size={16} /> {(isOpen || isMobileOpen) && "Terminate Session"}
+            <LogOut size={16} className="group-hover:rotate-180 transition-transform duration-500" /> 
+            {(isOpen || isMobileOpen) && "Terminate Session"}
           </button>
+          
+          {(isOpen || isMobileOpen) && (
+            <div className="mt-4 flex items-center justify-center gap-2 opacity-30">
+               <div className="w-1 h-1 rounded-full bg-slate-400 animate-pulse" />
+               <span className="text-[6px] font-black uppercase tracking-widest text-slate-500">Secure Node Environment</span>
+            </div>
+          )}
         </div>
       </aside>
     </>

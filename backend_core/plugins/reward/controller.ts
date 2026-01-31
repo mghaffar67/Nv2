@@ -1,4 +1,3 @@
-
 import { dbNode } from '../../utils/db';
 
 /**
@@ -8,10 +7,13 @@ import { dbNode } from '../../utils/db';
 export const rewardController = {
   // 1. ADMIN: Get rewards with claim counts
   getRewards: async (req: any, res: any) => {
-    const rewards = dbNode.getRewards() || [];
-    const users = dbNode.getUsers();
+    // Fix: Added await to async db call
+    const rewards = await dbNode.getRewards() || [];
+    // Fix: Added await to async db call
+    const users = await dbNode.getUsers();
 
     // Map claim counts to each reward
+    // Fix: rewards and users are now data from awaited promises
     const enriched = rewards.map((r: any) => {
       const claimCount = users.filter((u: any) => (u.claimedRewards || []).includes(r.id)).length;
       return { ...r, timesClaimed: claimCount };
@@ -23,12 +25,14 @@ export const rewardController = {
   // 2. ADMIN: Unified Stats Retrieval
   getStats: async (req: any, res: any) => {
     try {
-      const rewards = dbNode.getRewards() || [];
-      const users = dbNode.getUsers();
+      // Fix: Added await to async db calls
+      const rewards = await dbNode.getRewards() || [];
+      const users = await dbNode.getUsers();
       
       let totalClaims = 0;
       let totalBudgetSpent = 0;
 
+      // Fix: rewards and users are now data from awaited promises
       rewards.forEach((r: any) => {
         const count = users.filter((u: any) => (u.claimedRewards || []).includes(r.id)).length;
         totalClaims += count;
@@ -48,7 +52,8 @@ export const rewardController = {
 
   saveReward: async (req: any, res: any) => {
     const { id, title, description, type, targetValue, rewardAmount, isActive } = req.body;
-    const db = dbNode.getRewards() || [];
+    // Fix: Added await to async db call
+    const db = await dbNode.getRewards() || [];
     
     const entry = {
       id: id || `REW-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
@@ -62,6 +67,7 @@ export const rewardController = {
     };
 
     let updated;
+    // Fix: db is now the array from awaited promise
     const exists = db.findIndex((r: any) => r.id === entry.id);
     if (exists !== -1) {
       updated = [...db];
@@ -70,35 +76,45 @@ export const rewardController = {
       updated = [entry, ...db];
     }
 
-    dbNode.saveRewards(updated);
+    // Fix: Added await to async db call
+    await dbNode.saveRewards(updated);
     return res.status(200).json({ success: true, message: "Reward Node Synchronized." });
   },
 
   deleteReward: async (req: any, res: any) => {
     const { id } = req.params;
-    const db = dbNode.getRewards() || [];
+    // Fix: Added await to async db call
+    const db = await dbNode.getRewards() || [];
+    // Fix: db is now the array from awaited promise
     const filtered = db.filter((r: any) => r.id !== id);
-    dbNode.saveRewards(filtered);
+    // Fix: Added await to async db call
+    await dbNode.saveRewards(filtered);
     return res.status(200).json({ success: true, message: "Reward Terminated." });
   },
 
   // 3. USER: Get My Progress & Claim (Stay existing logic)
   getUserAchievements: async (req: any, res: any) => {
     try {
-      const user = dbNode.findUserById(req.user.id);
-      const allRewards = (dbNode.getRewards() || []).filter((r: any) => r.isActive);
-      const users = dbNode.getUsers();
+      // Fix: Added await to async db calls
+      const user = await dbNode.findUserById(req.user.id);
+      const allRewards = await dbNode.getRewards() || [];
+      const users = await dbNode.getUsers();
 
-      const achievements = allRewards.map((reward: any) => {
+      // Fix: allRewards and users are now data from awaited promises
+      const achievements = allRewards.filter((r: any) => r.isActive).map((reward: any) => {
         let currentProgress = 0;
         if (reward.type === 'referral_count') {
+          // Fix: Properly access referralCode on awaited user object
           currentProgress = users.filter((u: any) => u.referredBy === user.referralCode).length;
         } else if (reward.type === 'task_count') {
+          // Fix: Properly access workSubmissions on awaited user object
           currentProgress = (user.workSubmissions || []).filter((s: any) => s.status === 'approved').length;
         } else if (reward.type === 'plan_buy') {
+          // Fix: Properly access currentPlan on awaited user object
           currentProgress = (user.currentPlan && user.currentPlan !== 'None') ? 1 : 0;
         }
 
+        // Fix: Properly access claimedRewards on awaited user object
         const isClaimed = (user.claimedRewards || []).includes(reward.id);
         return { ...reward, currentProgress, isClaimed, canClaim: currentProgress >= reward.targetValue && !isClaimed };
       });
@@ -112,15 +128,18 @@ export const rewardController = {
   claimReward: async (req: any, res: any) => {
     try {
       const { rewardId } = req.body;
-      const user = dbNode.findUserById(req.user.id);
-      const allRewards = dbNode.getRewards() || [];
+      // Fix: Added await to async db calls
+      const user = await dbNode.findUserById(req.user.id);
+      const allRewards = await dbNode.getRewards() || [];
       const reward = allRewards.find((r: any) => r.id === rewardId);
 
+      // Fix: Proper access on awaited user object
       if (!reward || (user.claimedRewards || []).includes(rewardId)) {
         return res.status(400).json({ message: "Invalid or already claimed reward node." });
       }
 
       const bonus = Number(reward.rewardAmount);
+      // Fix: Property access on awaited object
       user.balance = (Number(user.balance) || 0) + bonus;
       if (!user.claimedRewards) user.claimedRewards = [];
       user.claimedRewards.push(rewardId);
@@ -139,7 +158,8 @@ export const rewardController = {
       if (!user.transactions) user.transactions = [];
       user.transactions.unshift(bonusTrx);
 
-      dbNode.updateUser(user.id, { balance: user.balance, claimedRewards: user.claimedRewards, transactions: user.transactions });
+      // Fix: Added await and proper property access
+      await dbNode.updateUser(user.id, { balance: user.balance, claimedRewards: user.claimedRewards, transactions: user.transactions });
       return res.status(200).json({ success: true, message: "Bonus credited.", newBalance: user.balance });
     } catch (e) {
       return res.status(500).json({ message: "Claim sync failure." });

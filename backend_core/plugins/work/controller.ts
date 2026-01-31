@@ -6,15 +6,19 @@ import { dbNode } from '../../utils/db';
 export const workPluginController = {
   getTasks: async (req: any, res: any) => {
     try {
-      const user = dbNode.findUserById(req.user.id);
+      // Fix: Added await to async db call
+      const user = await dbNode.findUserById(req.user.id);
       if (!user) return res.status(404).json({ message: "Account not found." });
 
-      const allTasks = dbNode.getTasks();
+      // Fix: Added await to async db call
+      const allTasks = await dbNode.getTasks();
       const today = new Date().toISOString().split('T')[0];
       
+      // Fix: Property access on awaited object
       let currentStreak = user.streak || 0;
       
       if (user.lastWorkDate) {
+        // Fix: Property access on awaited object
         const lastDate = new Date(user.lastWorkDate);
         const todayDate = new Date(today);
         const diffTime = todayDate.getTime() - lastDate.getTime();
@@ -33,6 +37,7 @@ export const workPluginController = {
         'None': 0
       };
 
+      // Fix: Property access on awaited object
       const userLimit = PLAN_LIMITS[user.currentPlan || 'None'] || 0;
       const submissionsToday = (user.workSubmissions || []).filter((s: any) => 
         s.timestamp.startsWith(today)
@@ -40,7 +45,9 @@ export const workPluginController = {
 
       const remainingSlots = Math.max(0, userLimit - submissionsToday);
 
+      // Fix: allTasks is now the array from awaited promise
       const tasksWithMeta = allTasks.map((task: any) => {
+        // Fix: Proper workSubmissions access on user
         const isCompletedToday = (user.workSubmissions || []).some((s: any) => 
           s.taskId === task.id && s.timestamp.startsWith(today)
         );
@@ -51,6 +58,7 @@ export const workPluginController = {
           ...task,
           myStatus: isCompletedToday ? 'completed' : 'new',
           isLocked,
+          // Fix: Proper currentPlan access on user
           lockReason: user.currentPlan === 'None' ? 'No Active Station' : 'Plan Limit Reached'
         };
       });
@@ -73,16 +81,19 @@ export const workPluginController = {
   completeTask: async (req: any, res: any) => {
     try {
       const { taskId, evidence, taskTitle, reward } = req.body;
-      const user = dbNode.findUserById(req.user.id);
+      // Fix: Added await to async db call
+      const user = await dbNode.findUserById(req.user.id);
       if (!user) return res.status(404).json({ message: "Account not found." });
 
       const today = new Date().toISOString().split('T')[0];
       
+      // Fix: Property access on awaited object
       let newStreak = user.streak || 0;
       if (user.lastWorkDate !== today) {
         if (!user.lastWorkDate) {
           newStreak = 1;
         } else {
+          // Fix: Property access on awaited object
           const lastDate = new Date(user.lastWorkDate);
           const todayDate = new Date(today);
           const diffDays = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -97,6 +108,7 @@ export const workPluginController = {
 
       const submissionPacket = {
         id: `SUB-${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
+        // Fix: id access on user
         userId: user.id,
         taskId,
         taskTitle,
@@ -107,11 +119,13 @@ export const workPluginController = {
         adminNote: ''
       };
 
+      // Fix: Property access on awaited object
       const submissions = user.workSubmissions || [];
       submissions.unshift(submissionPacket);
 
       try {
-        dbNode.updateUser(user.id, { 
+        // Fix: Added await to async db call
+        await dbNode.updateUser(user.id, { 
           workSubmissions: submissions,
           streak: newStreak,
           lastWorkDate: today

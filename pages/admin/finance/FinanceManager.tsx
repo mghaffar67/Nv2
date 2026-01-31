@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -40,8 +39,10 @@ const FinanceManager = () => {
   const fetchGlobalLedger = async () => {
     setLoading(true);
     try {
-      const users = dbNode.getUsers();
+      // Fix: Added await to async db call
+      const users = await dbNode.getUsers();
       let allEntries: any[] = [];
+      // Fix: users is now the array from awaited promise
       users.forEach((u: any) => {
         (u.transactions || []).filter((t: any) => t.type === 'reward' && t.gateway === 'Daily Income').forEach((y: any) => {
            allEntries.push({ ...y, userName: u.name, userPhone: u.phone, userId: u.id, reportType: 'task' });

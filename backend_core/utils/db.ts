@@ -1,128 +1,145 @@
+import mongoose from 'mongoose';
 
-import { INITIAL_USERS, INITIAL_TASKS, INITIAL_CONFIG } from '../../src/data/mockTasks';
+/**
+ * Noor Official V3 - Database Registry Node
+ * Refined for Vercel Serverless & AWS MongoDB Compatibility
+ */
 
-const ENRICHED_TASKS = [
-  ...INITIAL_TASKS,
-  { id: 'TASK-AMZ-001', title: 'Viral Expansion', reward: 500, category: 'social_media', plan: 'DIAMOND', instruction: 'Post a TikTok review of our platform and tag @NoorOfficial.', isActive: true, validityDays: 30, timeLimitSeconds: 1200 },
-  { id: 'TASK-TST-001', title: 'System Security Audit', reward: 150, category: 'verification', plan: 'STANDARD', instruction: 'Test the withdrawal logic and screenshot any error logs.', isActive: true, validityDays: 15, timeLimitSeconds: 600 }
-];
+const MONGO_URI = process.env.MONGO_URI || "";
 
-const KEYS = {
-  USERS: 'noor_v3_master_registry',
-  TASKS: 'noor_tasks_db',
-  PAGES: 'noor_pages_db',
-  CONFIG: 'noor_config',
-  INTEGRATIONS: 'noor_integrations_db',
-  PAGE_CONTENTS: 'noor_page_contents_db',
-  REWARDS: 'noor_rewards_db'
-};
+// Fix: Use globalThis for better environment compatibility
+let cached = (globalThis as any).mongoose;
 
-const isNode = typeof window === 'undefined';
+if (!cached) {
+  cached = (globalThis as any).mongoose = { conn: null, promise: null };
+}
 
-const pruneMasterRegistry = (users: any[]) => {
-  return users.map(user => ({
-    ...user,
-    // Evidence strings (Base64 PDF/Images) can be large. Increased limit to 2MB to prevent corruption.
-    workSubmissions: (user.workSubmissions || []).slice(0, 20).map((s: any) => ({
-      ...s,
-      userAnswer: s.userAnswer?.length > 2000000 ? s.userAnswer.substring(0, 2000000) + "...[PRUNED]" : s.userAnswer
-    })),
-    transactions: (user.transactions || []).slice(0, 30).map((t: any) => ({
-      ...t,
-      proofImage: t.proofImage?.length > 2000000 ? t.proofImage.substring(0, 2000000) + "...[PRUNED]" : t.proofImage
-    }))
-  }));
-};
+async function connectToDatabase() {
+  if (cached.conn) return cached.conn;
 
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: false,
+    };
+
+    cached.promise = mongoose.connect(MONGO_URI, opts).then((mongoose) => {
+      console.log("📡 AWS MongoDB Cluster Connected.");
+      return mongoose;
+    });
+  }
+  
+  try {
+    cached.conn = await cached.promise;
+  } catch (e) {
+    cached.promise = null;
+    throw e;
+  }
+
+  return cached.conn;
+}
+
+// Data Access Object (DAO) Pattern to maintain backward compatibility with previous code
 export const dbNode = {
-  getUsers: () => {
-    if (isNode) return INITIAL_USERS;
-    const data = localStorage.getItem(KEYS.USERS);
-    return data ? JSON.parse(data) : INITIAL_USERS;
-  },
-  
-  saveUsers: (users: any[]) => {
-    if (isNode) return;
-    try {
-      const pruned = pruneMasterRegistry(users);
-      localStorage.setItem(KEYS.USERS, JSON.stringify(pruned));
-      window.dispatchEvent(new Event('noor_db_update'));
-    } catch (e) {
-      console.error("Master Registry Quota Warning. Forcing aggressive cleanup.");
-      const ultraPruned = users.map(u => ({ ...u, workSubmissions: [], transactions: u.transactions?.slice(0, 5) }));
-      localStorage.setItem(KEYS.USERS, JSON.stringify(ultraPruned));
-    }
+  // Schema-less style for flexibility during migration
+  getCollection: async (name: string) => {
+    await connectToDatabase();
+    return mongoose.connection.db?.collection(name);
   },
 
-  findUserById: (id: string) => dbNode.getUsers().find((u: any) => u.id === id),
+  getUsers: async () => {
+    const col = await dbNode.getCollection('users');
+    return col?.find({}).toArray() || [];
+  },
 
-  findUserByIdentifier: (input: string) => {
+  findUserById: async (id: string) => {
+    const col = await dbNode.getCollection('users');
+    return col?.findOne({ id });
+  },
+
+  findUserByIdentifier: async (input: string) => {
     const term = input.toLowerCase().trim();
-    return dbNode.getUsers().find((u: any) => u.email.toLowerCase() === term || u.phone === term);
+    const col = await dbNode.getCollection('users');
+    return col?.findOne({ $or: [{ email: term }, { phone: term }] });
   },
 
-  updateUser: (id: string, updates: any) => {
-    const users = dbNode.getUsers();
-    const idx = users.findIndex((u: any) => u.id === id);
-    if (idx !== -1) {
-      users[idx] = { ...users[idx], ...updates };
-      dbNode.saveUsers(users);
-      return users[idx];
+  updateUser: async (id: string, updates: any) => {
+    const col = await dbNode.getCollection('users');
+    await col?.updateOne({ id }, { $set: updates });
+    const updated = await col?.findOne({ id });
+    // Global Event Sync
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('noor_db_update'));
+    return updated;
+  },
+
+  saveUsers: async (users: any[]) => {
+    const col = await dbNode.getCollection('users');
+    // Bulk write for efficiency
+    for (const user of users) {
+      await col?.updateOne({ id: user.id }, { $set: user }, { upsert: true });
     }
-    return null;
   },
 
-  getConfig: () => {
-    if (isNode) return INITIAL_CONFIG;
-    const data = localStorage.getItem(KEYS.CONFIG);
-    return data ? JSON.parse(data) : INITIAL_CONFIG;
-  },
-  
-  saveConfig: (config: any) => {
-    if (isNode) return;
-    localStorage.setItem(KEYS.CONFIG, JSON.stringify(config));
-    window.dispatchEvent(new Event('noor_db_update'));
-  },
-  
-  getTasks: () => {
-    if (isNode) return ENRICHED_TASKS;
-    const data = localStorage.getItem(KEYS.TASKS);
-    return data ? JSON.parse(data) : ENRICHED_TASKS;
-  },
-  
-  saveTasks: (tasks: any[]) => {
-    if (isNode) return;
-    localStorage.setItem(KEYS.TASKS, JSON.stringify(tasks));
+  getTasks: async () => {
+    const col = await dbNode.getCollection('tasks');
+    return col?.find({}).toArray() || [];
   },
 
-  getRewards: () => {
-    if (isNode) return [];
-    const data = localStorage.getItem(KEYS.REWARDS);
-    return data ? JSON.parse(data) : [];
+  saveTasks: async (tasks: any[]) => {
+    const col = await dbNode.getCollection('tasks');
+    await col?.deleteMany({});
+    if (tasks.length > 0) await col?.insertMany(tasks);
   },
 
-  saveRewards: (data: any[]) => {
-    if (!isNode) localStorage.setItem(KEYS.REWARDS, JSON.stringify(data));
+  getIntegrations: async () => {
+    const col = await dbNode.getCollection('integrations');
+    return col?.find({}).toArray() || [];
   },
 
-  getIntegrations: () => {
-    if (isNode) return [];
-    const data = localStorage.getItem(KEYS.INTEGRATIONS);
-    return data ? JSON.parse(data) : [];
+  saveIntegrations: async (data: any[]) => {
+    const col = await dbNode.getCollection('integrations');
+    await col?.deleteMany({});
+    if (data.length > 0) await col?.insertMany(data);
   },
 
-  saveIntegrations: (data: any[]) => {
-    if (!isNode) localStorage.setItem(KEYS.INTEGRATIONS, JSON.stringify(data));
+  getConfig: async () => {
+    const col = await dbNode.getCollection('config');
+    const config = await col?.findOne({});
+    return config || {};
   },
 
-  getPageContents: () => {
-    if (isNode) return {};
-    const data = localStorage.getItem(KEYS.PAGE_CONTENTS);
-    return data ? JSON.parse(data) : {};
+  saveConfig: async (config: any) => {
+    const col = await dbNode.getCollection('config');
+    await col?.updateOne({}, { $set: config }, { upsert: true });
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('noor_db_update'));
   },
 
-  savePageContents: (data: any) => {
-    if (!isNode) localStorage.setItem(KEYS.PAGE_CONTENTS, JSON.stringify(data));
+  // Fix: Added missing getPageContents method
+  getPageContents: async () => {
+    const col = await dbNode.getCollection('page_contents');
+    const data = await col?.find({}).toArray() || [];
+    return data.reduce((acc: any, curr: any) => ({ ...acc, [curr.pageKey]: curr }), {});
+  },
+
+  // Fix: Added missing savePageContents method
+  savePageContents: async (data: any) => {
+    const col = await dbNode.getCollection('page_contents');
+    for (const key in data) {
+      const entry = data[key];
+      await col?.updateOne({ pageKey: key }, { $set: entry }, { upsert: true });
+    }
+  },
+
+  // Fix: Added missing getRewards method
+  getRewards: async () => {
+    const col = await dbNode.getCollection('rewards');
+    return col?.find({}).toArray() || [];
+  },
+
+  // Fix: Added missing saveRewards method
+  saveRewards: async (rewards: any[]) => {
+    const col = await dbNode.getCollection('rewards');
+    await col?.deleteMany({});
+    if (rewards.length > 0) await col?.insertMany(rewards);
   }
 };
 

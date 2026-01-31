@@ -1,4 +1,3 @@
-
 import { dbNode } from '../../utils/db';
 
 /**
@@ -10,9 +9,14 @@ export const popupController = {
   getPublicCampaigns: async (req: any, res: any) => {
     try {
       const { userId } = req.query;
-      const allPopups = dbNode.getIntegrations().filter((i: any) => i.type === 'campaign' && i.isActive);
+      // Fix: Added await to async db call
+      const integrations = await dbNode.getIntegrations();
+      // Fix: integrations is now the array from awaited promise
+      const allPopups = integrations.filter((i: any) => i.type === 'campaign' && i.isActive);
       
-      const user = userId ? dbNode.findUserById(userId) : null;
+      // Fix: Added await to async db call
+      const user = userId ? await dbNode.findUserById(userId) : null;
+      // Fix: user is now the object from awaited promise
       const hasPlan = user?.currentPlan && user.currentPlan !== 'None';
 
       const filtered = allPopups.filter((p: any) => {
@@ -31,7 +35,8 @@ export const popupController = {
   saveCampaign: async (req: any, res: any) => {
     try {
       const { id, title, bodyText, imageUrl, btnText, btnAction, targetAudience, frequency, isActive } = req.body;
-      const data = dbNode.getIntegrations();
+      // Fix: Added await to async db call
+      const data = await dbNode.getIntegrations();
       
       const newEntry = {
         id: id || `CMP-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
@@ -48,16 +53,19 @@ export const popupController = {
       };
 
       let updatedData;
+      // Fix: data is now the array from awaited promise
       const existingIdx = data.findIndex((i: any) => i.id === id);
       
       if (existingIdx !== -1) {
         updatedData = [...data];
         updatedData[existingIdx] = newEntry;
       } else {
+        // Fix: data is now the array from awaited promise
         updatedData = [newEntry, ...data];
       }
 
-      dbNode.saveIntegrations(updatedData);
+      // Fix: Added await to async db call
+      await dbNode.saveIntegrations(updatedData);
       return res.status(200).json({ success: true, message: "Campaign Synchronized.", data: newEntry });
     } catch (e) {
       return res.status(500).json({ message: "Deployment failure." });

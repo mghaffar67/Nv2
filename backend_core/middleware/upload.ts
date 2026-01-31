@@ -1,38 +1,48 @@
+import multer from 'multer';
+import multerS3 from 'multer-s3';
+import s3Client from '../config/s3Config';
+import path from 'path';
 
 /**
- * Noor Official V3 - Secure Upload Pipeline
- * Simulates Multer logic to process multipart/form-data for transaction evidence and task assets.
+ * Noor Official V3 - AWS Cloud Storage Engine
  */
-export const uploadMiddleware = {
-  single: (fieldName: string) => (req: any, res: any, next: any) => {
-    // Logic to extract file from body (simulation for browser/mock environments)
-    const file = req.body?.[fieldName] || (req.files && req.files[fieldName]);
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Production Logic: Stream directly to S3
+const s3Storage = multerS3({
+  s3: s3Client,
+  bucket: process.env.AWS_BUCKET_NAME || 'noor-v3-assets',
+  acl: 'public-read', // Ensure bucket permissions allow ACLs
+  contentType: multerS3.AUTO_CONTENT_TYPE,
+  metadata: (req, file, cb) => {
+    cb(null, { fieldName: file.fieldname });
+  },
+  key: (req, file, cb) => {
+    const fileName = `audit_nodes/${Date.now()}-${Math.floor(Math.random() * 1000)}${path.extname(file.originalname)}`;
+    cb(null, fileName);
+  },
+});
+
+export const uploadMiddleware = multer({
+  storage: isProduction ? s3Storage : multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB Node Limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|pdf/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
     
-    if (file) {
-      // Determine mimetype (simulation)
-      let mimetype = 'image/png';
-      if (typeof file === 'string' && file.startsWith('data:application/pdf')) {
-        mimetype = 'application/pdf';
-      }
-
-      req.file = {
-        fieldname: fieldName,
-        originalname: `asset-${Date.now()}.${mimetype === 'application/pdf' ? 'pdf' : 'png'}`,
-        mimetype: mimetype,
-        filename: `node-asset-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        path: typeof file === 'string' ? file : URL.createObjectURL(file), // Support for preview paths
-        size: 1024 * 1024 * 5 // Mock 5MB
-      };
-    }
-
-    // Critical security check for deposits
-    if (req.path.includes('deposit') && !req.file && !req.body.image) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Security Protocol Violation: Transaction evidence (screenshot) is missing.' 
-      });
-    }
-
-    next();
+    if (extname && mimetype) return cb(null, true);
+    cb(new Error("Registry violation: Only images and PDF artifacts allowed."));
   }
+});
+
+/**
+ * Noor V3 - Express adaptation for Vercel req.file
+ * Note: req.file.location contains the AWS URL string
+ */
+export const handleUploadSync = (req: any) => {
+  if (req.file) {
+    return req.file.location || req.file.path || (req.file.buffer ? `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}` : null);
+  }
+  return null;
 };
