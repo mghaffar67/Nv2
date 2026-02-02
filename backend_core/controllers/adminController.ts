@@ -2,55 +2,23 @@ import { dbNode } from '../utils/db';
 
 export const adminController = {
   getDashboardStats: async (req: any, res: any) => {
-    // Added await to fix db forEach error
-    const db = await dbNode.getUsers();
-    const today = new Date().toISOString().split('T')[0];
-    
+    const db = dbNode.getUsers();
     let totalRevenue = 0;
-    let todayRevenue = 0;
     let pendingRequests = 0;
     let totalCompletedTasks = 0;
     
-    // Generate L-7 Date nodes
-    const last7Days = [...Array(7)].map((_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      return d.toISOString().split('T')[0];
-    }).reverse();
-
-    const revenueTrend = last7Days.map(date => ({ name: date.split('-')[2], revenue: 0, tasks: 0 }));
-
-    // Fix forEach on Promise error
     db.forEach((user: any) => {
-      // Calculate Revenue
       if (user.purchaseHistory) {
         user.purchaseHistory.forEach((p: any) => {
-          if (p.status === 'active' || p.status === 'approved') {
-            const amt = Number(p.amount) || 0;
-            totalRevenue += amt;
-            const pDate = p.date?.split('T')[0] || p.timestamp?.split('T')[0];
-            if (pDate === today) todayRevenue += amt;
-            
-            const trendIdx = last7Days.indexOf(pDate);
-            if (trendIdx !== -1) revenueTrend[trendIdx].revenue += amt;
-          }
+          if (p.status === 'active' || p.status === 'approved') totalRevenue += Number(p.amount) || 0;
         });
       }
-
-      // Calculate Work & Requests
       if (user.workSubmissions) {
         user.workSubmissions.forEach((s: any) => {
           if (s.status === 'pending') pendingRequests++;
-          if (s.status === 'approved') {
-            totalCompletedTasks++;
-            const sDate = s.timestamp?.split('T')[0];
-            const trendIdx = last7Days.indexOf(sDate);
-            if (trendIdx !== -1) revenueTrend[trendIdx].tasks += 1;
-          }
+          if (s.status === 'approved') totalCompletedTasks++;
         });
       }
-      
-      // Calculate Finance Pending
       if (user.transactions) {
         user.transactions.forEach((t: any) => {
           if (t.status === 'pending') pendingRequests++;
@@ -58,46 +26,44 @@ export const adminController = {
       }
     });
 
-    return res.status(200).json({
-      totalRevenue,
-      todayRevenue,
-      pendingRequests,
-      totalCompletedTasks,
-      revenueTrend,
-      serverTime: new Date().toISOString()
-    });
+    return res.status(200).json({ totalRevenue, pendingRequests, totalCompletedTasks });
   },
 
-  // Added editUserBalance to fix property missing errors in admin modals
   editUserBalance: async (req: any, res: any) => {
     try {
       const { userId, amount, action } = req.body;
-      // Added await to fix user property access errors
-      const user = await dbNode.findUserById(userId);
-      if (!user) return res.status(404).json({ message: "User not found in registry." });
+      const user = dbNode.findUserById(userId);
+      if (!user) return res.status(404).json({ message: "User not found." });
 
       const amt = Number(amount);
-      if (isNaN(amt) || amt < 0) return res.status(400).json({ message: "Invalid liquidity amount." });
+      if (isNaN(amt) || amt <= 0) return res.status(400).json({ message: "Ghalat raqam." });
 
-      // Fix property access on Promise
       let currentBalance = Number(user.balance) || 0;
-      let newBalance = currentBalance;
+      let newBalance = action === 'add' ? currentBalance + amt : currentBalance - amt;
 
-      if (action === 'add') {
-        newBalance = currentBalance + amt;
-      } else if (action === 'deduct') {
-        if (currentBalance < amt) return res.status(400).json({ message: "Insufficient balance for deduction." });
-        newBalance = currentBalance - amt;
-      }
+      if (newBalance < 0) return res.status(400).json({ message: "Natija manfi (negative) nahi ho sakta." });
 
-      dbNode.updateUser(userId, { balance: newBalance });
-      return res.status(200).json({ 
-        success: true, 
-        message: "Liquidity sync complete.", 
-        newBalance 
-      });
+      const updatePayload = {
+        balance: newBalance,
+        transactions: [
+          {
+            id: `ADJ-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
+            type: 'reward',
+            amount: amt,
+            status: 'approved',
+            gateway: 'Admin Adjustment',
+            note: action === 'add' ? 'Funds added by Admin' : 'Funds deducted by Admin',
+            date: new Date().toISOString().split('T')[0],
+            timestamp: new Date().toISOString()
+          },
+          ...(user.transactions || [])
+        ]
+      };
+
+      dbNode.updateUser(userId, updatePayload);
+      return res.status(200).json({ success: true, message: "Balance update ho gaya.", newBalance });
     } catch (err) {
-      return res.status(500).json({ message: "Ledger adjustment node failed." });
+      return res.status(500).json({ message: "Error updating balance." });
     }
   }
 };

@@ -1,89 +1,94 @@
+import { dbNode } from '../utils/db';
 
-const getMockDB = () => {
-  const data = localStorage.getItem('noor_v3_master_registry');
-  return data ? JSON.parse(data) : [];
-};
-
-const saveToMockDB = (db: any[]) => {
-  localStorage.setItem('noor_v3_master_registry', JSON.stringify(db));
-};
-
+/**
+ * Noor Official V3 - Gamification Controller
+ * Refined for dynamic reward pool management.
+ */
 export const gamificationController = {
   claimReward: async (req: any, res: any) => {
     try {
-      const { userId, streakRewards } = req.body;
-      let db = getMockDB();
-      const userIndex = db.findIndex((u: any) => u.id === userId);
+      const { userId } = req.body;
+      const user = dbNode.findUserById(userId);
 
-      if (userIndex === -1) return res.status(404).json({ success: false, message: "Registry node lost. Access denied." });
-      const user = db[userIndex];
+      if (!user) {
+        return res.status(404).json({ success: false, message: "User account not found." });
+      }
 
       const now = new Date();
       const todayStr = now.toISOString().split('T')[0];
       
-      // Verification: Prevent duplicate daily claims
+      // 1. DUPLICATE CLAIM CHECK
       if (user.lastCheckIn) {
-        const lastClaimStr = new Date(user.lastCheckIn).toISOString().split('T')[0];
-        if (lastClaimStr === todayStr) {
-          return res.status(400).json({ success: false, message: "Daily reward packet already synced for today." });
+        const lastClaimDate = new Date(user.lastCheckIn).toISOString().split('T')[0];
+        if (lastClaimDate === todayStr) {
+          return res.status(400).json({ 
+            success: false, 
+            message: "Aap aaj ka reward pehle hi le chuke hain. Kal dobara koshish karein." 
+          });
         }
       }
 
-      // Logic: Calculate streak continuity
-      let newStreak = (user.streak || 0) + 1;
+      // 2. STREAK LOGIC (New User Friendly & Forgiving Window)
+      let newStreak = 1;
+      
       if (user.lastCheckIn) {
         const lastDate = new Date(user.lastCheckIn);
-        const lastDayStart = new Date(lastDate.toISOString().split('T')[0]).getTime();
-        const currentDayStart = new Date(todayStr).getTime();
-        const oneDayInMs = 24 * 60 * 60 * 1000;
-        const diffDays = (currentDayStart - lastDayStart) / oneDayInMs;
+        const diffMs = now.getTime() - lastDate.getTime();
+        const diffHours = diffMs / (1000 * 60 * 60);
 
-        if (diffDays > 1.8) {
-          newStreak = 1; // Integrity Check: Streak broken due to inactivity
-        } else if (newStreak > 7) {
-          newStreak = 1; // Registry Check: 7-day cycle completed
+        // 48-hour window to keep the streak alive (handles midnight edge cases)
+        if (diffHours <= 48) {
+          newStreak = (user.streak || 0) + 1;
+          if (newStreak > 7) newStreak = 1; // Cycle resets after 7 days
+        } else {
+          newStreak = 1; // Streak broken
         }
       } else {
-        newStreak = 1;
+        newStreak = 1; // First claim ever
       }
 
-      const rewards = streakRewards || [5, 10, 15, 20, 25, 30, 100];
-      const rewardAmount = Number(rewards[newStreak - 1]) || 5;
+      // 3. DYNAMIC REWARD CALCULATION (From Config)
+      const config = dbNode.getConfig();
+      const rewardsPool = config.streakRewards || [5, 10, 15, 20, 25, 30, 100];
+      
+      // Ensure we don't index out of bounds
+      const rewardAmount = Number(rewardsPool[newStreak - 1]) || 5;
 
-      // Atomic Ledger Entry
-      user.balance = (Number(user.balance) || 0) + rewardAmount;
-      user.streak = newStreak;
-      user.lastCheckIn = now.toISOString();
-
+      // 4. LEDGER UPDATE
+      const updatedBalance = (Number(user.balance) || 0) + rewardAmount;
+      
       const newTrx = {
         id: `STRK-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
         type: 'reward',
         amount: rewardAmount,
         status: 'approved',
-        gateway: `Cycle: Day ${newStreak}`,
+        gateway: `Hazari Inam`,
+        note: `Day ${newStreak} Consistency Reward`,
         date: todayStr,
-        timestamp: now.toISOString(),
-        note: `Consistent Partner Reward: Node ${newStreak}`
+        timestamp: now.toISOString()
       };
 
-      if (!user.transactions) user.transactions = [];
-      user.transactions.unshift(newTrx);
+      const transactions = user.transactions || [];
+      transactions.unshift(newTrx);
 
-      db[userIndex] = user;
-      saveToMockDB(db);
+      dbNode.updateUser(userId, { 
+        balance: updatedBalance,
+        streak: newStreak,
+        lastCheckIn: now.toISOString(),
+        transactions
+      });
       
-      // Global Session Sync
-      localStorage.setItem('noor_user', JSON.stringify({ ...user, password: undefined }));
-
       return res.status(200).json({
         success: true,
+        message: `Mubarak! Day ${newStreak} ka Inam Rs. ${rewardAmount} aapke wallet mein add kar diya gaya hai.`,
         rewardAmount,
         newStreak,
-        updatedUser: { ...user, password: undefined }
+        updatedBalance
       });
+
     } catch (err) {
-      console.error("Streak Audit Failure:", err);
-      return res.status(500).json({ success: false, message: "Platform Logic Exception. Try again later." });
+      console.error("Gamification Protocol Error:", err);
+      return res.status(500).json({ success: false, message: "System logic error. Try again." });
     }
   }
 };

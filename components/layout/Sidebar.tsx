@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -21,7 +20,9 @@ import {
   FileText,
   Inbox,
   ShieldAlert,
-  Trophy
+  Trophy,
+  Sparkles,
+  Gift
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
@@ -122,11 +123,6 @@ export const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose?: () => 
     }
   }, [user?.role]);
 
-  useEffect(() => {
-    if (location.pathname.includes('/admin/advanced')) setOpenSub('Advanced Settings');
-    else if (location.pathname.includes('/admin/settings')) setOpenSub('Basic Settings');
-  }, [location.pathname]);
-
   const isAdmin = user?.role === 'admin';
   
   const menuStructure = isAdmin ? [
@@ -158,7 +154,14 @@ export const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose?: () => 
   ] : [
     { label: 'Dashboard', to: '/user/dashboard', icon: LayoutDashboard },
     { label: 'Daily Work', to: '/user/work', icon: Briefcase },
-    { label: 'Bonus Hub', to: '/user/achievements', icon: Trophy },
+    { 
+      label: 'Bounce Hub', 
+      icon: Trophy,
+      children: [
+        { label: 'Bumper Rewards', to: '/user/achievements' },
+        { label: 'Bounce Tasks', to: '/user/work' }
+      ]
+    },
     { label: 'My Wallet', to: '/user/wallet', icon: Wallet },
     { label: 'My Team', to: '/user/team', icon: Users },
     { label: 'My Profile', to: '/user/settings', icon: UserCircle },

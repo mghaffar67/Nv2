@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, UserPlus, ShieldCheck, Mail, Phone, Trash2, X, RefreshCw, BadgeCheck, ShieldAlert, UserCog } from 'lucide-react';
-import { api } from '../../../utils/api';
+import { Users, UserPlus, Shield, ShieldCheck, Mail, Phone, Trash2, Edit3, X, Save, RefreshCw, Key, UserCog, BadgeCheck, ShieldAlert } from 'lucide-react';
+import { dbNode } from '../../../backend_core/utils/db';
 import { clsx } from 'clsx';
 
 const TeamManagement = () => {
@@ -11,44 +11,44 @@ const TeamManagement = () => {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '', role: 'manager' });
   const [loading, setLoading] = useState(false);
 
-  const fetchTeam = async () => {
+  const fetchTeam = () => {
     setLoading(true);
-    try {
-        const allUsers = await api.get('/admin/users');
-        const staff = allUsers.filter((u: any) => u.role === 'admin' || u.role === 'manager');
-        setTeam(staff);
-    } catch (e) {
-        console.error("Staff sync failed.");
-    } finally {
-        setLoading(false);
-    }
+    const allUsers = dbNode.getUsers();
+    // Only show Staff and Admins
+    const staff = allUsers.filter((u: any) => u.role === 'admin' || u.role === 'manager');
+    setTeam(staff);
+    setLoading(false);
   };
 
   useEffect(() => { fetchTeam(); }, []);
 
-  const handleAdd = async (e: React.FormEvent) => {
+  const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-        await api.post('/auth/register', { ...formData, referralCode: 'STAFF' });
-        setShowAdd(false);
-        setFormData({ name: '', email: '', phone: '', password: '', role: 'manager' });
-        fetchTeam();
-        alert("Associate Integrated into Staff Registry.");
-    } catch (e: any) {
-        alert(e.message);
-    }
+    const newUser = {
+      ...formData,
+      id: `STAFF-${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
+      balance: 0,
+      createdAt: new Date().toISOString(),
+      isBanned: false,
+      transactions: [],
+      workSubmissions: [],
+      purchaseHistory: []
+    };
+    const current = dbNode.getUsers();
+    dbNode.saveUsers([...current, newUser]);
+    setShowAdd(false);
+    setFormData({ name: '', email: '', phone: '', password: '', role: 'manager' });
+    fetchTeam();
+    alert("Associate Integrated into Staff Registry.");
   };
 
-  const deleteStaff = async (id: string) => {
+  const deleteStaff = (id: string) => {
     const member = team.find(m => m.id === id);
     if (member?.email === 'admin@noor.com') return alert("Root Admin access cannot be revoked!");
-    if (!window.confirm("Remove this staff associate?")) return;
-    try {
-        await api.delete(`/admin/users/${id}`);
-        fetchTeam();
-    } catch (e) {
-        alert("Removal failed.");
-    }
+    if (!window.confirm("Remove this staff associate from the system hub?")) return;
+    const current = dbNode.getUsers().filter((u: any) => u.id !== id);
+    dbNode.saveUsers(current);
+    fetchTeam();
   };
 
   return (
@@ -112,18 +112,40 @@ const TeamManagement = () => {
                    <h3 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter">Initialize Node.</h3>
                    <button type="button" onClick={() => setShowAdd(false)} className="p-3 bg-slate-50 rounded-full hover:bg-rose-50 hover:text-rose-500 transition-all"><X size={28}/></button>
                 </div>
+                
                 <div className="space-y-5">
-                   <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full h-14 px-7 bg-slate-50 border border-slate-100 rounded-[28px] font-black text-sm" placeholder="Staff Name" />
-                   <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full h-14 px-7 bg-slate-50 border border-slate-100 rounded-[28px] font-bold text-xs" placeholder="Staff Email" />
-                   <input required type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full h-14 px-7 bg-slate-50 border border-slate-100 rounded-[28px] font-bold text-xs" placeholder="Access Key" />
-                   <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} className="w-full h-14 px-7 bg-slate-50 border border-slate-100 rounded-[28px] font-black text-[10px] uppercase">
-                      <option value="manager">Manager</option>
-                      <option value="admin">Admin</option>
-                   </select>
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-6 italic">Full Legal Name</label>
+                      <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full h-14 px-7 bg-slate-50 border border-slate-100 rounded-[28px] font-black text-sm text-slate-900 outline-none focus:bg-white focus:ring-4 focus:ring-indigo-50/50 transition-all shadow-inner" placeholder="M Ghaffar Official" />
+                   </div>
+                   <div className="grid grid-cols-2 gap-5">
+                      <div className="space-y-1.5">
+                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-6">Email Identity</label>
+                         <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full h-14 px-7 bg-slate-50 border border-slate-100 rounded-[28px] font-bold text-xs" />
+                      </div>
+                      <div className="space-y-1.5">
+                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-6">Mobile ID</label>
+                         <input required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full h-14 px-7 bg-slate-50 border border-slate-100 rounded-[28px] font-bold text-xs" />
+                      </div>
+                   </div>
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-6">Access Security Key</label>
+                      <input required type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full h-14 px-7 bg-slate-50 border border-slate-100 rounded-[28px] font-bold text-xs" placeholder="••••••••" />
+                   </div>
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-6 italic">Hierarchy Level</label>
+                      <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} className="w-full h-14 px-7 bg-slate-50 border border-slate-100 rounded-[28px] font-black text-[10px] uppercase outline-none focus:bg-white appearance-none cursor-pointer">
+                         <option value="manager">Operations Manager (Daily Audit)</option>
+                         <option value="admin">Executive Admin (Master Access)</option>
+                      </select>
+                   </div>
                 </div>
-                <button type="submit" className="w-full h-18 bg-slate-950 text-white rounded-[32px] font-black text-[12px] uppercase tracking-[0.3em] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-4">
-                   <BadgeCheck size={24} className="text-sky-400" /> Deploy Associate
-                </button>
+
+                <div className="pt-6">
+                   <button type="submit" className="w-full h-18 bg-slate-950 text-white rounded-[32px] font-black text-[12px] uppercase tracking-[0.3em] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-4">
+                      <BadgeCheck size={24} className="text-sky-400" /> Deploy to Staff Cluster
+                   </button>
+                </div>
              </motion.form>
           </div>
         )}

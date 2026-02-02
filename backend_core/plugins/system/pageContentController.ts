@@ -1,3 +1,4 @@
+
 import { dbNode } from '../../utils/db';
 
 /**
@@ -8,8 +9,7 @@ export const pageContentController = {
   getPageContent: async (req: any, res: any) => {
     try {
       const { pageKey } = req.params;
-      // Added await to fix Promise property access error
-      const db = await dbNode.getPageContents();
+      const db = dbNode.getPageContents();
       
       // Seed default if missing to prevent UI crashes
       if (!db[pageKey]) {
@@ -30,8 +30,7 @@ export const pageContentController = {
   updatePageContent: async (req: any, res: any) => {
     try {
       const { pageKey, sections } = req.body;
-      // Added await to fix Promise property access error
-      const db = await dbNode.getPageContents();
+      const db = dbNode.getPageContents();
       
       db[pageKey] = {
         pageKey,
@@ -42,8 +41,7 @@ export const pageContentController = {
         updatedAt: new Date().toISOString()
       };
 
-      // Added await to fix Promise execution
-      await dbNode.savePageContents(db);
+      dbNode.savePageContents(db);
       return res.status(200).json({ 
         success: true, 
         message: "Production nodes synchronized.",

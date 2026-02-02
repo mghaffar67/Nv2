@@ -1,3 +1,4 @@
+
 import { dbRegistry } from '../utils/db';
 
 export const authController = {
@@ -9,26 +10,21 @@ export const authController = {
         return res.status(400).json({ message: 'Email aur Password likhna zaroori hai.' });
       }
 
-      // Add await to fix Promise property access error
-      const user = await dbRegistry.findUserByIdentifier(email);
+      const user = dbRegistry.findUserByIdentifier(email);
 
-      // Fix property access on Promise
       if (!user || user.password !== password) {
         return res.status(401).json({ message: 'Ghalat details! Dobara check karen.' });
       }
       
-      // Fix property access on Promise
       if (user.isBanned) {
         return res.status(403).json({ message: 'Aap ka account suspend kar diya gaya hai.' });
       }
 
-      // Fix property access on Promise
       const { password: _, ...sessionUser } = user;
       const timestamp = Date.now();
 
       return res.status(200).json({
         success: true,
-        // Fix property access on Promise
         token: `jwt-noor-${user.id}-${timestamp}`,
         user: sessionUser
       });
@@ -41,8 +37,7 @@ export const authController = {
     try {
       const { name, email, phone, password, referralCode } = req.body;
       
-      // Add await to fix Promise return value check
-      if (await dbRegistry.findUserByIdentifier(email) || await dbRegistry.findUserByIdentifier(phone)) {
+      if (dbRegistry.findUserByIdentifier(email) || dbRegistry.findUserByIdentifier(phone)) {
         return res.status(400).json({ message: 'Ye Email ya Phone pehle se registered hai.' });
       }
 
@@ -62,11 +57,8 @@ export const authController = {
         createdAt: new Date().toISOString()
       };
 
-      // Add await to getUsers call
-      const users = await dbRegistry.getUsers();
-      // Fix property access on Promise
+      const users = dbRegistry.getUsers();
       users.push(newUser);
-      // Fix argument type error by ensuring users is an array
       dbRegistry.saveUsers(users);
 
       const { password: _, ...safeUser } = newUser;

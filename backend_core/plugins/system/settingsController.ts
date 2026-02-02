@@ -9,11 +9,9 @@ export const settingsController = {
   updateCompanyProfile: async (req: any, res: any) => {
     try {
       const { appName, supportPhone, whatsappNumber, supportEmail, address } = req.body;
-      // Add await to fix Promise property access error
-      const config = await dbNode.getConfig();
+      const config = dbNode.getConfig();
 
       // Identity Logic: Keep old assets if new ones aren't provided
-      // Fix property access on Promise
       const updatedBranding = {
         ...config.branding,
         companyName: appName || config.branding.companyName,
@@ -32,12 +30,11 @@ export const settingsController = {
       // Sync with Master Registry
       const newConfig = {
         ...config,
-        // Fix property access on Promise
         appName: appName || config.appName,
         branding: updatedBranding
       };
 
-      await dbNode.saveConfig(newConfig);
+      dbNode.saveConfig(newConfig);
 
       return res.status(200).json({
         success: true,

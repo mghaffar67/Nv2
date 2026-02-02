@@ -48,26 +48,22 @@ const TaskFormModal = ({ isOpen, onClose, task, onUpdate }: TaskFormModalProps) 
   const [preview, setPreview] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadRegistry = async () => {
-      if (isOpen) {
-        // Add await to fix Promise data error
-        const registry = await dbNode.getUsers();
-        setUsers(registry);
-        
-        if (task) {
-          setForm({ ...task });
-          setPreview(task.mediaType === 'image' ? task.mediaUrl : task.mediaType === 'pdf' ? 'pdf_detected' : null);
-        } else {
-          setForm({ 
-            title: '', category: 'verification', mediaType: 'image', mediaUrl: '',
-            requiredLines: 0, reward: 25, plan: 'ANY', instruction: '',
-            assignmentType: 'all', targetUsers: []
-          });
-          setPreview(null);
-        }
+    if (isOpen) {
+      const registry = dbNode.getUsers();
+      setUsers(registry);
+      
+      if (task) {
+        setForm({ ...task });
+        setPreview(task.mediaType === 'image' ? task.mediaUrl : task.mediaType === 'pdf' ? 'pdf_detected' : null);
+      } else {
+        setForm({ 
+          title: '', category: 'verification', mediaType: 'image', mediaUrl: '',
+          requiredLines: 0, reward: 25, plan: 'ANY', instruction: '',
+          assignmentType: 'all', targetUsers: []
+        });
+        setPreview(null);
       }
-    };
-    loadRegistry();
+    }
   }, [task, isOpen]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'pdf') => {
@@ -101,11 +97,10 @@ const TaskFormModal = ({ isOpen, onClose, task, onUpdate }: TaskFormModalProps) 
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Add await to fix Promise array method error
-    const db = await dbNode.getTasks();
+    const db = dbNode.getTasks();
     const newTask = { 
       ...form, 
       id: task?.id || `TASK-${Math.random().toString(36).substr(2, 4).toUpperCase()}`, 
@@ -113,16 +108,13 @@ const TaskFormModal = ({ isOpen, onClose, task, onUpdate }: TaskFormModalProps) 
     };
     
     if (task) {
-      // Fix property access on Promise
       const idx = db.findIndex((t: any) => t.id === task.id);
       if (idx !== -1) db[idx] = newTask;
     } else {
-      // Fix unshift on Promise error
       db.unshift(newTask);
     }
     
-    // Fix argument type error
-    await dbNode.saveTasks(db);
+    dbNode.saveTasks(db);
     setTimeout(() => { 
       onUpdate(); 
       onClose(); 

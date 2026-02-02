@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { GlobalConfig } from '../types';
 
@@ -12,11 +13,11 @@ const defaultConfig: GlobalConfig = {
   maintenanceMode: false,
   broadcastMessage: "Welcome to Noor! Withdrawals take 24 hours to process.",
   branding: {
-    companyName: "Noor Official",
+    companyName: "Noor",
     logo: "",
     banner: "",
-    contactPhone: "03068665907",
-    supportPhone: "03068665907",
+    contactPhone: "03001234567",
+    supportPhone: "03007654321",
     showHelpSection: true
   },
   financeSettings: {
@@ -32,8 +33,8 @@ const defaultConfig: GlobalConfig = {
     level3Percent: 2
   },
   paymentGateways: [
-    { name: 'EasyPaisa', accountNumber: '03068665907', accountTitle: 'M Ghaffar' },
-    { name: 'JazzCash', accountNumber: '03068665907', accountTitle: 'M Ghaffar' }
+    { name: 'EasyPaisa', accountNumber: '03001234567', accountTitle: 'Noor Admin' },
+    { name: 'JazzCash', accountNumber: '03451122334', accountTitle: 'Noor Admin' }
   ],
   modules: {
     allowDeposits: true,
@@ -44,11 +45,11 @@ const defaultConfig: GlobalConfig = {
   },
   theme: {
     primaryColor: '#6366f1',
-    fontFamily: "'Plus Jakarta Sans', sans-serif",
+    fontFamily: "'Inter', sans-serif",
     themePreset: 'indigo'
   },
   appearance: {
-    heroTitle: "Daily Earnings. Simple Work.",
+    heroTitle: "Start Earning Daily From Your Home.",
     heroSubtitle: "Join the most trusted platform in Pakistan.",
     heroSlides: [
       { image: "https://images.unsplash.com/photo-1556761175-b413da4baf72?q=80&w=1920", title: "Empowering Pakistan.", subtitle: "Simple tasks, daily earnings." }
@@ -61,11 +62,11 @@ const defaultConfig: GlobalConfig = {
     companyBanner: ""
   },
   seo: {
-    metaTitle: "Noor V3 - Premium Earning Platform",
-    metaDescription: "Join Noor V3 for daily earning opportunities in Pakistan. Secure tasks and fast payouts via EasyPaisa and JazzCash.",
-    keywords: "online earning pakistan, easypaisa earning, jazzcash earning, earn money online"
+    metaTitle: "Noor V3 - Best Earning App",
+    metaDescription: "Earn daily earnings with simple tasks in Pakistan.",
+    keywords: "earning app, pakistan, online work"
   },
-  streakRewards: [10, 10, 15, 20, 25, 50, 100]
+  streakRewards: [5, 10, 15, 20, 25, 50, 100]
 };
 
 const ConfigContext = createContext<ConfigContextType | undefined>(undefined);
@@ -89,13 +90,6 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     root.style.setProperty('--primary-color', config.theme.primaryColor);
     root.style.setProperty('--global-font', config.theme.fontFamily);
     localStorage.setItem('noor_config', JSON.stringify(config));
-    
-    // SEO Dynamic Update
-    if (config.seo) {
-      document.title = config.seo.metaTitle || "Noor V3";
-      const metaDesc = document.querySelector('meta[name="description"]');
-      if (metaDesc) metaDesc.setAttribute('content', config.seo.metaDescription);
-    }
   }, [config]);
 
   const updateConfig = (newConfig: any) => {

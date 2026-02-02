@@ -9,8 +9,7 @@ export const integrationController = {
   // 1. PUBLIC ENDPOINT: Fetch active items for the App
   getPublicIntegrations: async (req: any, res: any) => {
     try {
-      // Add await to fix Promise filter error
-      const data = await dbNode.getIntegrations();
+      const data = dbNode.getIntegrations();
       const activeOnly = data.filter((i: any) => i.isActive);
       return res.status(200).json(activeOnly);
     } catch (e) {
@@ -21,8 +20,7 @@ export const integrationController = {
   // 2. ADMIN ENDPOINT: Get all items
   getAllIntegrations: async (req: any, res: any) => {
     try {
-      // Add await to fix Promise return
-      const data = await dbNode.getIntegrations();
+      const data = dbNode.getIntegrations();
       return res.status(200).json(data);
     } catch (e) {
       return res.status(500).json({ message: "Registry Hub access denied." });
@@ -33,8 +31,7 @@ export const integrationController = {
   saveIntegration: async (req: any, res: any) => {
     try {
       const { id, name, type, position, content, isActive } = req.body;
-      // Add await to fix Promise map error
-      const data = await dbNode.getIntegrations();
+      const data = dbNode.getIntegrations();
       
       const newEntry = {
         id: id || `INT-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
@@ -48,14 +45,12 @@ export const integrationController = {
 
       let updatedData;
       if (id) {
-        // Fix map on Promise error
         updatedData = data.map((i: any) => i.id === id ? newEntry : i);
       } else {
-        // Fix iterator error on Promise
         updatedData = [newEntry, ...data];
       }
 
-      await dbNode.saveIntegrations(updatedData);
+      dbNode.saveIntegrations(updatedData);
       return res.status(200).json({ success: true, message: "Hub Synchronized.", data: newEntry });
     } catch (e) {
       return res.status(500).json({ message: "Deployment failure." });
@@ -66,13 +61,11 @@ export const integrationController = {
   toggleStatus: async (req: any, res: any) => {
     try {
       const { id } = req.params;
-      // Add await to fix Promise map error
-      const data = await dbNode.getIntegrations();
-      // Fix map on Promise error
+      const data = dbNode.getIntegrations();
       const updatedData = data.map((i: any) => 
         i.id === id ? { ...i, isActive: !i.isActive } : i
       );
-      await dbNode.saveIntegrations(updatedData);
+      dbNode.saveIntegrations(updatedData);
       return res.status(200).json({ success: true, message: "Status Toggled." });
     } catch (e) {
       return res.status(500).json({ message: "Node switch failed." });
@@ -83,11 +76,9 @@ export const integrationController = {
   deleteIntegration: async (req: any, res: any) => {
     try {
       const { id } = req.params;
-      // Add await to fix Promise filter error
-      const data = await dbNode.getIntegrations();
-      // Fix filter on Promise error
+      const data = dbNode.getIntegrations();
       const updatedData = data.filter((i: any) => i.id !== id);
-      await dbNode.saveIntegrations(updatedData);
+      dbNode.saveIntegrations(updatedData);
       return res.status(200).json({ success: true, message: "Node removed." });
     } catch (e) {
       return res.status(500).json({ message: "Removal failed." });

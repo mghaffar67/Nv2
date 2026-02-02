@@ -1,12 +1,12 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
-  Users, UserCog, Gem, ShieldCheck, Filter, Search, Smartphone, Wallet, RefreshCw
+  Users, UserCog, Gem, ShieldCheck, Filter, Search, Smartphone, Wallet
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import UserDetailModal from '../../components/admin/UserDetailModal';
-import { api } from '../../utils/api';
+import { dbNode } from '../../backend_core/utils/db';
 import DataTable from '../../components/ui/DataTable';
 
 const UserManager = () => {
@@ -16,17 +16,13 @@ const UserManager = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const refreshData = async () => {
+  const refreshData = () => {
     setLoading(true);
-    try {
-      const list = await api.get('/admin/users');
-      const clientUsers = (list || []).filter((u: any) => u.role === 'user');
-      setUsers(clientUsers);
-    } catch (e) {
-      console.error("Registry sync failed.");
-    } finally {
-      setLoading(false);
-    }
+    const list = dbNode.getUsers();
+    // Filter out Admin and Manager roles from Client User List
+    const clientUsers = (list || []).filter((u: any) => u.role === 'user');
+    setUsers(clientUsers);
+    setLoading(false);
   };
 
   useEffect(() => { refreshData(); }, []);
@@ -110,9 +106,6 @@ const UserManager = () => {
           <p className="text-slate-400 font-bold uppercase tracking-[0.3em] text-[8px] md:text-xs mt-2 italic">Client Database Hub</p>
         </div>
         <div className="flex gap-4">
-           <button onClick={refreshData} className="w-12 h-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center text-slate-400 shadow-sm active:rotate-180 transition-all">
-             <RefreshCw size={20} />
-           </button>
            <div className="bg-white px-5 py-4 rounded-[28px] border border-slate-100 shadow-sm flex items-center gap-3 shrink-0">
              <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-inner"><Users size={20}/></div>
              <div>

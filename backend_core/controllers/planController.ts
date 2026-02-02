@@ -1,3 +1,4 @@
+
 import { dbNode } from '../utils/db';
 import { distributeCommission } from '../utils/commissionHelper';
 
@@ -12,8 +13,7 @@ export const planController = {
   requestPlanPurchase: async (req: any, res: any) => {
     try {
       const { userId, planId, method, trxId, proofImage, senderNumber } = req.body;
-      // Added await to fix user property access errors
-      const user = await dbNode.findUserById(userId);
+      const user = dbNode.findUserById(userId);
 
       if (!user) return res.status(404).json({ message: 'User account not found.' });
       
@@ -21,7 +21,6 @@ export const planController = {
       const price = PLAN_PRICES[normalizedId] || 0;
 
       if (method === 'wallet') {
-        // Fix property access on Promise
         const currentBalance = Number(user.balance) || 0;
         if (currentBalance < price) {
           return res.status(400).json({ message: 'Insufficient account balance.' });
@@ -40,7 +39,6 @@ export const planController = {
           date: new Date().toISOString()
         };
 
-        // Fix property access on Promise
         const history = user.purchaseHistory || [];
         history.unshift(purchaseRecord);
 
@@ -51,7 +49,9 @@ export const planController = {
           purchaseHistory: history
         });
 
-        distributeCommission(userId, price);
+        // Fix: Argument of type 'number' is not assignable to parameter of type 'string'.
+        // Pass normalizedId (string) instead of price (number).
+        distributeCommission(userId, normalizedId);
 
         return res.status(200).json({ message: 'Plan activated successfully.', user });
       }
@@ -73,7 +73,6 @@ export const planController = {
           date: new Date().toISOString()
         };
 
-        // Fix property access on Promise
         const history = user.purchaseHistory || [];
         history.unshift(requestRecord);
 

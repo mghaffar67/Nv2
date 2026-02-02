@@ -3,7 +3,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Zap, CheckCircle2, Clock, Eye, Edit3, Trash2, X, Filter, RefreshCw, Briefcase, FileText } from 'lucide-react';
 import { clsx } from 'clsx';
-import { api } from '../../utils/api';
+import { workController } from '../../backend_core/controllers/workController';
+import { dbNode } from '../../backend_core/utils/db';
 import TaskFormModal from '../../components/admin/TaskFormModal';
 import { ImageModal } from '../../components/ui/ImageModal';
 
@@ -28,19 +29,10 @@ const WorkManager = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const taskRes = await api.get('/admin/tasks');
+      const taskRes = dbNode.getTasks();
       setTasks(Array.isArray(taskRes) ? taskRes : []);
-      // In a production environment, this would come from a dedicated review endpoint
-      const users = await api.get('/admin/users');
-      let allSubs: any[] = [];
-      users.forEach((u: any) => {
-        if (u.workSubmissions) {
-          allSubs = [...allSubs, ...u.workSubmissions.map((s: any) => ({ ...s, userName: u.name, userId: u.id }))];
-        }
-      });
-      setSubmissions(allSubs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
-    } catch (e) {
-        console.error("Registry Sync failure.");
+      const subsRes = await new Promise<any[]>(r => workController.getAllSubmissions({}, { status: () => ({ json: r }) }));
+      setSubmissions(Array.isArray(subsRes) ? subsRes : []);
     } finally {
       setLoading(false);
     }
@@ -50,22 +42,11 @@ const WorkManager = () => {
 
   const handleReview = async (sub: any, action: 'approved' | 'rejected') => {
     try {
-      await api.post('/admin/finance/requests/manage', { 
-        transactionId: sub.id, 
-        userId: sub.userId, 
-        action,
-        type: 'work_submission'
-      });
+      await workController.reviewSubmission({ 
+        body: { userId: sub.userId, submissionId: sub.id, status: action, reward: sub.reward } 
+      }, { status: () => ({ json: () => {} }) });
       fetchData();
     } catch (err) { alert("Review sync failed."); }
-  };
-
-  const handleDeleteTask = async (id: string) => {
-    if (!window.confirm("Terminate this task node?")) return;
-    try {
-        await api.delete(`/admin/tasks/${id}`);
-        fetchData();
-    } catch (e) { alert("Deletion failed."); }
   };
 
   const filteredTasks = useMemo(() => {
@@ -122,7 +103,7 @@ const WorkManager = () => {
                    <p className="text-[10px] font-medium text-slate-400 line-clamp-2 leading-relaxed mb-6 italic flex-grow">"{task.instruction}"</p>
                    <div className="flex gap-2 border-t border-slate-50 pt-4 mt-auto">
                       <button onClick={() => { setSelectedTask(task); setIsTaskModalOpen(true); }} className="flex-1 h-11 bg-slate-50 text-slate-400 rounded-xl font-black text-[9px] uppercase flex items-center justify-center gap-2 hover:bg-slate-900 hover:text-white transition-all"><Edit3 size={14}/> Edit</button>
-                      <button onClick={() => handleDeleteTask(task.id)} className="w-11 h-11 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center active:scale-90 transition-all"><Trash2 size={16}/></button>
+                      <button onClick={() => {if(window.confirm('Delete task?')) { const db = tasks.filter(t => t.id !== task.id); dbNode.saveTasks(db); fetchData(); }}} className="w-11 h-11 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center active:scale-90 transition-all"><Trash2 size={16}/></button>
                    </div>
                 </div>
               ))}
