@@ -2,7 +2,7 @@ import { dbNode } from '../../utils/db';
 
 /**
  * Noor Official V3 - Work Protocol Controller
- * Enhanced with Expiry Logic and Bounce Task Nodes
+ * Integrated with Global Config for dynamic work hours and strict filtering.
  */
 export const workPluginController = {
   getTasks: async (req: any, res: any) => {
@@ -13,21 +13,23 @@ export const workPluginController = {
       const config = dbNode.getConfig();
       const serverDate = new Date();
       const todayStr = serverDate.toISOString().split('T')[0];
-      const day = serverDate.getDay(); 
       const currentHour = serverDate.getHours();
 
-      // 1. WEEKEND & HOUR LOCK LOGIC
-      const isWeekend = day === 0 || day === 6;
-      if (isWeekend) {
-        return res.status(200).json({ tasks: [], isLocked: true, lockReason: 'weekend', message: "Weekend Off! Stations are offline.", streak: user.streak || 0 });
-      }
-
+      // 1. DYNAMIC WORK HOURS LOGIC (Strictly from Config)
       const { start, end } = config.workHours || { start: 9, end: 22 };
-      if (currentHour < start || currentHour >= end) {
-        return res.status(200).json({ tasks: [], isLocked: true, lockReason: 'hours', message: `Station Closed until ${start}:00 AM.`, streak: user.streak || 0 });
+      const isLockedByTime = currentHour < start || currentHour >= end;
+      
+      if (isLockedByTime) {
+        return res.status(200).json({ 
+          tasks: [], 
+          isLocked: true, 
+          lockReason: 'hours', 
+          message: `Station Closed. Operates between ${start}:00 AM and ${end}:00 PM PKT.`, 
+          streak: user.streak || 0 
+        });
       }
 
-      // 2. FETCH REGISTRY DATA
+      // 2. REGISTRY DATA & LIMITS
       const allTasks = dbNode.getTasks();
       const plansRegistry = JSON.parse(localStorage.getItem('noor_plans_registry') || '[]');
       const userPlan = plansRegistry.find((p: any) => p.name === user.currentPlan);
@@ -37,15 +39,15 @@ export const workPluginController = {
         s.timestamp.startsWith(todayStr)
       ).length;
 
-      // 3. ENHANCED FILTERING LOGIC
+      // 3. ENHANCED FILTERING PROTOCOL
       const filteredTasks = allTasks.filter((task: any) => {
-        // Expiry Date Check
+        // Expiry Check
         if (task.expiryDate && new Date(task.expiryDate) < serverDate) return false;
         
-        // Plan Requirements
+        // Membership Plan Gate
         if (task.plan && task.plan !== 'ANY' && task.plan !== user.currentPlan) return false;
 
-        // Specific User Targeting
+        // Specific Targeting
         if (task.assignmentType === 'specific' && !task.targetUsers?.includes(user.id)) return false;
 
         return true;
@@ -61,8 +63,8 @@ export const workPluginController = {
           ...task,
           myStatus: isCompletedToday ? 'completed' : 'new',
           isLocked: isReachedLimit,
-          lockReason: !userPlan ? 'No Active Station' : 'Daily Limit Reached',
-          isBounceTask: task.reward > 500 // Logic for Bounce Tasks
+          lockReason: !userPlan ? 'Activate Station' : 'Daily Capacity Full',
+          isBounceTask: task.reward >= 500 // Mark high-yield tasks
         };
       });
 
@@ -73,7 +75,7 @@ export const workPluginController = {
         limitInfo: { total: userLimit, used: submissionsToday, remaining: Math.max(0, userLimit - submissionsToday) }
       });
     } catch (err) {
-      return res.status(500).json({ message: "Work Hub Logic Error." });
+      return res.status(500).json({ message: "Work Engine Failure." });
     }
   },
 
@@ -85,7 +87,7 @@ export const workPluginController = {
 
       const allTasks = dbNode.getTasks();
       const taskRef = allTasks.find((t: any) => t.id === taskId);
-      const reward = taskRef?.reward || 240;
+      const reward = taskRef?.reward || 0;
 
       const submissionPacket = {
         id: `SUB-${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
@@ -106,9 +108,9 @@ export const workPluginController = {
         lastWorkDate: new Date().toISOString().split('T')[0]
       });
       
-      return res.status(201).json({ success: true, message: "Work logged for audit." });
+      return res.status(201).json({ success: true, message: "Ledger updated." });
     } catch (err) {
-      return res.status(500).json({ message: "Submission Registry Error." });
+      return res.status(500).json({ message: "Submission Sync Error." });
     }
   }
 };

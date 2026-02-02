@@ -142,12 +142,12 @@ export const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose?: () => 
       ]
     },
     { 
-      label: 'Advanced Settings', 
+      label: 'Advanced Hub', 
       icon: ShieldAlert,
       children: [
-        { label: 'Edit Pages', to: '/admin/advanced/page-editor' },
+        { label: 'Global CMS', to: '/admin/advanced/global-cms' },
+        { label: 'Popup Notification', to: '/admin/advanced/campaigns' },
         { label: 'SEO Settings', to: '/admin/advanced/seo' },
-        { label: 'Third Party', to: '/admin/advanced/integration' },
         { label: 'Database', to: '/admin/advanced/database' }
       ]
     }
@@ -155,11 +155,11 @@ export const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose?: () => 
     { label: 'Dashboard', to: '/user/dashboard', icon: LayoutDashboard },
     { label: 'Daily Work', to: '/user/work', icon: Briefcase },
     { 
-      label: 'Bounce Hub', 
+      label: 'Inam Hub', 
       icon: Trophy,
       children: [
         { label: 'Bumper Rewards', to: '/user/achievements' },
-        { label: 'Bounce Tasks', to: '/user/work' }
+        { label: 'Bounce Tasks', to: '/user/work?type=bounce' }
       ]
     },
     { label: 'My Wallet', to: '/user/wallet', icon: Wallet },
