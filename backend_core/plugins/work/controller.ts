@@ -2,52 +2,84 @@
 import { dbNode } from '../../utils/db';
 
 export const workPluginController = {
+  // Admin Task List
+  adminList: async (req: any, res: any) => {
+    try {
+      const tasks = await dbNode.getTasks();
+      return res.status(200).json(tasks);
+    } catch (err) {
+      return res.status(500).json({ message: "Registry access failure." });
+    }
+  },
+
+  // Admin Task Delete
+  adminDelete: async (req: any, res: any) => {
+    try {
+      const { id } = req.params;
+      await dbNode.deleteTask(id);
+      return res.status(200).json({ success: true, message: "Node terminated." });
+    } catch (err) {
+      return res.status(500).json({ message: "Registry deletion failure." });
+    }
+  },
+
   getTasks: async (req: any, res: any) => {
     try {
-      const user = dbNode.findUserById(req.user.id);
+      const user = await dbNode.findUserById(req.user.id);
       if (!user) return res.status(404).json({ message: "Identity node lost." });
 
-      const allTasks = dbNode.getTasks();
+      const allTasks = await dbNode.getTasks();
       const today = new Date().toISOString().split('T')[0];
+      
+      const PLAN_LIMITS: Record<string, number> = {
+        'BASIC': 2,
+        'STANDARD': 5,
+        'GOLD ELITE': 10,
+        'DIAMOND': 25,
+        'None': 0
+      };
 
-      // Logic: Filter by Plan and Merge status from user's history
-      const tasksWithStatus = allTasks
-        .filter((t: any) => {
-          if (t.plan && t.plan !== 'ANY' && user.currentPlan !== t.plan) return false;
-          return t.isActive !== false;
-        })
-        .map((task: any) => {
-          // Check if user has a submission for this task today
-          const submission = (user.workSubmissions || []).find((s: any) => 
-            s.taskId === task.id && s.timestamp.startsWith(today)
-          );
+      const userLimit = PLAN_LIMITS[user.currentPlan || 'None'] || 0;
+      const submissionsToday = (user.workSubmissions || []).filter((s: any) => 
+        s.timestamp.startsWith(today)
+      ).length;
 
-          return {
-            ...task,
-            myStatus: submission ? submission.status : 'new',
-            adminNote: submission?.adminNote || ""
-          };
-        });
+      const remainingSlots = Math.max(0, userLimit - submissionsToday);
 
-      return res.status(200).json(tasksWithStatus);
+      const tasksWithMeta = allTasks.map((task: any) => {
+        const isCompletedToday = (user.workSubmissions || []).some((s: any) => 
+          s.taskId === task.id && s.timestamp.startsWith(today)
+        );
+
+        const isLocked = !isCompletedToday && (submissionsToday >= userLimit);
+
+        return {
+          ...task,
+          myStatus: isCompletedToday ? 'completed' : 'new',
+          isLocked,
+          lockReason: user.currentPlan === 'None' ? 'No Active Station' : 'Plan Limit Reached'
+        };
+      });
+
+      return res.status(200).json({
+        tasks: tasksWithMeta,
+        streak: user.streak || 0,
+        limitInfo: {
+          total: userLimit,
+          used: submissionsToday,
+          remaining: remainingSlots
+        }
+      });
     } catch (err) {
-      return res.status(500).json({ message: "Task Node Sync Failure." });
+      return res.status(500).json({ message: "Work Hub Logic Error." });
     }
   },
 
   completeTask: async (req: any, res: any) => {
     try {
-      const { taskId, evidence, username, taskTitle, reward } = req.body;
-      const user = dbNode.findUserById(req.user.id);
+      const { taskId, evidence, taskTitle, reward } = req.body;
+      const user = await dbNode.findUserById(req.user.id);
       if (!user) return res.status(404).json({ message: "Identity missing." });
-
-      const today = new Date().toISOString().split('T')[0];
-      
-      // Verification: Prevent double submission
-      const existing = (user.workSubmissions || []).find((s: any) => 
-        s.taskId === taskId && s.timestamp.startsWith(today)
-      );
-      if (existing) return res.status(400).json({ message: "Work already filed for this node today." });
 
       const submissionPacket = {
         id: `SUB-${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
@@ -55,7 +87,7 @@ export const workPluginController = {
         taskId,
         taskTitle,
         reward,
-        userAnswer: evidence, // This is the proof screenshot base64
+        userAnswer: evidence,
         status: 'pending',
         timestamp: new Date().toISOString()
       };
@@ -63,14 +95,13 @@ export const workPluginController = {
       if (!user.workSubmissions) user.workSubmissions = [];
       user.workSubmissions.unshift(submissionPacket);
 
-      dbNode.updateUser(user.id, { workSubmissions: user.workSubmissions });
-      
-      return res.status(201).json({ 
-        success: true, 
-        message: "Packet Synchronized. Pending admin audit." 
+      await dbNode.updateUser(user.id, { 
+        workSubmissions: user.workSubmissions
       });
+      
+      return res.status(201).json({ success: true, message: "Packet synced." });
     } catch (err) {
-      return res.status(500).json({ message: "Submission Protocol Failure." });
+      return res.status(500).json({ message: "Registry Error." });
     }
   }
 };

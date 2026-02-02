@@ -3,8 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Zap, CheckCircle2, Clock, Eye, Edit3, Trash2, X, Filter, RefreshCw, Briefcase, FileText } from 'lucide-react';
 import { clsx } from 'clsx';
-import { workController } from '../../backend_core/controllers/workController';
-import { dbNode } from '../../backend_core/utils/db';
+import { api } from '../../utils/api';
 import TaskFormModal from '../../components/admin/TaskFormModal';
 import { ImageModal } from '../../components/ui/ImageModal';
 
@@ -29,10 +28,19 @@ const WorkManager = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const taskRes = dbNode.getTasks();
-      setTasks(taskRes || []);
-      const subsRes = await new Promise<any[]>(r => workController.getAllSubmissions({}, { status: () => ({ json: r }) }));
-      setSubmissions(subsRes || []);
+      const taskRes = await api.get('/admin/tasks');
+      setTasks(Array.isArray(taskRes) ? taskRes : []);
+      // In a production environment, this would come from a dedicated review endpoint
+      const users = await api.get('/admin/users');
+      let allSubs: any[] = [];
+      users.forEach((u: any) => {
+        if (u.workSubmissions) {
+          allSubs = [...allSubs, ...u.workSubmissions.map((s: any) => ({ ...s, userName: u.name, userId: u.id }))];
+        }
+      });
+      setSubmissions(allSubs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
+    } catch (e) {
+        console.error("Registry Sync failure.");
     } finally {
       setLoading(false);
     }
@@ -42,14 +50,26 @@ const WorkManager = () => {
 
   const handleReview = async (sub: any, action: 'approved' | 'rejected') => {
     try {
-      await workController.reviewSubmission({ 
-        body: { userId: sub.userId, submissionId: sub.id, status: action, reward: sub.reward } 
-      }, { status: () => ({ json: () => {} }) });
+      await api.post('/admin/finance/requests/manage', { 
+        transactionId: sub.id, 
+        userId: sub.userId, 
+        action,
+        type: 'work_submission'
+      });
       fetchData();
     } catch (err) { alert("Review sync failed."); }
   };
 
+  const handleDeleteTask = async (id: string) => {
+    if (!window.confirm("Terminate this task node?")) return;
+    try {
+        await api.delete(`/admin/tasks/${id}`);
+        fetchData();
+    } catch (e) { alert("Deletion failed."); }
+  };
+
   const filteredTasks = useMemo(() => {
+    if (!Array.isArray(tasks)) return [];
     if (activeCategory === 'all') return tasks;
     return tasks.filter(t => t.category === activeCategory);
   }, [tasks, activeCategory]);
@@ -102,7 +122,7 @@ const WorkManager = () => {
                    <p className="text-[10px] font-medium text-slate-400 line-clamp-2 leading-relaxed mb-6 italic flex-grow">"{task.instruction}"</p>
                    <div className="flex gap-2 border-t border-slate-50 pt-4 mt-auto">
                       <button onClick={() => { setSelectedTask(task); setIsTaskModalOpen(true); }} className="flex-1 h-11 bg-slate-50 text-slate-400 rounded-xl font-black text-[9px] uppercase flex items-center justify-center gap-2 hover:bg-slate-900 hover:text-white transition-all"><Edit3 size={14}/> Edit</button>
-                      <button onClick={() => {if(window.confirm('Delete task?')) { const db = tasks.filter(t => t.id !== task.id); dbNode.saveTasks(db); fetchData(); }}} className="w-11 h-11 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center active:scale-90 transition-all"><Trash2 size={16}/></button>
+                      <button onClick={() => handleDeleteTask(task.id)} className="w-11 h-11 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center active:scale-90 transition-all"><Trash2 size={16}/></button>
                    </div>
                 </div>
               ))}
@@ -110,7 +130,7 @@ const WorkManager = () => {
           </motion.div>
         ) : (
           <motion.div key="review" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 mx-1">
-             {submissions.filter(s => s.status === 'pending').map(sub => (
+             {(Array.isArray(submissions) ? submissions : []).filter(s => s.status === 'pending').map(sub => (
                <div key={sub.id} className="bg-white p-5 rounded-[32px] border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5">
                   <div className="flex items-center gap-4 overflow-hidden">
                      <div className="w-12 h-12 bg-slate-900 text-sky-400 rounded-xl flex items-center justify-center font-black italic shadow-lg shrink-0 text-lg">{sub.userName?.charAt(0)}</div>

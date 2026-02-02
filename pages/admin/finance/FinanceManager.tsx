@@ -1,16 +1,16 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  ArrowDownCircle, Clock, CheckCircle2, 
-  XCircle, Eye, Wallet, ShieldCheck, 
-  RefreshCw, Briefcase, ChevronRight,
-  TrendingUp, TrendingDown, CreditCard, Award, Gem, Search, Filter,
-  History, Calendar, Activity, BarChart3,
-  // Added missing Zap icon import
-  Zap
+  Wallet, ShieldCheck, 
+  RefreshCw, Briefcase,
+  Award, Gem, Search,
+  History, Activity, BarChart3,
+  Zap,
+  CreditCard
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { dbNode } from '../../../backend_core/utils/db';
+import { api } from '../../../utils/api';
 import { ProofModal } from '../../../components/admin/ProofModal';
 
 const GlobalLedgerCard = ({ label, value, icon: Icon, gradient, delay }: any) => (
@@ -45,10 +45,11 @@ const FinanceManager = () => {
   const fetchGlobalLedger = async () => {
     setLoading(true);
     try {
-      const users = dbNode.getUsers();
+      // Use API instead of direct DB access to prevent browser native module errors
+      const users = await api.get('/admin/users');
       let allEntries: any[] = [];
       
-      users.forEach((u: any) => {
+      (users || []).forEach((u: any) => {
         // Task Yields
         (u.transactions || []).filter((t: any) => t.type === 'reward' && t.gateway === 'Daily Income').forEach((y: any) => {
            allEntries.push({ ...y, userName: u.name, userPhone: u.phone, userId: u.id, reportType: 'task' });
@@ -64,6 +65,8 @@ const FinanceManager = () => {
       });
 
       setData(allEntries.sort((a, b) => new Date(b.timestamp || b.date).getTime() - new Date(a.timestamp || a.date).getTime()));
+    } catch (e) {
+        console.error("Ledger sync failure.");
     } finally {
       setLoading(false);
     }
@@ -82,15 +85,14 @@ const FinanceManager = () => {
   const stats = useMemo(() => {
     const approved = data.filter(i => i.status === 'approved' || i.status === 'active');
     return {
-      totalYield: approved.filter(i => i.reportType === 'task').reduce((a, b) => a + Number(b.amount), 0),
-      totalPayouts: approved.filter(i => i.reportType === 'withdraw').reduce((a, b) => a + Number(b.amount), 0),
-      totalPlanSales: approved.filter(i => i.reportType === 'plan').reduce((a, b) => a + Number(b.amount), 0)
+      totalYield: approved.filter(i => i.reportType === 'task').reduce((a, b) => a + Number(b.amount || 0), 0),
+      totalPayouts: approved.filter(i => i.reportType === 'withdraw').reduce((a, b) => a + Number(b.amount || 0), 0),
+      totalPlanSales: approved.filter(i => i.reportType === 'plan').reduce((a, b) => a + Number(b.amount || 0), 0)
     };
   }, [data]);
 
   return (
     <div className="space-y-6 md:space-y-8 pb-24 animate-fade-in max-w-7xl mx-auto px-2">
-      
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 p-2">
         <div>
           <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
@@ -103,14 +105,12 @@ const FinanceManager = () => {
         <button onClick={fetchGlobalLedger} className="w-12 h-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center text-slate-400 active:rotate-180 transition-all duration-500 shadow-sm"><RefreshCw size={22}/></button>
       </header>
 
-      {/* FINANCE STATS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <GlobalLedgerCard label="Total Task Yield" value={`Rs. ${stats.totalYield.toLocaleString()}`} icon={Zap} gradient="bg-emerald-600" delay={0.1} />
         <GlobalLedgerCard label="Total Disbursed" value={`Rs. ${stats.totalPayouts.toLocaleString()}`} icon={Wallet} gradient="bg-rose-600" delay={0.2} />
         <GlobalLedgerCard label="Activation Revenue" value={`Rs. ${stats.totalPlanSales.toLocaleString()}`} icon={Award} gradient="bg-indigo-600" delay={0.3} />
       </div>
 
-      {/* FILTER BAR */}
       <div className="bg-white p-3 rounded-[32px] border border-slate-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
          <div className="flex bg-slate-50 p-1.5 rounded-2xl gap-1 overflow-x-auto no-scrollbar w-full md:w-auto">
             {[
@@ -141,7 +141,6 @@ const FinanceManager = () => {
          </div>
       </div>
 
-      {/* LEDGER DATASET */}
       <div className="bg-white rounded-[44px] border border-slate-100 shadow-sm overflow-hidden p-2">
          <div className="overflow-x-auto no-scrollbar">
             <table className="w-full text-left">

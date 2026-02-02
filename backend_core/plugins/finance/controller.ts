@@ -9,9 +9,11 @@ import { distributeCommission } from '../../utils/commissionHelper';
 export const financePluginController = {
   getHistory: async (req: any, res: any) => {
     try {
-      const user = dbNode.findUserById(req.user.id);
+      // Add await to fix Promise property access error
+      const user = await dbNode.findUserById(req.user.id);
       if (!user) return res.status(404).json({ message: "Identity node lost." });
       
+      // Fix property access on Promise
       const history = (user.transactions || []).map((t: any) => {
         let context = "";
         if (t.type === 'withdraw') {
@@ -33,10 +35,12 @@ export const financePluginController = {
 
   depositReq: async (req: any, res: any) => {
     const { amount, method, trxId, senderNumber, image } = req.body;
-    const user = dbNode.findUserById(req.user.id);
+    // Add await to fix Promise property access error
+    const user = await dbNode.findUserById(req.user.id);
     if (!user) return res.status(404).json({ message: 'Identity missing.' });
 
     const newTrx = {
+      // Fix property access on Promise
       id: `DEP-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
       userId: user.id,
       type: 'deposit',
@@ -50,27 +54,34 @@ export const financePluginController = {
       timestamp: new Date().toISOString()
     };
 
+    // Fix property access on Promise
     const trx = user.transactions || [];
     trx.unshift(newTrx);
-    dbNode.updateUser(user.id, { transactions: trx });
+    // Fix property access on Promise
+    await dbNode.updateUser(user.id, { transactions: trx });
     return res.status(201).json({ success: true, message: 'Deposit packet submitted.', transaction: newTrx });
   },
 
   withdrawReq: async (req: any, res: any) => {
     const { amount, gateway, accountNumber, accountTitle } = req.body;
-    const user = dbNode.findUserById(req.user.id);
+    // Add await to fix Promise property access error
+    const user = await dbNode.findUserById(req.user.id);
     if (!user) return res.status(404).json({ message: 'Auth session expired.' });
 
     const amt = Number(amount);
-    const config = dbNode.getConfig();
+    // Add await to fix Promise property access error
+    const config = await dbNode.getConfig();
+    // Fix property access on Promise
     const minLimit = config.financeSettings.minWithdraw || 500;
     const maxLimit = config.financeSettings.maxWithdraw || 50000;
 
     if (amt < minLimit) return res.status(400).json({ message: `Minimum withdrawal is PKR ${minLimit}.` });
     if (amt > maxLimit) return res.status(400).json({ message: `Maximum withdrawal is PKR ${maxLimit}.` });
+    // Fix property access on Promise
     if ((user.balance || 0) < amt) return res.status(400).json({ message: 'Insufficient liquidity in wallet.' });
 
     const newTrx = {
+      // Fix property access on Promise
       id: `WD-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
       userId: user.id,
       type: 'withdraw',
@@ -83,18 +94,22 @@ export const financePluginController = {
       timestamp: new Date().toISOString()
     };
 
+    // Fix property access on Promise
     const newBalance = user.balance - amt;
+    // Fix property access on Promise
     const trx = user.transactions || [];
     trx.unshift(newTrx);
     
-    dbNode.updateUser(user.id, { balance: newBalance, transactions: trx });
+    // Fix property access on Promise
+    await dbNode.updateUser(user.id, { balance: newBalance, transactions: trx });
     return res.status(201).json({ success: true, message: 'Withdrawal request locked.', newBalance });
   },
 
   activatePlan: async (req: any, res: any) => {
     try {
       const { planId, method, trxId, proofImage, senderNumber } = req.body;
-      const user = dbNode.findUserById(req.user.id);
+      // Add await to fix Promise property access error
+      const user = await dbNode.findUserById(req.user.id);
       if (!user) return res.status(404).json({ message: "User not found." });
 
       const priceMap: Record<string, number> = { 
@@ -108,6 +123,7 @@ export const financePluginController = {
       const price = priceMap[normalized] || 0;
 
       if (method === 'wallet') {
+        // Fix property access on Promise
         const currentBalance = Number(user.balance) || 0;
         if (currentBalance < price) return res.status(400).json({ message: "Insufficient account balance." });
         
@@ -124,10 +140,12 @@ export const financePluginController = {
           date: new Date().toISOString()
         };
 
+        // Fix property access on Promise
         const history = user.purchaseHistory || [];
         history.unshift(purchaseRecord);
 
-        dbNode.updateUser(user.id, { 
+        // Fix property access on Promise
+        await dbNode.updateUser(user.id, { 
           balance: newBalance, 
           currentPlan: normalized, 
           planExpiry: expiry.toISOString(), 
@@ -135,12 +153,13 @@ export const financePluginController = {
         });
 
         // Referral commission logic
-        distributeCommission(user.id, price);
+        // Fix property access on Promise
+        await distributeCommission(user.id, price);
         
         return res.status(200).json({ 
           success: true, 
           message: "Station Activated Successfully.",
-          config: dbNode.getConfig()
+          config: await dbNode.getConfig()
         });
       }
 
@@ -161,10 +180,12 @@ export const financePluginController = {
           date: new Date().toISOString()
         };
 
+        // Fix property access on Promise
         const history = user.purchaseHistory || [];
         history.unshift(requestRecord);
 
-        dbNode.updateUser(user.id, { purchaseHistory: history });
+        // Fix property access on Promise
+        await dbNode.updateUser(user.id, { purchaseHistory: history });
         return res.status(201).json({ 
           success: true, 
           message: "Activation packet submitted for audit." 

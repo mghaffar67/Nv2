@@ -1,13 +1,12 @@
-
 export const GlobalConfigSchema = {
   appName: { type: String, default: "Noor Official" },
   currency: { type: String, default: "PKR" },
   maintenanceMode: { type: Boolean, default: false },
   theme: {
-    primaryColor: { type: String, default: "#0EA5E9" },
-    secondaryColor: { type: String, default: "#6366F1" },
+    primaryColor: { type: String, default: "#6366F1" },
+    secondaryColor: { type: String, default: "#0ea5e9" },
     accentColor: { type: String, default: "#6366F1" },
-    fontFamily: { type: String, default: "'Inter', sans-serif" },
+    fontFamily: { type: String, default: "'Plus Jakarta Sans', sans-serif" },
     fontWeight: { type: String, default: "700" }
   },
   financeSettings: {
@@ -25,12 +24,12 @@ export const GlobalConfigSchema = {
   },
   streakRewards: { 
     type: [Number], 
-    default: [5, 5, 5, 10, 10, 15, 100] 
+    default: [5, 10, 15, 20, 25, 50, 100] 
   },
   seo: {
-    title: { type: String, default: "Noor Official - Pakistan's #1 Earning Platform" },
-    description: { type: String, default: "Noor Official V3 is a premium Pakistani platform for online earning." },
-    keywords: { type: String, default: "online earning pakistan, easypaisa earning, jazzcash earning" }
+    title: { type: String, default: "Noor V3 - Premium Earning Platform" },
+    description: { type: String, default: "Join Noor V3 for daily earning opportunities in Pakistan with fast EasyPaisa and JazzCash payouts. Trusted by thousands." },
+    keywords: { type: String, default: "online earning pakistan, easypaisa earning, jazzcash earning, Noor V3, M Ghaffar" }
   },
   appearance: {
     heroTitle: { type: String, default: "Start Earning Daily From Your Home." },

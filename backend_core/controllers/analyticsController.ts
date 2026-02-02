@@ -8,7 +8,8 @@ import { format, subDays, eachDayOfInterval, isSameDay } from 'date-fns';
 export const analyticsController = {
   getSystemReports: async (req: any, res: any) => {
     try {
-      const users = dbNode.getUsers();
+      // Add await to fix Promise iteration error
+      const users = await dbNode.getUsers();
       const days = parseInt(req.query.days as string) || 7;
       
       const today = new Date();
@@ -26,6 +27,7 @@ export const analyticsController = {
       let totalTasksCompleted = 0;
       let pendingTasksCount = 0;
 
+      // Fix forEach on Promise error
       users.forEach((u: any) => {
         // Task aggregations
         (u.workSubmissions || []).forEach((s: any) => {
@@ -53,6 +55,7 @@ export const analyticsController = {
         let dailyDeposit = 0;
         let dailyWithdraw = 0;
 
+        // Fix forEach on Promise error
         users.forEach((u: any) => {
           (u.transactions || []).forEach((t: any) => {
             if (t.status === 'approved') {
@@ -73,6 +76,7 @@ export const analyticsController = {
       });
 
       const memberGrowth = dateRange.map(date => {
+        // Fix filter on Promise error
         const count = users.filter((u: any) => isSameDay(new Date(u.createdAt), date)).length;
         return {
           date: format(date, 'MMM dd'),
@@ -81,6 +85,7 @@ export const analyticsController = {
       });
 
       const planMap: Record<string, number> = {};
+      // Fix forEach on Promise error
       users.forEach((u: any) => {
         const plan = u.currentPlan || 'Unsubscribed';
         planMap[plan] = (planMap[plan] || 0) + 1;
@@ -96,6 +101,7 @@ export const analyticsController = {
           revenue: totalRevenue,
           payouts: totalPayouts,
           profit: totalRevenue - totalPayouts,
+          // Fix length on Promise error
           totalMembers: users.length,
           totalUserEarnings,
           todayUserEarnings,

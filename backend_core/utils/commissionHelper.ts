@@ -6,22 +6,28 @@ import { dbNode } from './db';
  * Distributes yield across 3 levels of network nodes.
  */
 export const distributeCommission = async (buyerId: string, amount: number) => {
-  const buyer = dbNode.findUserById(buyerId);
+  // Add await to fix Promise property access error
+  const buyer = await dbNode.findUserById(buyerId);
   if (!buyer || !buyer.referredBy) return;
 
-  const config = dbNode.getConfig();
+  // Add await to fix Promise property access error
+  const config = await dbNode.getConfig();
+  // Fix property access on Promise
   const tiers = [
     { level: 1, percent: config.referralSettings.level1Percent || 15 },
     { level: 2, percent: config.referralSettings.level2Percent || 5 },
     { level: 3, percent: config.referralSettings.level3Percent || 2 }
   ];
 
+  // Fix property access on Promise
   let currentUplineCode = buyer.referredBy;
 
   for (const tier of tiers) {
     if (!currentUplineCode) break;
 
-    const allUsers = dbNode.getUsers();
+    // Add await to fix Promise find error
+    const allUsers = await dbNode.getUsers();
+    // Fix find on Promise error
     const upline = allUsers.find((u: any) => u.referralCode === currentUplineCode);
     
     // Integrity Check: Node must exist and not be banned
@@ -36,6 +42,7 @@ export const distributeCommission = async (buyerId: string, amount: number) => {
       amount: commissionAmount,
       status: 'approved',
       gateway: `L${tier.level} Referral Bonus`,
+      // Fix property access on Promise
       note: `Network Yield from node ${buyer.name}'s upgrade.`,
       date: new Date().toISOString().split('T')[0],
       timestamp: new Date().toISOString()
@@ -45,7 +52,7 @@ export const distributeCommission = async (buyerId: string, amount: number) => {
     trx.unshift(commissionTrx);
 
     // Save updated node state
-    dbNode.updateUser(upline.id, { 
+    await dbNode.updateUser(upline.id, { 
       balance: newBalance, 
       transactions: trx 
     });

@@ -1,33 +1,33 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Noor V3 - Premium Earning Platform</title>
-    <meta name="description" content="Join Noor V3, the #1 trusted platform for youth earning in Pakistan. Fast payouts via EasyPaisa and JazzCash.">
-    <meta name="keywords" content="online earning pakistan, easypaisa earning, jazzcash earning">
+    <title>Noor V3 - Pakistan's Premium Earning Platform</title>
+    <meta name="description" content="Join Noor V3 for daily earning opportunities in Pakistan. Secure tasks and fast payouts via EasyPaisa and JazzCash. Trusted by 20,000+ members.">
+    <meta name="keywords" content="online earning pakistan, easypaisa earning, jazzcash earning, Noor V3, M Ghaffar, work from home">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
-            --primary: #6366f1;
-            --accent: #0ea5e9;
+            --primary-color: #6366f1;
+            --secondary-color: #0ea5e9;
             --font-main: 'Plus Jakarta Sans', sans-serif;
+            --bg-base: #f8fafc;
         }
         
-        /* Adjusted Global Scaling for Professional Compact Look */
         html { font-size: 11px; } 
         @media (min-width: 768px) { html { font-size: 13px; } }
         @media (min-width: 1280px) { html { font-size: 14px; } }
 
         body {
             font-family: var(--font-main);
-            background-color: #f8fafc;
+            background-color: var(--bg-base);
             color: #0f172a;
             -webkit-tap-highlight-color: transparent;
             overflow-x: hidden;
             letter-spacing: -0.01em;
+            min-height: 100vh;
         }
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -46,6 +46,14 @@
         .animate-aurora {
           background-size: 200% 200%;
           animation: aurora 20s linear infinite;
+        }
+        
+        .animate-fade-in {
+          animation: fadeIn 0.4s ease-out forwards;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(5px); }
+          to { opacity: 1; transform: translateY(0); }
         }
     </style>
 <script type="importmap">
@@ -70,7 +78,9 @@
     "cors": "https://esm.sh/cors@^2.8.6",
     "path": "https://esm.sh/path@^0.12.7",
     "express": "https://esm.sh/express@^5.2.1",
-    "date-fns": "https://esm.sh/date-fns@^4.1.0"
+    "date-fns": "https://esm.sh/date-fns@^4.1.0",
+    "jspdf": "https://esm.sh/jspdf@2.5.1",
+    "mongodb": "https://esm.sh/mongodb@^7.0.0"
   }
 }
 </script>

@@ -1,9 +1,9 @@
-
 import { dbNode } from '../utils/db';
 
 export const adminController = {
   getDashboardStats: async (req: any, res: any) => {
-    const db = dbNode.getUsers();
+    // Added await to fix db forEach error
+    const db = await dbNode.getUsers();
     const today = new Date().toISOString().split('T')[0];
     
     let totalRevenue = 0;
@@ -20,6 +20,7 @@ export const adminController = {
 
     const revenueTrend = last7Days.map(date => ({ name: date.split('-')[2], revenue: 0, tasks: 0 }));
 
+    // Fix forEach on Promise error
     db.forEach((user: any) => {
       // Calculate Revenue
       if (user.purchaseHistory) {
@@ -71,12 +72,14 @@ export const adminController = {
   editUserBalance: async (req: any, res: any) => {
     try {
       const { userId, amount, action } = req.body;
-      const user = dbNode.findUserById(userId);
+      // Added await to fix user property access errors
+      const user = await dbNode.findUserById(userId);
       if (!user) return res.status(404).json({ message: "User not found in registry." });
 
       const amt = Number(amount);
       if (isNaN(amt) || amt < 0) return res.status(400).json({ message: "Invalid liquidity amount." });
 
+      // Fix property access on Promise
       let currentBalance = Number(user.balance) || 0;
       let newBalance = currentBalance;
 

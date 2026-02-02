@@ -2,10 +2,9 @@
 import { dbNode } from '../../utils/db';
 
 export const adminPluginController = {
-  // 1. GET PENDING STATS FOR SIDEBAR BADGES
   getPendingStats: async (req: any, res: any) => {
     try {
-      const users = dbNode.getUsers();
+      const users = await dbNode.getUsers();
       let deposits = 0;
       let withdrawals = 0;
 
@@ -20,71 +19,74 @@ export const adminPluginController = {
         }
       });
 
-      return res.status(200).json({
-        deposits,
-        withdrawals,
-        total: deposits + withdrawals
-      });
+      return res.status(200).json({ deposits, withdrawals, total: deposits + withdrawals });
     } catch (e) {
-      return res.status(500).json({ message: "Registry audit failed." });
+      return res.status(500).json({ message: "Audit failed." });
     }
   },
 
-  // 2. PROCESS REQUEST ACTION (REFINED & CONSOLIDATED)
+  getAllUsers: async (req: any, res: any) => {
+    try {
+        const users = await dbNode.getUsers();
+        const safeUsers = users.map((u: any) => {
+            const { password, ...safe } = u;
+            return safe;
+        });
+        return res.status(200).json(safeUsers);
+    } catch (e) {
+        return res.status(500).json({ message: "Identity registry inaccessible." });
+    }
+  },
+
+  updateUser: async (req: any, res: any) => {
+      try {
+          const { id, ...updates } = req.body;
+          if (!id) return res.status(400).json({ message: "Missing User Identity." });
+          const result = await dbNode.updateUser(id, updates);
+          return res.status(200).json({ success: true, user: result });
+      } catch (e) {
+          return res.status(500).json({ message: "Registry update failed." });
+      }
+  },
+
+  deleteUser: async (req: any, res: any) => {
+    try {
+      const { id } = req.params;
+      await dbNode.deleteUser(id);
+      return res.status(200).json({ success: true, message: "Node removed." });
+    } catch (e) {
+      return res.status(500).json({ message: "Registry deletion failed." });
+    }
+  },
+
   processRequestAction: async (req: any, res: any) => {
     const { transactionId, userId, action, type, reason } = req.body;
-    
     try {
-      const user = dbNode.findUserById(userId);
-      if (!user) return res.status(404).json({ message: "Member node not found." });
+      const user = await dbNode.findUserById(userId);
+      if (!user) return res.status(404).json({ message: "Member node missing." });
 
       const trxIndex = (user.transactions || []).findIndex((t: any) => t.id === transactionId);
-      if (trxIndex === -1) return res.status(404).json({ message: "Voucher record missing." });
+      if (trxIndex === -1) return res.status(404).json({ message: "Voucher missing." });
 
       const transaction = user.transactions[trxIndex];
-      if (transaction.status !== 'pending') {
-        return res.status(400).json({ message: "Voucher already processed." });
-      }
+      if (transaction.status !== 'pending') return res.status(400).json({ message: "Processed already." });
 
       const amount = Number(transaction.amount);
 
       if (action === 'approve') {
         transaction.status = 'approved';
         transaction.processedAt = new Date().toISOString();
-        
-        // Deposits: Add to balance on approval
-        if (type === 'deposit') {
-          user.balance = (Number(user.balance) || 0) + amount;
-        }
-        // Withdrawals: No balance change (balance was already deducted on request)
+        if (type === 'deposit') user.balance = (Number(user.balance) || 0) + amount;
       } else {
         transaction.status = 'rejected';
         transaction.adminNote = reason || "Data Discrepancy";
-        
-        // Withdrawals: Refund on rejection
-        if (type === 'withdraw') {
-          user.balance = (Number(user.balance) || 0) + amount;
-          
-          // Log refund in transaction history for transparency
-          const refundLog = {
-            id: `REF-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-            type: 'reward',
-            amount: amount,
-            status: 'approved',
-            gateway: 'System Refund',
-            note: `Refund for Payout #${transactionId}`,
-            date: new Date().toISOString().split('T')[0],
-            timestamp: new Date().toISOString()
-          };
-          user.transactions.unshift(refundLog);
-        }
+        if (type === 'withdraw') user.balance = (Number(user.balance) || 0) + amount;
       }
 
-      dbNode.updateUser(userId, { balance: user.balance, transactions: user.transactions });
-      return res.status(200).json({ success: true, message: "Ledger Synchronized." });
+      await dbNode.updateUser(userId, { balance: user.balance, transactions: user.transactions });
+      return res.status(200).json({ success: true, message: "Ledger Synced." });
     } catch (err) {
-      console.error("Ledger Node Failure:", err);
-      return res.status(500).json({ message: "Critical Logic Error during process." });
+      return res.status(500).json({ message: "Process error." });
     }
   }
 };

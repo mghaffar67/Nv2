@@ -10,9 +10,12 @@ export const popupController = {
   getPublicCampaigns: async (req: any, res: any) => {
     try {
       const { userId } = req.query;
-      const allPopups = dbNode.getIntegrations().filter((i: any) => i.type === 'campaign' && i.isActive);
+      // Add await to fix Promise filter error
+      const allPopups = (await dbNode.getIntegrations()).filter((i: any) => i.type === 'campaign' && i.isActive);
       
-      const user = userId ? dbNode.findUserById(userId) : null;
+      // Add await to fix Promise property access error
+      const user = userId ? await dbNode.findUserById(userId) : null;
+      // Fix property access on Promise
       const hasPlan = user?.currentPlan && user.currentPlan !== 'None';
 
       const filtered = allPopups.filter((p: any) => {
@@ -31,7 +34,8 @@ export const popupController = {
   saveCampaign: async (req: any, res: any) => {
     try {
       const { id, title, bodyText, imageUrl, btnText, btnAction, targetAudience, frequency, isActive } = req.body;
-      const data = dbNode.getIntegrations();
+      // Add await to fix Promise findIndex error
+      const data = await dbNode.getIntegrations();
       
       const newEntry = {
         id: id || `CMP-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
@@ -48,16 +52,19 @@ export const popupController = {
       };
 
       let updatedData;
+      // Fix findIndex on Promise error
       const existingIdx = data.findIndex((i: any) => i.id === id);
       
       if (existingIdx !== -1) {
+        // Fix iterator error on Promise
         updatedData = [...data];
         updatedData[existingIdx] = newEntry;
       } else {
+        // Fix iterator error on Promise
         updatedData = [newEntry, ...data];
       }
 
-      dbNode.saveIntegrations(updatedData);
+      await dbNode.saveIntegrations(updatedData);
       return res.status(200).json({ success: true, message: "Campaign Synchronized.", data: newEntry });
     } catch (e) {
       return res.status(500).json({ message: "Deployment failure." });
