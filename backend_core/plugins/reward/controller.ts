@@ -56,9 +56,11 @@ export const rewardController = {
         currentProgress = users.filter((u: any) => u.referredBy === user.referralCode).length;
       } else if (reward.type === 'task_count') {
         currentProgress = (user.workSubmissions || []).filter((s: any) => s.status === 'approved').length;
-      } else if (reward.type === 'deposit_total') {
+      } else if (reward.type === 'streak_days') {
+        currentProgress = user.streak || 0;
+      } else if (reward.type === 'withdraw_total') {
         currentProgress = (user.transactions || [])
-          .filter((t: any) => t.type === 'deposit' && t.status === 'approved')
+          .filter((t: any) => t.type === 'withdraw' && t.status === 'approved')
           .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
       }
 
@@ -79,12 +81,14 @@ export const rewardController = {
     const user = dbNode.findUserById(req.user.id);
     const reward = dbNode.getRewards().find((r: any) => r.id === rewardId);
 
-    if (!reward || (user.claimedRewards || []).includes(rewardId)) {
-      return res.status(400).json({ message: "Inam pehle hi liya ja chuka hai." });
+    if (!reward) return res.status(404).json({ message: "Inam node missing." });
+    if ((user.claimedRewards || []).includes(rewardId)) {
+      return res.status(400).json({ message: "Packet already claimed." });
     }
 
     const bonus = Number(reward.rewardAmount);
     user.balance = (Number(user.balance) || 0) + bonus;
+    
     if (!user.claimedRewards) user.claimedRewards = [];
     user.claimedRewards.push(rewardId);
 
@@ -93,8 +97,8 @@ export const rewardController = {
       type: 'reward',
       amount: bonus,
       status: 'approved',
-      gateway: 'Bonus System',
-      note: `Target Achieved: ${reward.title}`,
+      gateway: 'Bumper Reward',
+      note: `Milestone Achieved: ${reward.title}`,
       date: new Date().toISOString().split('T')[0],
       timestamp: new Date().toISOString()
     };
@@ -107,63 +111,10 @@ export const rewardController = {
       transactions: user.transactions 
     });
     
-    return res.status(200).json({ success: true, message: "Rs. " + bonus + " aapke wallet mein add ho gaye!" });
-  },
-
-  adminAwardManual: async (req: any, res: any) => {
-    const { userId, rewardId } = req.body;
-    const user = dbNode.findUserById(userId);
-    const reward = dbNode.getRewards().find((r: any) => r.id === rewardId);
-
-    if (!user || !reward) return res.status(404).json({ message: "Member ya Inam nahi mila." });
-
-    const bonus = Number(reward.rewardAmount);
-    user.balance = (Number(user.balance) || 0) + bonus;
-    if (!user.claimedRewards) user.claimedRewards = [];
-    user.claimedRewards.push(rewardId);
-
-    user.transactions.unshift({
-      id: `ADM-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
-      type: 'reward',
-      amount: bonus,
-      status: 'approved',
-      gateway: 'Admin Special',
-      note: `Manually Awarded: ${reward.title}`,
-      date: new Date().toISOString().split('T')[0],
-      timestamp: new Date().toISOString()
+    return res.status(200).json({ 
+      success: true, 
+      message: `Rs. ${bonus} has been added to your vault.`,
+      newBalance: user.balance
     });
-
-    dbNode.updateUser(userId, { balance: user.balance, claimedRewards: user.claimedRewards, transactions: user.transactions });
-    return res.status(200).json({ success: true, message: "Inam manually bhej diya gaya." });
-  },
-
-  adminRevokeManual: async (req: any, res: any) => {
-    const { userId, rewardId } = req.body;
-    const user = dbNode.findUserById(userId);
-    const reward = dbNode.getRewards().find((r: any) => r.id === rewardId);
-
-    if (!user || !reward) return res.status(404).json({ message: "Member ya Inam nahi mila." });
-
-    if (!(user.claimedRewards || []).includes(rewardId)) {
-      return res.status(400).json({ message: "Member ne ye inam claim nahi kiya." });
-    }
-
-    const bonus = Number(reward.rewardAmount);
-    user.balance = Math.max(0, (Number(user.balance) || 0) - bonus);
-    user.claimedRewards = user.claimedRewards.filter((id: string) => id !== rewardId);
-
-    user.transactions.unshift({
-      id: `REV-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
-      type: 'withdraw',
-      amount: bonus,
-      status: 'approved',
-      gateway: 'Admin Adjustment',
-      note: `Revoked: ${reward.title}`,
-      date: new Date().toISOString().split('T')[0],
-      timestamp: new Date().toISOString()
-    });
-
-    dbNode.updateUser(userId, { balance: user.balance, claimedRewards: user.claimedRewards, transactions: user.transactions });
-    return res.status(200).json({ success: true, message: "Inam wapas le liya gaya." });
   }
 };

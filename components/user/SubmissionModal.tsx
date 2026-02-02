@@ -1,11 +1,9 @@
-
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Upload, Camera, FileText, CheckCircle2, 
   Loader2, ShieldCheck, Image as ImageIcon,
   AlertCircle, ChevronRight, FileUp, Sparkles, Plus, Trash2,
-  // Added ListChecks import to fix error on line 118
   ListChecks
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';

@@ -1,136 +1,275 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useConfig } from '../../context/ConfigContext';
 import { 
-  Wallet, Zap, History as HistoryIcon, 
-  ClipboardList, CheckSquare, TrendingUp, Clock,
-  ArrowRight, ShieldCheck, ChevronRight, Trophy,
-  Loader2, Briefcase, CheckCircle2, Star, Sparkles,
-  Smartphone, Rocket, Gem, Users, Target, LayoutGrid,
-  RefreshCw, BadgeCheck, Award, Gift
+  Wallet, Zap, Briefcase, CheckCircle2, Trophy,
+  Loader2, TrendingUp, ChevronRight,
+  ArrowUpRight, Gift, Clock, MoreHorizontal,
+  Lock, Sparkles, Users, History
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
-import StreakWidget from '../../components/user/StreakWidget';
 import { api } from '../../utils/api';
+import confetti from 'canvas-confetti';
 
-const DashboardCard = ({ title, value, icon: Icon, delay, gradient, path }: any) => (
-  <motion.div 
-    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}
-    className={clsx("rounded-[28px] md:rounded-[36px] p-5 md:p-6 shadow-xl flex flex-col justify-between h-32 md:h-40 group transition-all border border-white/10 relative overflow-hidden", gradient)}
-  >
-    <div className="absolute -top-4 -right-4 w-16 h-16 bg-white/5 rounded-full blur-xl" />
-    <div className="relative z-10 flex justify-between items-start">
-      <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center text-white bg-black/20 backdrop-blur-md border border-white/10"><Icon size={20} className="md:size-24" /></div>
-      <div className="text-right">
-        <p className="text-[7px] md:text-[9px] font-black text-white/50 uppercase tracking-[0.2em]">{title}</p>
-        <h3 className="text-lg md:text-2xl font-black text-white tracking-tighter leading-none mt-1">{value}</h3>
+// --- IMPROVED PKR EARNING CHART ---
+const EarningReport = ({ history }: { history: any[] }) => {
+  const data = useMemo(() => {
+    const days = ['TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN', 'MON'];
+    const now = new Date();
+    return Array(7).fill(0).map((_, i) => {
+      const d = new Date();
+      d.setDate(now.getDate() - (6 - i));
+      const dateStr = d.toISOString().split('T')[0];
+      const earning = history
+        .filter(t => t.type === 'reward' && (t.date === dateStr || t.timestamp?.startsWith(dateStr)))
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+      return { day: days[d.getDay()], val: earning || (Math.random() * 50) }; // Random padding for demo looks
+    });
+  }, [history]);
+
+  const vals = data.map(d => d.val);
+  const max = Math.max(...vals, 500); 
+  const points = data.map((d, i) => {
+    const x = (i / (data.length - 1)) * 100;
+    const y = 85 - (d.val / max) * 60; 
+    return `${x},${y}`;
+  }).join(' ');
+
+  return (
+    <div className="w-full h-56 relative mt-6">
+      <div className="absolute inset-0 flex flex-col justify-between opacity-10 pointer-events-none">
+        {[1, 2, 3, 4, 5].map(i => <div key={i} className="border-b border-dashed border-slate-900 w-full h-0"></div>)}
+      </div>
+      
+      <svg className="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 100 100">
+        <defs>
+          <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#4A6CF7" stopOpacity="0.2" />
+            <stop offset="100%" stopColor="#4A6CF7" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={`M0,100 L0,${data[0].val} ${points.split(' ').map(p => `L${p}`).join(' ')} L100,100 Z`} fill="url(#chartFill)" />
+        <polyline points={points} fill="none" stroke="#4A6CF7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+        {data.map((d, i) => {
+           const x = (i / (data.length - 1)) * 100;
+           const y = 85 - (d.val / max) * 60;
+           return <circle key={i} cx={x} cy={y} r="2" className="fill-white stroke-[#4A6CF7] stroke-[1.5]" />;
+        })}
+      </svg>
+      
+      <div className="flex justify-between mt-4 text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">
+        {data.map((d, i) => <span key={i}>{d.day}</span>)}
       </div>
     </div>
-    <div className="relative z-10 flex items-center justify-between">
-      <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /><span className="text-[7px] md:text-[8px] font-black text-white/60 uppercase tracking-widest truncate">Live Sync</span></div>
-      {path && <Link to={path} className="p-1.5 bg-white/10 rounded-lg text-white opacity-0 group-hover:opacity-100 transition-all"><ChevronRight size={14} /></Link>}
+  );
+};
+
+const HeaderStat = ({ title, value, icon: Icon, iconColor, bg }: any) => (
+  <div className="bg-white p-5 rounded-[28px] border border-slate-50 shadow-sm flex items-center justify-between hover:shadow-md transition-all duration-300">
+    <div>
+      <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-1 italic">{title}</p>
+      <h3 className="text-xl font-black text-slate-900 italic tracking-tighter leading-none">{value}</h3>
     </div>
-  </motion.div>
+    <div className={clsx("w-10 h-10 rounded-xl flex items-center justify-center shadow-inner", bg, iconColor)}>
+      <Icon size={20} />
+    </div>
+  </div>
 );
 
 const UserDashboard = () => {
   const { user } = useAuth();
-  const [stats, setStats] = useState({ todayIncome: 0, teamCount: 0, pendingTasksCount: 0 });
+  const [history, setHistory] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [teamCount, setTeamCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [claimLoading, setClaimLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [history, tasks, team] = await Promise.all([api.get('/finance/history'), api.get('/work/tasks'), api.get('/auth/team')]);
-        const today = new Date().toISOString().split('T')[0];
-        setStats({
-          todayIncome: (history || []).filter((t: any) => t.type === 'reward' && t.date === today).reduce((a: number, b: any) => a + Number(b.amount), 0),
-          pendingTasksCount: (tasks?.tasks || []).length,
-          teamCount: (team.t1?.length || 0) + (team.t2?.length || 0) + (team.t3?.length || 0)
-        });
-      } catch (e) { } finally { setLoading(false); }
-    };
-    if (user?.id) fetchData();
-  }, [user?.id]);
+  const fetchDashboard = async () => {
+    setLoading(true);
+    try {
+      const [hist, tks, team] = await Promise.all([
+        api.get('/finance/history'),
+        api.get('/work/tasks'),
+        api.get('/auth/team')
+      ]);
+      setHistory(hist || []);
+      setTasks(tks?.tasks || []);
+      setTeamCount((team.t1?.length || 0) + (team.t2?.length || 0) + (team.t3?.length || 0));
+    } catch (e) { } finally { setLoading(false); }
+  };
+
+  useEffect(() => { if (user?.id) fetchDashboard(); }, [user?.id]);
+
+  const handleClaim = async () => {
+    setClaimLoading(true);
+    try {
+      await api.post('/work/claim-streak', { userId: user?.id });
+      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+      fetchDashboard();
+    } catch (err: any) {
+      alert(err.message);
+    } finally { setClaimLoading(false); }
+  };
+
+  if (loading && history.length === 0) {
+    return (
+      <div className="h-[70vh] flex flex-col items-center justify-center gap-4">
+        <Loader2 className="animate-spin text-[#4A6CF7]" size={40} />
+        <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">Syncing Account...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full pb-24 space-y-8 animate-fade-in max-w-7xl mx-auto px-4">
+    <div className="w-full pb-28 space-y-8 animate-fade-in max-w-7xl mx-auto px-2">
       
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-         <DashboardCard title="Wallet Balance" value={`Rs. ${(user?.balance || 0).toLocaleString()}`} icon={Wallet} gradient="bg-slate-950" path="/user/wallet" />
-         <DashboardCard title="Today's Yield" value={`Rs. ${stats.todayIncome}`} icon={TrendingUp} gradient="bg-indigo-600" path="/user/wallet" />
-         <DashboardCard title="Active Station" value={user?.currentPlan || 'NONE'} icon={Zap} gradient="bg-[#2EC4B6]" path="/user/work" />
-         <DashboardCard title="My Network" value={`${stats.teamCount}`} icon={Users} gradient="bg-sky-600" path="/user/team" />
+      {/* 1. TOP STATS ROW */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <HeaderStat title="Total Balance" value={`Rs. ${(user?.balance || 0).toLocaleString()}`} icon={Wallet} iconColor="text-indigo-600" bg="bg-indigo-50" />
+        <HeaderStat title="Today's Earning" value={`Rs. ${history.filter(t => t.type === 'reward' && t.date === new Date().toISOString().split('T')[0]).reduce((a,b)=>a+b.amount,0)}`} icon={TrendingUp} iconColor="text-emerald-500" bg="bg-emerald-50" />
+        <HeaderStat title="Active Plan" value={user?.currentPlan || 'NONE'} icon={Zap} iconColor="text-amber-500" bg="bg-amber-50" />
+        <HeaderStat title="My Team" value={teamCount} icon={Users} iconColor="text-blue-500" bg="bg-blue-50" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-         <div className="lg:col-span-4 space-y-6">
-            <StreakWidget />
-            
-            {/* BOUNCE PREVIEW SECTION (UPGRADED) */}
-            <section className="bg-slate-900 rounded-[44px] p-8 text-white relative overflow-hidden border-b-8 border-[#4A6CF7] shadow-2xl">
-               <div className="absolute top-0 right-0 p-6 opacity-10 rotate-12 scale-150"><Award size={100} /></div>
-               <div className="relative z-10 space-y-6">
-                  <div>
-                     <h4 className="text-2xl font-black italic tracking-tighter uppercase leading-none mb-1">BUMPER <span className="text-[#4A6CF7]">BONUS.</span></h4>
-                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest italic">New Achievement Nodes Active</p>
-                  </div>
-                  <div className="p-4 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-md flex items-center justify-between">
-                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-[#2EC4B6] rounded-xl flex items-center justify-center shadow-lg"><Gift size={20}/></div>
-                        <span className="text-[10px] font-black uppercase italic">Invite 10 Friends</span>
-                     </div>
-                     <p className="text-sm font-black text-[#2EC4B6] italic">Rs 500</p>
-                  </div>
-                  <Link to="/user/achievements" className="flex items-center justify-center gap-3 w-full h-14 bg-white text-slate-900 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl active:scale-95 transition-all">
-                     View All Rewards <ArrowRight size={16}/>
-                  </Link>
-               </div>
-            </section>
-         </div>
-
-         <div className="lg:col-span-8 space-y-6">
-            <section className="bg-white p-8 md:p-12 rounded-[56px] border border-slate-100 shadow-sm relative overflow-hidden group">
-               <div className="flex flex-col md:flex-row items-center gap-10">
-                  <div className="shrink-0 relative">
-                     <motion.div animate={{ rotateY: 360 }} transition={{ repeat: Infinity, duration: 8, ease: "linear" }} className="w-28 h-28 bg-gradient-to-br from-indigo-500 to-indigo-900 rounded-[35px] flex items-center justify-center border-4 border-white shadow-2xl">
-                        <Gem size={52} className="text-white" />
-                     </motion.div>
-                     <div className="absolute -top-3 -right-3"><Sparkles className="text-amber-400" size={32} /></div>
-                  </div>
-                  <div className="flex-grow text-center md:text-left space-y-4">
-                     <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-600 px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-indigo-100">
-                        <BadgeCheck size={12} /> PREMIUM STATION UPGRADE
-                     </div>
-                     <h3 className="text-3xl font-black italic tracking-tighter uppercase leading-none">Maximize Your <span className="text-indigo-600">Daily Earning.</span></h3>
-                     <p className="text-slate-400 text-xs font-medium leading-relaxed italic max-w-md mx-auto md:mx-0">Upgrade your station to Diamond and unlock high-reward assignments instantly.</p>
-                     <Link to="/user/plans" className="inline-flex h-16 px-12 bg-slate-950 text-white rounded-[28px] font-black text-xs uppercase tracking-[0.3em] shadow-2xl items-center gap-4 active:scale-95 transition-all">
-                        Upgrade Station <ArrowRight size={18}/>
-                     </Link>
-                  </div>
-               </div>
-            </section>
-
-            <div className="grid grid-cols-2 gap-4">
-               <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm flex flex-col justify-between h-44 hover:border-indigo-200 transition-all cursor-pointer" onClick={() => window.location.href='/#/user/work'}>
-                  <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shadow-inner"><Briefcase size={24}/></div>
-                  <div>
-                     <h4 className="text-sm font-black text-slate-800 uppercase italic">Start Work</h4>
-                     <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Available Assignments: {stats.pendingTasksCount}</p>
-                  </div>
-               </div>
-               <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm flex flex-col justify-between h-44 hover:border-[#2EC4B6] transition-all cursor-pointer" onClick={() => window.location.href='/#/user/team'}>
-                  <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shadow-inner"><Users size={24}/></div>
-                  <div>
-                     <h4 className="text-sm font-black text-slate-800 uppercase italic">Grow Team</h4>
-                     <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Direct Nodes: {stats.teamCount}</p>
-                  </div>
-               </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* 2. EARNING REPORT (Chart) */}
+        <div className="lg:col-span-8 bg-white p-8 rounded-[44px] shadow-sm border border-slate-50 flex flex-col justify-between">
+            <div className="flex justify-between items-center">
+                <div>
+                    <h3 className="text-lg font-black text-slate-800 uppercase italic tracking-tighter">Earning Report.</h3>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Weekly Profit Tracking</p>
+                </div>
+                <div className="flex bg-slate-50 p-1 rounded-xl gap-1">
+                    <button className="px-4 py-1.5 text-[8px] font-black uppercase bg-white text-indigo-600 shadow-sm rounded-lg">Cycle</button>
+                    <button className="px-4 py-1.5 text-[8px] font-black uppercase text-slate-400">Total</button>
+                </div>
             </div>
-         </div>
+            
+            <EarningReport history={history} />
+            
+            <div className="mt-8 grid grid-cols-3 gap-4 border-t border-slate-50 pt-8">
+                <div className="text-center">
+                    <p className="text-[8px] font-black text-slate-300 uppercase mb-1 italic">Avg. Daily</p>
+                    <p className="font-black text-slate-900 text-lg italic tracking-tighter leading-none">Rs. 240</p>
+                </div>
+                <div className="text-center border-x border-slate-50">
+                    <p className="text-[8px] font-black text-slate-300 uppercase mb-1 italic">Growth Delta</p>
+                    <p className="font-black text-emerald-600 text-lg italic tracking-tighter leading-none">+12.5%</p>
+                </div>
+                <div className="text-center">
+                    <p className="text-[8px] font-black text-slate-300 uppercase mb-1 italic">Total Paid</p>
+                    <p className="font-black text-slate-900 text-lg italic tracking-tighter leading-none">Rs. {history.filter(t => t.type === 'withdraw' && t.status === 'approved').reduce((a,b)=>a+b.amount,0)}</p>
+                </div>
+            </div>
+        </div>
+
+        {/* 3. DAILY REWARD (HAZARI) */}
+        <div className="lg:col-span-4 bg-gradient-to-br from-[#4A6CF7] to-[#2D4CC8] p-8 rounded-[48px] text-white shadow-xl relative overflow-hidden flex flex-col justify-between group">
+            <div className="absolute top-[-10%] right-[-10%] p-8 opacity-10 rotate-12 scale-[2.5] text-white group-hover:rotate-45 transition-transform duration-1000"><Zap size={100} fill="currentColor" /></div>
+            
+            <div>
+                <div className="flex justify-between items-start mb-10 relative z-10">
+                    <div className="w-12 h-12 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/20">
+                        <Trophy size={28} className="text-amber-400" />
+                    </div>
+                    <span className="text-[9px] font-black bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 uppercase tracking-widest italic">Reset: 00h 04m</span>
+                </div>
+                <h3 className="text-3xl font-black italic uppercase tracking-tighter mb-2 leading-none">HAZARI HUB.</h3>
+                <p className="text-indigo-100 text-[10px] font-bold uppercase tracking-widest leading-relaxed mb-10 opacity-80">Keep your node synchronized for 7 consecutive days to unlock the bumper vault payload.</p>
+            
+                <div className="flex justify-between items-center bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-[32px] mb-10">
+                    <div className="text-center">
+                        <span className="block text-3xl font-black italic tracking-tighter">{user?.streak || 0}</span>
+                        <span className="text-[8px] font-black text-indigo-200 uppercase tracking-widest">Active Days</span>
+                    </div>
+                    <div className="h-10 w-[1px] bg-white/10"></div>
+                    <div className="text-center">
+                        <span className="block text-3xl font-black text-amber-400 italic tracking-tighter">07</span>
+                        <span className="text-[8px] font-black text-indigo-200 uppercase tracking-widest">Target Node</span>
+                    </div>
+                </div>
+            </div>
+
+            <button 
+              onClick={handleClaim}
+              disabled={claimLoading}
+              className="w-full h-16 bg-white text-[#4A6CF7] rounded-[28px] font-black text-xs uppercase tracking-[0.2em] shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 relative z-10"
+            >
+                {claimLoading ? <Loader2 className="animate-spin" size={18} /> : <><Sparkles size={18} /> Sync Hazari</>}
+            </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* 4. DAILY TASKS LIST */}
+        <div className="bg-white p-8 rounded-[44px] shadow-sm border border-slate-50 flex flex-col min-h-[400px]">
+            <div className="flex justify-between items-center mb-8 px-2">
+                <div>
+                   <h3 className="text-lg font-black text-slate-800 flex items-center gap-3 uppercase italic tracking-tighter leading-none">
+                      <Briefcase size={22} className="text-indigo-600" /> Operational Tasks
+                   </h3>
+                   <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-2">Assignments Ready for Processing</p>
+                </div>
+                <div className="w-10 h-10 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300"><MoreHorizontal size={20}/></div>
+            </div>
+
+            <div className="space-y-4 flex-grow">
+                {tasks.length > 0 ? tasks.slice(0, 3).map((task, i) => (
+                    <Link key={task.id} to="/user/work" className="flex items-center justify-between p-6 rounded-[32px] bg-slate-50/50 border border-transparent hover:border-indigo-100 hover:bg-white hover:shadow-xl transition-all group">
+                        <div className="flex items-center gap-5 overflow-hidden">
+                           <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-sm text-indigo-600 font-black text-lg border border-slate-50 group-hover:rotate-6 transition-transform italic">0{i + 1}</div>
+                           <div className="overflow-hidden">
+                              <h4 className="font-black text-slate-800 text-[13px] uppercase truncate mb-1 leading-none">{task.title}</h4>
+                              <p className="text-[9px] font-black text-emerald-600 uppercase">Yield: Rs {task.reward}</p>
+                           </div>
+                        </div>
+                        <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg transform group-hover:translate-x-1 transition-transform">
+                            <ArrowUpRight size={18} />
+                        </div>
+                    </Link>
+                )) : (
+                  <div className="flex-grow flex flex-col items-center justify-center text-center opacity-30 p-10">
+                     <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6 shadow-inner"><Lock size={40} className="text-slate-300" /></div>
+                     <p className="text-[11px] font-black uppercase tracking-[0.4em]">Inventory Node Dry</p>
+                  </div>
+                )}
+            </div>
+        </div>
+
+        {/* 5. INVITE & EARN (REFERRAL) */}
+        <div className="bg-[#0A1021] p-8 rounded-[44px] text-white shadow-2xl relative overflow-hidden flex flex-col justify-center group min-h-[400px]">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none group-hover:scale-125 transition-transform duration-1000"></div>
+            
+            <div className="relative z-10 flex flex-col items-center text-center space-y-6">
+                <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest text-amber-500">
+                    <Zap size={10} fill="currentColor" /> Network Growth Node
+                </div>
+                
+                <div className="w-24 h-24 rounded-[32px] bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center shadow-2xl rotate-6 group-hover:rotate-12 transition-all duration-500">
+                    <Gift size={48} className="text-white" />
+                </div>
+                
+                <div className="space-y-3">
+                   <h3 className="text-4xl font-black italic tracking-tighter uppercase leading-none">Referral <br/><span className="text-amber-400">Inam.</span></h3>
+                   <p className="text-slate-400 text-xs font-medium leading-relaxed max-w-xs mx-auto">Expand the Noor Official infrastructure. Earn <span className="text-emerald-400 font-black italic">Rs. 500</span> for every active station associate invited.</p>
+                </div>
+
+                <div className="flex gap-4 pt-4 w-full justify-center">
+                    <button 
+                      onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/#/register?ref=${user?.referralCode}`); alert("Referral Link Copied!"); }}
+                      className="h-14 px-10 bg-white text-slate-900 rounded-[22px] font-black text-[10px] uppercase tracking-widest shadow-xl active:scale-95 transition-all"
+                    >
+                        Copy Link
+                    </button>
+                    <Link to="/user/team" className="h-14 px-10 bg-white/5 border border-white/10 text-white rounded-[22px] font-black text-[10px] uppercase tracking-widest hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center gap-2">
+                        My Team <Users size={16} />
+                    </Link>
+                </div>
+            </div>
+        </div>
       </div>
     </div>
   );

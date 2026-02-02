@@ -122,7 +122,7 @@ export const financePluginController = {
         
         const newBalance = currentBalance - price;
         const expiry = new Date();
-        expiry.setDate(expiry.getDate() + 365);
+        expiry.setDate(expiry.getDate() + (purchasedPlan.validityDays || 365));
 
         const purchaseRecord = {
           id: `PH-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,

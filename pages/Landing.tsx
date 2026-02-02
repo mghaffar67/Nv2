@@ -1,188 +1,253 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { 
-  ArrowRight, Zap, Star, Users, 
-  Activity, ChevronRight,
-  UserPlus, Cpu, Wallet, ShieldCheck, Award, Diamond,
-  TrendingUp, Globe, MessageSquare, Quote
+  Users, 
+  ShieldCheck, 
+  Headphones, 
+  ArrowRight, 
+  CheckCircle2, 
+  Star, 
+  Zap, 
+  BarChart3, 
+  LayoutDashboard,
+  Menu,
+  X,
+  TrendingUp,
+  Wallet,
+  ChevronRight,
+  Shield,
+  Smartphone,
+  Trophy,
+  Award,
+  Sparkles,
+  CreditCard
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { useConfig } from '../context/ConfigContext';
 import LivePayoutTicker from '../components/marketing/LivePayoutTicker';
 
 const Landing = () => {
   const { config } = useConfig();
-  const heroImage = config.appearance.heroSlides?.[0]?.image || "https://images.unsplash.com/photo-1556761175-b413da4baf72?q=80&w=1920";
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const premiumPlans = [
-    { name: 'Basic', price: '500', daily: '50', icon: Star, color: 'text-slate-400' },
-    { name: 'Standard', price: '1000', daily: '100', icon: Zap, color: 'text-emerald-500' },
-    { name: 'Elite Pro', price: '1500', daily: '150', icon: Award, color: 'text-indigo-500' },
-    { name: 'Diamond', price: '5000', daily: '650', icon: Diamond, color: 'text-sky-500' },
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const stats = [
+    { label: "Total Paid Out", value: "Rs. 12.8M+", icon: <BarChart3 className="w-5 h-5 text-emerald-500" /> },
+    { label: "Members", value: "24.8k+", icon: <Users className="w-5 h-5 text-indigo-500" /> },
+    { label: "Security", value: "OPERATIONAL", icon: <Shield className="w-5 h-5 text-sky-500" /> },
+    { label: "Support", value: "24/7 LIVE", icon: <Headphones className="w-5 h-5 text-purple-500" /> },
+  ];
+
+  const plans = [
+    { id: 1, name: "BASIC", price: 1000, daily: 240, color: "bg-indigo-600", badge: "ENTRY LEVEL", features: ["1 Daily Task", "EasyPaisa Support", "Level 1 Team Bonus"] },
+    { id: 2, name: "STANDARD", price: 2000, daily: 480, color: "bg-emerald-600", badge: "POPULAR", features: ["2 Daily Tasks", "Fast Payout", "Level 2 Team Bonus"] },
+    { id: 3, name: "GOLD ELITE", price: 3500, daily: 720, isPopular: true, color: "bg-purple-600", badge: "BEST VALUE", features: ["3 Daily Tasks", "Priority Support", "Level 3 Team Bonus"] },
+    { id: 4, name: "DIAMOND", price: 6000, daily: 960, color: "bg-slate-900", badge: "PREMIUM", features: ["4 Daily Tasks", "Dedicated Manager", "Maximum Earning"] },
   ];
 
   return (
-    <div className="overflow-hidden bg-[#fbfcfe] pb-20 font-sans">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans selection:bg-indigo-100 overflow-x-hidden">
       <LivePayoutTicker />
-      
-      {/* Professional Hero */}
-      <section className="relative h-[340px] md:h-[500px] flex items-center overflow-hidden bg-slate-950">
-        <div className="absolute inset-0 z-0 opacity-40">
-           <img src={heroImage} className="w-full h-full object-cover" alt="Hero" />
-           <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/60 to-transparent" />
+
+      {/* --- NAVIGATION --- */}
+      <nav className={clsx(
+        "fixed top-8 left-0 w-full z-50 transition-all duration-500 px-6",
+        isScrolled ? "top-4" : "top-8"
+      )}>
+        <div className={clsx(
+          "max-w-6xl mx-auto flex justify-between items-center px-8 h-18 rounded-[28px] border transition-all duration-500",
+          isScrolled ? "bg-white/80 backdrop-blur-xl border-slate-200 shadow-xl" : "bg-transparent border-transparent"
+        )}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg text-white">
+              <Zap size={18} fill="currentColor" />
+            </div>
+            <span className="text-lg font-black italic tracking-tighter uppercase">Noor<span className="text-indigo-600">HQ</span></span>
+          </div>
+
+          <div className="hidden md:flex items-center gap-10">
+            <Link to="/payouts" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-colors">Payout History</Link>
+            <Link to="/login" className="px-8 h-11 bg-slate-900 text-white rounded-2xl font-black text-[9px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl">
+              Login Portal
+            </Link>
+          </div>
+
+          <button className="md:hidden p-2 text-slate-500" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
-        <div className="max-w-6xl mx-auto w-full px-6 relative z-10">
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="max-w-xl space-y-4">
-              <div className="inline-flex items-center gap-2 bg-indigo-500/20 border border-indigo-500/20 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] text-indigo-300 backdrop-blur-md">
-                <ShieldCheck size={12} /> Pakistan's #1 Trusted Platform
-              </div>
-              <h1 className="text-4xl md:text-6xl font-black tracking-tight uppercase italic text-white leading-[0.9]">
-                Daily Earnings.<br/>Simple Work.
-              </h1>
-              <p className="text-slate-400 text-[10px] md:text-base font-bold tracking-tight max-w-md leading-relaxed uppercase italic">
-                Join our community of thousands earning daily from simple online assignments. Fast payouts via EasyPaisa & JazzCash.
-              </p>
-              <div className="flex gap-3 pt-6">
-                <Link to="/register" className="bg-indigo-600 text-white h-12 px-8 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-2xl flex items-center justify-center gap-2 active:scale-95 transition-all">
-                  Get Started <ArrowRight size={16} />
-                </Link>
-                <Link to="/payouts" className="bg-white/5 backdrop-blur-md text-white border border-white/10 h-12 px-8 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all">
-                  Proof Center
-                </Link>
-              </div>
+      </nav>
+
+      {/* --- HERO --- */}
+      <section className="relative pt-48 pb-20 px-6 min-h-[90vh] flex items-center">
+        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-8">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 text-[10px] font-black uppercase tracking-widest">
+              <Sparkles size={12} className="animate-pulse" /> Verified Earning Network Pakistan
+            </div>
+            <h1 className="text-5xl md:text-7xl font-black tracking-tighter uppercase italic leading-[0.9] text-slate-900">
+              Earning <br /> Made <span className="text-indigo-600">Simple.</span>
+            </h1>
+            <p className="text-lg text-slate-500 max-w-lg leading-relaxed font-medium italic">
+              Join thousands of students and professionals earning daily from their homes with secure EasyPaisa and JazzCash withdrawals.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link to="/register" className="h-16 px-10 bg-indigo-600 text-white rounded-[22px] font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-2xl flex items-center justify-center gap-3">
+                Join Today <ArrowRight size={18} />
+              </Link>
+              <Link to="/login" className="h-16 px-10 bg-white border border-slate-200 text-slate-600 rounded-[22px] font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-2">
+                Member Login
+              </Link>
+            </div>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative hidden lg:block">
+            <div className="w-[320px] mx-auto bg-white border-[10px] border-slate-900 rounded-[3rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] overflow-hidden h-[600px] relative">
+               <div className="h-full w-full bg-slate-50 p-6 pt-12 space-y-6">
+                  <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-[24px] p-6 text-white shadow-xl">
+                    <p className="text-[8px] font-black uppercase tracking-widest opacity-60 mb-1">Total Reward</p>
+                    <h3 className="text-2xl font-black italic tracking-tighter mb-4">Rs. 1,550</h3>
+                    <div className="flex gap-2">
+                       <div className="h-8 w-8 bg-white/10 rounded-lg flex items-center justify-center"><TrendingUp size={14}/></div>
+                       <div className="h-8 w-8 bg-white/10 rounded-lg flex items-center justify-center"><Wallet size={14}/></div>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                     {[1,2,3].map(i => (
+                       <div key={i} className="bg-white p-4 rounded-2xl border border-slate-100 flex items-center justify-between shadow-sm">
+                          <div className="flex items-center gap-3">
+                             <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center"><CheckCircle2 size={16}/></div>
+                             <div className="w-20 h-2 bg-slate-100 rounded-full" />
+                          </div>
+                          <span className="text-[10px] font-black text-emerald-600">+Rs 240</span>
+                       </div>
+                     ))}
+                  </div>
+               </div>
+               {/* Floating Success Pill */}
+               <div className="absolute bottom-10 -right-4 bg-white p-4 rounded-2xl shadow-2xl border border-slate-50 flex items-center gap-3">
+                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white"><ShieldCheck size={18}/></div>
+                  <div>
+                    <p className="text-[8px] font-black text-slate-400 uppercase">Withdrawal</p>
+                    <p className="text-[10px] font-black">Paid Successfully</p>
+                  </div>
+               </div>
+            </div>
           </motion.div>
         </div>
       </section>
 
-      {/* Stats Bar */}
-      <section className="max-w-6xl mx-auto px-4 -mt-8 relative z-20">
-         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <StatSmall label="Total Payouts" val="Rs. 12.8M" icon={TrendingUp} color="text-emerald-500" />
-            <StatSmall label="Global Members" val="24.8k+" icon={Users} color="text-indigo-500" />
-            <StatSmall label="System Status" val="Operational" icon={Zap} color="text-sky-500" />
-            <StatSmall label="Live Support" val="Online" icon={Globe} color="text-amber-500" />
-         </div>
-      </section>
-
-      {/* Earning Plans Hub */}
-      <section className="py-16 px-4 max-w-6xl mx-auto">
-         <div className="text-center mb-12">
-            <h2 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter leading-none">Earning Plans.</h2>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-2">Choose the best plan for your daily goals</p>
-         </div>
-
-         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {premiumPlans.map((plan, i) => (
-               <motion.div 
-                 key={plan.name}
-                 initial={{ opacity: 0, y: 10 }}
-                 whileInView={{ opacity: 1, y: 0 }}
-                 viewport={{ once: true }}
-                 transition={{ delay: i * 0.05 }}
-                 className="bg-white rounded-[40px] p-6 border border-slate-100 shadow-sm flex flex-col items-center text-center gap-4 hover:border-indigo-200 hover:shadow-xl transition-all group"
-               >
-                  <div className={clsx("w-14 h-14 rounded-2xl flex items-center justify-center bg-slate-50 transition-all group-hover:scale-110 shadow-inner", plan.color)}>
-                     <plan.icon size={28} />
-                  </div>
-                  <div>
-                     <h4 className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{plan.name}</h4>
-                     <p className="text-2xl font-black text-slate-900 italic tracking-tighter leading-none">Rs {plan.price}</p>
-                  </div>
-                  <div className="w-full h-[1px] bg-slate-50" />
-                  <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Earning: Rs {plan.daily}/Day</p>
-                  <Link to="/register" className="h-10 w-full bg-slate-950 text-white rounded-xl font-black text-[8px] uppercase tracking-widest flex items-center justify-center gap-1 group-hover:bg-indigo-600 transition-colors shadow-lg active:scale-95">
-                    Activate Now <ChevronRight size={12} />
-                  </Link>
-               </motion.div>
+      {/* --- STATS GRID --- */}
+      <section className="px-6 pb-24">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {stats.map((stat, idx) => (
+              <div key={idx} className="bg-white p-6 rounded-[28px] border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
+                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center shrink-0">
+                  {stat.icon}
+                </div>
+                <div>
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5 italic">{stat.label}</p>
+                  <h4 className="text-lg font-black text-slate-900 tracking-tight">{stat.value}</h4>
+                </div>
+              </div>
             ))}
-         </div>
+          </div>
+        </div>
       </section>
 
-      {/* Community Feedback (Reviews Section) */}
-      <section className="py-16 bg-slate-50">
-         <div className="max-w-6xl mx-auto px-6">
-            <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-12">
-               <div>
-                  <h2 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter">Member Reviews.</h2>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-2">Real feedback from our earning community</p>
-               </div>
-               <div className="flex gap-2">
-                  <div className="px-4 py-2 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center gap-2">
-                     <Star size={14} className="fill-amber-400 text-amber-400" />
-                     <span className="font-black text-xs text-slate-800 tracking-tight">4.9/5 Rating</span>
+      {/* --- EARNING STATIONS --- */}
+      <section id="plans" className="py-24 px-6 bg-slate-50/50 border-y border-slate-100">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16 space-y-2">
+            <h2 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase text-slate-900">Choose Your <span className="text-indigo-600">Station.</span></h2>
+            <p className="text-slate-400 font-black uppercase text-[10px] tracking-widest">Select an earning capacity that fits you</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {plans.map((plan) => (
+              <div key={plan.id} className={clsx(
+                "bg-white rounded-[40px] p-8 border transition-all flex flex-col relative group",
+                plan.isPopular ? "border-indigo-600 shadow-2xl scale-[1.02] z-10" : "border-slate-100 shadow-sm hover:border-slate-200"
+              )}>
+                {plan.isPopular && (
+                  <div className="absolute top-0 right-10 bg-indigo-600 text-[7px] font-black text-white px-4 py-1.5 rounded-b-xl uppercase tracking-widest">Recommended</div>
+                )}
+                <div className="mb-8">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 italic">{plan.badge}</p>
+                  <h4 className="text-xl font-black italic mb-4">{plan.name}</h4>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-xs font-black text-slate-300">Rs.</span>
+                    <span className="text-4xl font-black tracking-tighter text-slate-900">{plan.price.toLocaleString()}</span>
                   </div>
-               </div>
-            </div>
+                </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-               {config.appearance.reviews.map((rev, idx) => (
-                  <motion.div 
-                    key={idx}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    className="bg-white p-8 rounded-[44px] border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-2xl transition-all"
-                  >
-                     <Quote size={40} className="absolute -top-4 -right-4 text-indigo-50/50 group-hover:text-indigo-50 transition-colors" />
-                     <div className="flex gap-1 mb-6">
-                        {[...Array(rev.rating)].map((_, i) => <Star key={i} size={10} className="fill-amber-400 text-amber-400" />)}
-                     </div>
-                     <p className="text-xs font-bold text-slate-500 italic mb-8 leading-relaxed">"{rev.comment}"</p>
-                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-slate-900 text-sky-400 rounded-2xl flex items-center justify-center font-black italic shadow-lg border border-white/10 shrink-0">
-                           {rev.name.charAt(0)}
-                        </div>
-                        <div>
-                           <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{rev.name}</h4>
-                           <p className="text-[7px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5 italic">Verified Member</p>
-                        </div>
-                     </div>
-                  </motion.div>
-               ))}
-            </div>
-         </div>
+                <div className={clsx("p-4 rounded-2xl text-center mb-8", plan.isPopular ? "bg-indigo-50" : "bg-slate-50")}>
+                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Daily Yield</p>
+                   <p className="text-xl font-black text-indigo-600">Rs {plan.daily}</p>
+                </div>
+
+                <ul className="space-y-4 mb-10 flex-grow">
+                  {plan.features.map((f, i) => (
+                    <li key={i} className="flex items-center gap-3 text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+                       <CheckCircle2 size={14} className="text-indigo-600 shrink-0" /> {f}
+                    </li>
+                  ))}
+                </ul>
+
+                <Link to="/register" className={clsx(
+                  "h-14 w-full rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 active:scale-95",
+                  plan.isPopular ? "bg-indigo-600 text-white shadow-xl shadow-indigo-200" : "bg-slate-900 text-white"
+                )}>
+                  Activate Station <ChevronRight size={14}/>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
-      {/* Simple Workflow */}
-      <section className="py-16 px-6 mx-4 bg-slate-950 rounded-[44px] relative overflow-hidden shadow-2xl">
-         <div className="absolute top-0 right-0 p-12 opacity-[0.03] rotate-12 scale-150"><Zap size={200} fill="currentColor"/></div>
-         <div className="max-w-4xl mx-auto text-center mb-12">
-            <h2 className="text-3xl font-black text-white tracking-tighter uppercase italic leading-none">How It <span className="text-indigo-500">Works.</span></h2>
-            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.3em] mt-3">Simple 4-Step Journey to Success</p>
-         </div>
-         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
-            <FlowPill n="1" t="Create Account" icon={UserPlus} />
-            <FlowPill n="2" t="Pick a Plan" icon={Cpu} />
-            <FlowPill n="3" t="Complete Tasks" icon={Activity} />
-            <FlowPill n="4" t="Instant Cashout" icon={Wallet} />
-         </div>
-      </section>
+      {/* --- FOOTER --- */}
+      <footer className="bg-white border-t border-slate-100 py-16 px-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-12">
+           <div className="space-y-4 max-w-xs">
+              <div className="flex items-center gap-3">
+                 <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg text-white"><Zap size={20} fill="currentColor"/></div>
+                 <span className="text-2xl font-black tracking-tighter uppercase italic">Noor<span className="text-indigo-600">HQ</span></span>
+              </div>
+              <p className="text-[11px] font-bold text-slate-400 uppercase leading-relaxed tracking-widest italic">Pakistan's Trusted Micro-Work Gateway. Built for community growth and financial independence.</p>
+           </div>
+           
+           <div className="grid grid-cols-2 gap-20">
+              <div className="space-y-4">
+                 <h5 className="text-[11px] font-black uppercase text-slate-900 italic tracking-widest">Protocol</h5>
+                 <ul className="space-y-2">
+                    <li><Link to="/payouts" className="text-[10px] font-bold text-slate-500 hover:text-indigo-600 uppercase">Live Registry</Link></li>
+                    <li><Link to="/support" className="text-[10px] font-bold text-slate-500 hover:text-indigo-600 uppercase">Help Node</Link></li>
+                 </ul>
+              </div>
+              <div className="space-y-4">
+                 <h5 className="text-[11px] font-black uppercase text-slate-900 italic tracking-widest">Security</h5>
+                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-3">
+                    <ShieldCheck size={20} className="text-indigo-600" />
+                    <p className="text-[8px] font-black text-slate-500 uppercase leading-none">256-Bit <br/> Encrypted</p>
+                 </div>
+              </div>
+           </div>
+        </div>
+        <div className="max-w-7xl mx-auto mt-16 pt-8 border-t border-slate-50 text-center">
+           <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em]">© 2024 Noor Official Hub. Build v3.30.0-PRO</p>
+        </div>
+      </footer>
     </div>
   );
 };
-
-const StatSmall = ({ label, val, icon: Icon, color }: any) => (
-  <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3.5 group hover:border-indigo-200 transition-all">
-     <div className={clsx("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-slate-50 shadow-inner group-hover:scale-110 transition-transform", color)}>
-        <Icon size={20} />
-     </div>
-     <div className="overflow-hidden">
-        <p className="text-[7px] font-black text-slate-400 uppercase tracking-[0.2em] truncate">{label}</p>
-        <p className="text-sm font-black text-slate-900 italic tracking-tighter leading-none mt-0.5">{val}</p>
-     </div>
-  </div>
-);
-
-const FlowPill = ({ n, t, icon: Icon }: any) => (
-  <div className="bg-white/5 border border-white/5 p-6 rounded-[32px] flex flex-col items-center gap-4 group hover:bg-indigo-600 transition-all duration-500 border border-white/5">
-     <span className="text-[10px] font-black text-indigo-500 group-hover:text-white uppercase tracking-widest">Step {n}</span>
-     <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center group-hover:bg-white/10 transition-colors">
-        <Icon size={24} className="text-white group-hover:scale-110 transition-transform" />
-     </div>
-     <h4 className="text-[10px] font-black text-white uppercase italic tracking-[0.1em] text-center">{t}</h4>
-  </div>
-);
 
 export default Landing;

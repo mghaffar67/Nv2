@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-/* Added AnimatePresence to imports from framer-motion to fix "Cannot find name AnimatePresence" errors */
 import { motion, AnimatePresence } from 'framer-motion';
 import { Save, AlertCircle, TrendingDown, Users, CheckCircle2, Loader2, ShieldCheck, Clock, Zap, Target } from 'lucide-react';
 import { useConfig } from '../../../context/ConfigContext';
@@ -16,8 +15,8 @@ const CoreSettings = () => {
     withdrawFee: config.financeSettings.withdrawFeePercent,
     referralReqActive: config.financeSettings.referralRequirementActive,
     referralCount: config.financeSettings.requiredReferralCount,
-    workStart: config.workHours?.start || 9,
-    workEnd: config.workHours?.end || 22,
+    workStart: (config as any).workHours?.start || 9,
+    workEnd: (config as any).workHours?.end || 22,
     streakRewards: [...(config.streakRewards || [5, 10, 15, 20, 25, 30, 100])]
   });
 

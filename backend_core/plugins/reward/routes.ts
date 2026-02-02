@@ -9,8 +9,6 @@ router.get('/admin/list', authMiddleware, rewardController.getRewards);
 router.get('/admin/stats', authMiddleware, rewardController.getStats);
 router.post('/admin/save', authMiddleware, rewardController.saveReward);
 router.delete('/admin/:id', authMiddleware, rewardController.deleteReward);
-router.post('/admin/award-manual', authMiddleware, rewardController.adminAwardManual);
-router.post('/admin/revoke-manual', authMiddleware, rewardController.adminRevokeManual);
 
 // User Endpoints
 router.get('/my-achievements', authMiddleware, rewardController.getUserAchievements);
