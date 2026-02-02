@@ -5,8 +5,6 @@ import {
   Palette, 
   Image as ImageIcon,
   Lock,
-  Users,
-  ShieldCheck,
   ChevronRight
 } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -43,8 +41,6 @@ const SettingsLayout = () => {
             <SettingsLink to="/admin/settings/general" label="Core System" icon={Lock} />
             <SettingsLink to="/admin/settings/branding" label="Branding" icon={ImageIcon} />
             <SettingsLink to="/admin/settings/appearance" label="Themes" icon={Palette} />
-            <SettingsLink to="/admin/settings/team" label="Team Staff" icon={Users} />
-            <SettingsLink to="/admin/settings/roles" label="Permissions" icon={ShieldCheck} />
           </div>
         </div>
 

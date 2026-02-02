@@ -1,15 +1,14 @@
+
 import { dbNode } from '../../utils/db';
 
 export const adminPluginController = {
   // 1. GET PENDING STATS FOR SIDEBAR BADGES
   getPendingStats: async (req: any, res: any) => {
     try {
-      // Fix: Added await to async db call
-      const users = await dbNode.getUsers();
+      const users = dbNode.getUsers();
       let deposits = 0;
       let withdrawals = 0;
 
-      // Fix: users is now the array from awaited promise
       users.forEach((u: any) => {
         if (u.transactions) {
           u.transactions.forEach((t: any) => {
@@ -36,11 +35,9 @@ export const adminPluginController = {
     const { transactionId, userId, action, type, reason } = req.body;
     
     try {
-      // Fix: Added await to async db call
-      const user = await dbNode.findUserById(userId);
+      const user = dbNode.findUserById(userId);
       if (!user) return res.status(404).json({ message: "Member node not found." });
 
-      // Fix: Proper access on awaited user object
       const trxIndex = (user.transactions || []).findIndex((t: any) => t.id === transactionId);
       if (trxIndex === -1) return res.status(404).json({ message: "Voucher record missing." });
 
@@ -57,7 +54,6 @@ export const adminPluginController = {
         
         // Deposits: Add to balance on approval
         if (type === 'deposit') {
-          // Fix: Property access on awaited object
           user.balance = (Number(user.balance) || 0) + amount;
         }
         // Withdrawals: No balance change (balance was already deducted on request)
@@ -67,7 +63,6 @@ export const adminPluginController = {
         
         // Withdrawals: Refund on rejection
         if (type === 'withdraw') {
-          // Fix: Property access on awaited object
           user.balance = (Number(user.balance) || 0) + amount;
           
           // Log refund in transaction history for transparency
@@ -81,13 +76,11 @@ export const adminPluginController = {
             date: new Date().toISOString().split('T')[0],
             timestamp: new Date().toISOString()
           };
-          // Fix: Proper transactions access on user
           user.transactions.unshift(refundLog);
         }
       }
 
-      // Fix: Added await and proper property access
-      await dbNode.updateUser(userId, { balance: user.balance, transactions: user.transactions });
+      dbNode.updateUser(userId, { balance: user.balance, transactions: user.transactions });
       return res.status(200).json({ success: true, message: "Ledger Synchronized." });
     } catch (err) {
       console.error("Ledger Node Failure:", err);

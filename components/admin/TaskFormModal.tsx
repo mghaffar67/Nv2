@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -6,7 +7,7 @@ import {
   Search, Check, Image as ImageIcon, File,
   Upload, Camera, FileDown
 } from 'lucide-react';
-import { api } from '../../utils/api';
+import { dbNode } from '../../backend_core/utils/db';
 import { clsx } from 'clsx';
 
 const CATEGORIES = [
@@ -47,60 +48,78 @@ const TaskFormModal = ({ isOpen, onClose, task, onUpdate }: TaskFormModalProps) 
   const [preview, setPreview] = useState<string | null>(null);
 
   useEffect(() => {
-    const initModal = async () => {
-      if (isOpen) {
-        try {
-          const registry = await api.get('/admin/users');
-          setUsers(registry || []);
-        } catch (e) {}
-        
-        if (task) {
-          setForm({ ...task });
-          setPreview(task.mediaType === 'image' ? task.mediaUrl : task.mediaType === 'pdf' ? 'pdf_detected' : null);
-        } else {
-          setForm({ 
-            title: '', category: 'verification', mediaType: 'image', mediaUrl: '',
-            requiredLines: 0, reward: 25, plan: 'ANY', instruction: '',
-            assignmentType: 'all', targetUsers: []
-          });
-          setPreview(null);
-        }
+    if (isOpen) {
+      const registry = dbNode.getUsers();
+      setUsers(registry);
+      
+      if (task) {
+        setForm({ ...task });
+        setPreview(task.mediaType === 'image' ? task.mediaUrl : task.mediaType === 'pdf' ? 'pdf_detected' : null);
+      } else {
+        setForm({ 
+          title: '', category: 'verification', mediaType: 'image', mediaUrl: '',
+          requiredLines: 0, reward: 25, plan: 'ANY', instruction: '',
+          assignmentType: 'all', targetUsers: []
+        });
+        setPreview(null);
       }
-    };
-    initModal();
+    }
   }, [task, isOpen]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'pdf') => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
-        alert("File too large. Max 10MB allowed.");
+        alert("File too large. Max 10MB allowed for registry nodes.");
         return;
       }
 
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64 = reader.result as string;
-        if (type === 'image') setPreview(base64);
-        else setPreview('pdf_detected');
+        if (type === 'image') {
+          setPreview(base64);
+        } else {
+          setPreview('pdf_detected');
+        }
         setForm(prev => ({ ...prev, mediaUrl: base64 }));
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const toggleUserSelection = (userId: string) => {
+    const current = [...form.targetUsers];
+    if (current.includes(userId)) {
+      setForm({ ...form, targetUsers: current.filter(id => id !== userId) });
+    } else {
+      setForm({ ...form, targetUsers: [...current, userId] });
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try {
-      await api.post('/admin/tasks', { ...form, id: task?.id });
-      onUpdate(); 
-      onClose();
-    } catch (e) {
-      alert("Submission failed");
-    } finally {
-      setLoading(false);
+    const db = dbNode.getTasks();
+    const newTask = { 
+      ...form, 
+      id: task?.id || `TASK-${Math.random().toString(36).substr(2, 4).toUpperCase()}`, 
+      createdAt: new Date().toISOString() 
+    };
+    
+    if (task) {
+      const idx = db.findIndex((t: any) => t.id === task.id);
+      if (idx !== -1) db[idx] = newTask;
+    } else {
+      db.unshift(newTask);
     }
+    
+    dbNode.saveTasks(db);
+    setTimeout(() => { 
+      onUpdate(); 
+      onClose(); 
+      setLoading(false); 
+    }, 600);
   };
 
   return (
@@ -126,7 +145,7 @@ const TaskFormModal = ({ isOpen, onClose, task, onUpdate }: TaskFormModalProps) 
                <div className="space-y-4">
                   <div className="space-y-1">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4 italic">Task Headline</label>
-                    <input required value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="w-full h-14 px-6 bg-white border border-slate-200 rounded-[22px] font-black text-slate-900 outline-none shadow-sm focus:border-indigo-400 transition-all" placeholder="e.g. Document Verification" />
+                    <input required value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="w-full h-14 px-6 bg-white border border-slate-200 rounded-[22px] font-black text-slate-900 outline-none shadow-sm focus:border-indigo-400 transition-all" placeholder="e.g. Document Verification Phase 2" />
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
@@ -162,6 +181,51 @@ const TaskFormModal = ({ isOpen, onClose, task, onUpdate }: TaskFormModalProps) 
                            <button type="button" onClick={() => setForm({...form, assignmentType: 'specific'})} className={clsx("flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all", form.assignmentType === 'specific' ? "bg-slate-900 text-white shadow-md" : "text-slate-400")}>Selected</button>
                         </div>
                      </div>
+                  </div>
+               </div>
+
+               <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <div className="space-y-1.5">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Asset Format</label>
+                        <select value={form.mediaType} onChange={e => {
+                          const newType = e.target.value as any;
+                          setForm({...form, mediaType: newType, mediaUrl: ''});
+                          setPreview(null);
+                        }} className="w-full h-12 px-5 bg-white border border-slate-200 rounded-xl font-black text-[10px] uppercase outline-none">
+                           <option value="image">IMAGE NODE</option>
+                           <option value="pdf">PDF DOCUMENT</option>
+                           <option value="link">WEB LINK</option>
+                        </select>
+                     </div>
+                     <div className="space-y-1.5">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Payload Injection</label>
+                        {form.mediaType === 'image' || form.mediaType === 'pdf' ? (
+                           <div className="relative group">
+                              <input type="file" accept={form.mediaType === 'image' ? "image/*" : "application/pdf"} onChange={e => handleFileChange(e, form.mediaType as any)} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                              <div className={clsx(
+                                "h-12 px-4 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition-all overflow-hidden",
+                                preview ? "border-emerald-400 bg-emerald-50/20" : "border-slate-200 bg-white hover:border-indigo-400"
+                              )}>
+                                 {preview ? <Check size={14} className="text-emerald-500"/> : <Upload size={14} className="text-slate-300"/>}
+                                 <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{preview ? "ASSET LOADED" : `UPLOAD ${form.mediaType.toUpperCase()}`}</span>
+                              </div>
+                           </div>
+                        ) : (
+                           <input 
+                             type="text" 
+                             value={form.mediaUrl} 
+                             onChange={e => setForm({...form, mediaUrl: e.target.value})}
+                             className="w-full h-12 px-4 bg-white border border-slate-200 rounded-xl font-mono text-[9px] outline-none"
+                             placeholder="https://resource-link.com"
+                           />
+                        )}
+                     </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4 italic">Execution Instructions</label>
+                    <textarea rows={4} value={form.instruction} onChange={e => setForm({...form, instruction: e.target.value})} className="w-full p-6 bg-white border border-slate-200 rounded-[32px] font-medium text-xs text-slate-600 outline-none shadow-sm resize-none focus:border-indigo-400" placeholder="Provide step-by-step guidance for the user node..." />
                   </div>
                </div>
 

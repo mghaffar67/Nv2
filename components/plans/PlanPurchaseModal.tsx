@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -49,10 +50,6 @@ const PlanPurchaseModal = ({ isOpen, onClose, plan, onSuccess }: PlanPurchaseMod
       });
 
       if (res.success) {
-        // Manually update the session cache with the populated user data
-        if (res.user) {
-          localStorage.setItem('noor_user', JSON.stringify(res.user));
-        }
         onSuccess(plan);
         onClose();
       }

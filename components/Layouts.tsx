@@ -47,9 +47,9 @@ const BottomNav = () => {
   const location = useLocation();
   const navItems = [
     { to: '/user/dashboard', icon: LayoutDashboard, label: 'Home' },
-    { to: '/user/work', icon: Briefcase, label: 'Work' },
+    { to: '/user/work', icon: Briefcase, label: 'Tasks' },
     { to: '/user/wallet', icon: WalletIcon, label: 'Wallet' },
-    { to: '/user/team', icon: Network, label: 'My Team' },
+    { to: '/user/team', icon: Network, label: 'Network' },
     { to: '/user/settings', icon: SettingsIcon, label: 'Profile' },
   ];
 
@@ -101,18 +101,19 @@ export const UserLayout = () => {
         </div>
 
         <nav className="flex-grow px-4 overflow-y-auto no-scrollbar space-y-0.5 mt-2">
-           <NavItem to="/user/dashboard" label="Dashboard" icon={LayoutDashboard} active={location.pathname === '/user/dashboard'} />
-           <NavItem to="/user/work" label="Daily Work" icon={Briefcase} active={location.pathname === '/user/work'} />
+           <NavItem to="/user/dashboard" label="Home" icon={LayoutDashboard} active={location.pathname === '/user/dashboard'} />
+           <NavItem to="/user/work" label="Daily Tasks" icon={Briefcase} active={location.pathname === '/user/work'} />
            <NavItem to="/user/wallet" label="My Wallet" icon={WalletIcon} active={location.pathname === '/user/wallet'} />
-           <NavItem to="/user/team" label="My Team" icon={Network} active={location.pathname === '/user/team'} />
-           <NavItem to="/user/plans" label="Membership" icon={Award} active={location.pathname === '/user/plans'} />
-           <NavItem to="/user/settings" label="Profile Settings" icon={SettingsIcon} active={location.pathname === '/user/settings'} />
+           <NavItem to="/user/team" label="Network Hub" icon={Network} active={location.pathname === '/user/team'} />
+           <NavItem to="/user/history" label="Activity Records" icon={History} active={location.pathname === '/user/history'} />
+           <NavItem to="/user/plans" label="Membership Hub" icon={Award} active={location.pathname === '/user/plans'} />
+           <NavItem to="/user/settings" label="Profile" icon={SettingsIcon} active={location.pathname === '/user/settings'} />
         </nav>
 
         <div className="p-4 mt-auto">
            <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all">
              <LogOut size={16} />
-             <span className="font-bold text-[9px] uppercase tracking-widest">Logout</span>
+             <span className="font-bold text-[9px] uppercase tracking-widest">Sign Out</span>
            </button>
         </div>
       </aside>
@@ -123,13 +124,13 @@ export const UserLayout = () => {
         <header className="h-14 md:h-16 flex items-center justify-between px-4 md:px-6 bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-slate-100 w-full">
            <div className="flex items-center gap-3">
               <div className="w-7 h-7 bg-slate-900 rounded-lg flex items-center justify-center text-sky-400 lg:hidden shadow-lg"><Zap size={14} fill="currentColor" /></div>
-              <h1 className="text-[7px] md:text-sm font-black uppercase tracking-[0.2em] text-slate-400">Noor <span className="text-slate-900 italic">Official</span></h1>
+              <h1 className="text-[7px] md:text-sm font-black uppercase tracking-[0.2em] text-slate-400">Noor <span className="text-slate-900 italic">V3</span></h1>
            </div>
 
            <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
                  <p className="text-[10px] font-black text-slate-800 leading-none mb-1">{user?.name || 'User'}</p>
-                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Verified Account</p>
+                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Authorized Partner</p>
               </div>
               <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white text-[10px] font-black italic shadow-lg">
                 {user?.name?.charAt(0) || 'U'}
@@ -138,9 +139,7 @@ export const UserLayout = () => {
         </header>
 
         <main className="p-2 md:p-6 pb-20 lg:pb-6 w-full max-w-full flex-grow">
-           <div className="max-w-7xl mx-auto">
-             <Outlet />
-           </div>
+           <Outlet />
         </main>
 
         <BottomNav />

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import DataTable from '../../../components/ui/DataTable';
 import { ImageModal } from '../../../components/ui/ImageModal';
@@ -5,15 +6,17 @@ import {
   Check, 
   X, 
   Eye, 
+  Search, 
+  Filter, 
+  Smartphone, 
   ShieldCheck, 
   Clock, 
   AlertCircle,
   TrendingUp,
-  User as UserIcon,
-  RefreshCw
+  User as UserIcon
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { api } from '../../../utils/api';
+import { financeController } from '../../../backend_core/controllers/financeController';
 
 const Deposits = () => {
   const [allData, setAllData] = useState<any[]>([]);
@@ -25,10 +28,12 @@ const Deposits = () => {
   const fetchDeposits = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/admin/finance/deposits');
+      const res = await new Promise<any>((resolve) => {
+        financeController.getAllDeposits({}, { 
+          status: () => ({ json: (data: any) => resolve(data) }) 
+        });
+      });
       setAllData(res || []);
-    } catch (err) {
-      console.error("Failed to fetch deposits");
     } finally {
       setLoading(false);
     }
@@ -44,11 +49,15 @@ const Deposits = () => {
 
     setActionLoading(trx.id);
     try {
-      const endpoint = action === 'approve' ? '/admin/finance/deposit/approve' : '/admin/finance/deposit/reject';
-      await api.post(endpoint, { 
-        transactionId: trx.id, 
-        userId: trx.userId, 
-        reason 
+      const method = action === 'approve' ? financeController.approveDeposit : financeController.rejectDeposit;
+      await new Promise<any>((resolve, reject) => {
+        method({ 
+          body: { transactionId: trx.id, userId: trx.userId, reason } 
+        }, { 
+          status: (code: number) => ({ 
+            json: (data: any) => code === 200 ? resolve(data) : reject(data) 
+          }) 
+        });
       });
       alert(`Successfully ${action === 'approve' ? 'Approved' : 'Rejected'}`);
       fetchDeposits();
@@ -113,7 +122,7 @@ const Deposits = () => {
           onClick={() => setSelectedImage(val)}
           className="w-14 h-10 rounded-xl overflow-hidden border border-slate-100 hover:border-sky-500 transition-all group relative"
         >
-          {val ? <img src={val} alt="Proof" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-300 italic text-[8px]">No Img</div>}
+          <img src={val} alt="Proof" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-sky-500/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white">
             <Eye size={14} />
           </div>
@@ -143,6 +152,7 @@ const Deposits = () => {
             disabled={!!actionLoading}
             onClick={() => handleAction(row, 'approve')}
             className="p-3 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-xl transition-all shadow-sm disabled:opacity-30"
+            title="Approve & Credit Balance"
           >
             <Check size={16} />
           </button>
@@ -150,6 +160,7 @@ const Deposits = () => {
             disabled={!!actionLoading}
             onClick={() => handleAction(row, 'reject')}
             className="p-3 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all shadow-sm disabled:opacity-30"
+            title="Reject Request"
           >
             <X size={16} />
           </button>
@@ -162,7 +173,8 @@ const Deposits = () => {
 
   return (
     <div className="space-y-8 pb-12">
-      <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 px-2">
+      {/* Dynamic Header */}
+      <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
              <div className="p-2 bg-slate-900 text-white rounded-2xl"><TrendingUp size={24} /></div>
@@ -179,11 +191,18 @@ const Deposits = () => {
                 <p className="text-xl font-black text-slate-800">{stats.pending}</p>
               </div>
            </div>
-           <button onClick={fetchDeposits} className="w-14 h-14 bg-white border border-slate-100 rounded-2xl flex items-center justify-center text-slate-400 active:rotate-180 transition-all shadow-sm hover:text-indigo-600"><RefreshCw size={24}/></button>
+           <div className="bg-white px-6 py-4 rounded-[32px] border border-slate-100 shadow-sm flex items-center gap-4">
+              <div className="w-10 h-10 rounded-2xl bg-green-50 text-green-500 flex items-center justify-center"><TrendingUp size={20} /></div>
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Vol (Approved)</p>
+                <p className="text-xl font-black text-slate-800">Rs {stats.totalVolume.toLocaleString()}</p>
+              </div>
+           </div>
         </div>
       </header>
 
-      <div className="flex bg-white p-1.5 rounded-[24px] shadow-sm border border-slate-100 w-fit mx-2">
+      {/* Filter Tabs */}
+      <div className="flex bg-white p-1.5 rounded-[24px] shadow-sm border border-slate-100 w-fit">
         {(['pending', 'approved', 'rejected', 'all'] as const).map((tab) => (
           <button
             key={tab}
@@ -198,7 +217,7 @@ const Deposits = () => {
         ))}
       </div>
 
-      <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden p-2 mx-2">
+      <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden p-2">
         <DataTable 
           title="Financial Audit Ledger"
           columns={columns}

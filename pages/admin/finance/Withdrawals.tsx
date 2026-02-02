@@ -1,34 +1,41 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import DataTable from '../../../components/ui/DataTable';
 import { 
   Wallet, 
-  ShieldCheck, 
-  Clock, 
+  CheckCircle2, 
   XCircle, 
-  RefreshCw,
+  Clock, 
+  Copy, 
+  Smartphone, 
+  History, 
+  ArrowUpRight,
   TrendingDown,
   User as UserIcon,
-  Copy,
   AlertCircle,
-  ShieldAlert
+  ShieldCheck,
+  Zap
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { api } from '../../../utils/api';
+import { financeController } from '../../../backend_core/controllers/financeController';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Withdrawals = () => {
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ row: any; action: 'paid' | 'reject' } | null>(null);
 
   const fetchWithdrawals = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/admin/finance/withdrawals');
+      const res = await new Promise<any>((resolve) => {
+        financeController.getAllWithdrawals({}, { 
+          status: () => ({ json: (data: any) => resolve(data) }) 
+        });
+      });
       setWithdrawals(res || []);
-    } catch (err) {
-      console.error("Failed to fetch withdrawals");
     } finally {
       setLoading(false);
     }
@@ -37,6 +44,12 @@ const Withdrawals = () => {
   useEffect(() => {
     fetchWithdrawals();
   }, []);
+
+  const handleCopy = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   const handleProcess = async () => {
     if (!confirmModal) return;
@@ -54,11 +67,15 @@ const Withdrawals = () => {
     setActionLoading(row.id);
     setConfirmModal(null);
     try {
-      const endpoint = action === 'paid' ? '/admin/finance/withdraw/approve' : '/admin/finance/withdraw/reject';
-      await api.post(endpoint, { 
-        transactionId: row.id, 
-        userId: row.userId, 
-        reason 
+      const method = action === 'paid' ? financeController.approveWithdrawal : financeController.rejectWithdrawal;
+      await new Promise<any>((resolve, reject) => {
+        method({ 
+          body: { transactionId: row.id, userId: row.userId, reason } 
+        }, { 
+          status: (code: number) => ({ 
+            json: (data: any) => code === 200 ? resolve(data) : reject(data) 
+          }) 
+        });
       });
       fetchWithdrawals();
     } catch (err: any) {
@@ -97,7 +114,10 @@ const Withdrawals = () => {
       header: 'Amount',
       accessor: 'amount',
       render: (val: number) => (
-        <span className="font-black text-rose-600 text-xs md:text-base whitespace-nowrap">Rs {val.toLocaleString()}</span>
+        <div className="flex flex-col">
+           <span className="font-black text-rose-600 text-xs md:text-base whitespace-nowrap">Rs {val.toLocaleString()}</span>
+           <span className="text-[7px] md:text-[9px] font-black text-slate-400 uppercase tracking-widest hidden sm:block">Requested</span>
+        </div>
       )
     },
     {
@@ -109,7 +129,12 @@ const Withdrawals = () => {
             <span className="px-1.5 py-0.5 bg-sky-50 text-sky-600 rounded-md text-[7px] md:text-[9px] font-black uppercase border border-sky-100">
               {row.gateway}
             </span>
-            <span className="font-mono font-black text-[10px] md:text-xs text-slate-700">{val}</span>
+            <div className="flex items-center gap-1 relative">
+              <span className="font-mono font-black text-[10px] md:text-xs text-slate-700">{val}</span>
+              <button onClick={() => handleCopy(val, row.id)} className="p-1 hover:bg-slate-100 rounded-md text-slate-400">
+                <Copy size={10} />
+              </button>
+            </div>
           </div>
           <p className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase truncate max-w-[100px]">{row.accountTitle}</p>
         </div>
@@ -150,14 +175,17 @@ const Withdrawals = () => {
           </button>
         </div>
       ) : (
-        <span className="text-[7px] md:text-[9px] font-black uppercase tracking-widest italic text-slate-300">Logged</span>
+        <div className="flex items-center gap-1 text-slate-300">
+           <Zap size={10} />
+           <span className="text-[7px] md:text-[9px] font-black uppercase tracking-widest italic">Logged</span>
+        </div>
       )
     }
   ];
 
   return (
     <div className="space-y-4 md:space-y-8 pb-12 animate-fade-in px-1 md:px-0">
-      <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 md:gap-8 px-2">
+      <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 md:gap-8">
         <div>
           <h1 className="text-xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
              <div className="p-2 md:p-3 bg-rose-600 text-white rounded-xl md:rounded-2xl shadow-lg"><TrendingDown size={20} className="md:size-[28px]" /></div>
@@ -166,25 +194,43 @@ const Withdrawals = () => {
           <p className="text-slate-400 font-bold uppercase tracking-widest text-[8px] md:text-[10px] mt-1.5">Manage user withdrawal requests and finalize payments.</p>
         </div>
 
-        <div className="flex gap-4">
+        <div className="grid grid-cols-2 gap-3 md:gap-4 w-full lg:w-auto">
            <div className="bg-white px-4 md:px-8 py-3 md:py-5 rounded-2xl md:rounded-[36px] border border-slate-100 shadow-sm flex items-center gap-3 md:gap-5">
-              <div className="w-8 h-8 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center shrink-0"><Wallet size={16} /></div>
+              <div className="w-8 h-8 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center shrink-0"><Wallet size={16} className="md:size-24" /></div>
               <div>
                 <p className="text-[7px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5 md:mb-1.5">Pending</p>
                 <p className="text-xs md:text-2xl font-black text-slate-800 tracking-tighter">Rs {stats.pendingTotal.toLocaleString()}</p>
               </div>
            </div>
-           <button onClick={fetchWithdrawals} className="w-14 h-14 bg-white border border-slate-100 rounded-2xl flex items-center justify-center text-slate-400 active:rotate-180 transition-all shadow-sm hover:text-indigo-600"><RefreshCw size={24}/></button>
+           <div className="bg-white px-4 md:px-8 py-3 md:py-5 rounded-2xl md:rounded-[36px] border border-slate-100 shadow-sm flex items-center gap-3 md:gap-5">
+              <div className="w-8 h-8 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-green-50 text-green-500 flex items-center justify-center shrink-0"><History size={16} className="md:size-24" /></div>
+              <div>
+                <p className="text-[7px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5 md:mb-1.5">Paid Total</p>
+                <p className="text-xs md:text-2xl font-black text-slate-800 tracking-tighter">Rs {stats.approvedTotal.toLocaleString()}</p>
+              </div>
+           </div>
         </div>
       </header>
 
-      <div className="bg-white rounded-[24px] md:rounded-[44px] border border-slate-100 shadow-sm overflow-hidden p-1 md:p-6 mx-2">
+      <div className="bg-white rounded-[24px] md:rounded-[44px] border border-slate-100 shadow-sm overflow-hidden p-1 md:p-6">
         <DataTable 
           title="Withdrawal Ledger"
           columns={columns}
           data={withdrawals}
           isLoading={loading}
         />
+      </div>
+
+      <div className="p-4 md:p-8 bg-indigo-50 rounded-[28px] md:rounded-[44px] border border-indigo-100 flex items-start gap-4 md:gap-6 shadow-sm">
+         <div className="w-9 h-9 md:w-12 md:h-12 bg-white rounded-xl md:rounded-2xl flex items-center justify-center text-indigo-500 shadow-sm shrink-0 mt-0.5">
+            <AlertCircle size={18} className="md:size-24" />
+         </div>
+         <div>
+            <h4 className="text-[10px] md:text-sm font-black text-indigo-900 uppercase tracking-tight mb-1 md:mb-2">Admin Security Protocol</h4>
+            <p className="text-[8px] md:text-[11px] text-indigo-700 font-medium leading-relaxed">
+              Marking as <b>Paid</b> will finalize the transaction. Rejecting will automatically refund the PKR amount back to the user's wallet with a system notification.
+            </p>
+         </div>
       </div>
 
       <AnimatePresence>
@@ -196,7 +242,7 @@ const Withdrawals = () => {
                   "w-16 h-16 md:w-20 md:h-20 rounded-2xl md:rounded-[28px] flex items-center justify-center mx-auto mb-6 md:mb-8 shadow-xl",
                   confirmModal.action === 'paid' ? "bg-indigo-50 text-indigo-500" : "bg-rose-50 text-rose-500"
                 )}>
-                   {confirmModal.action === 'paid' ? <ShieldCheck size={32} /> : <AlertCircle size={32} />}
+                   {confirmModal.action === 'paid' ? <ShieldCheck size={32} className="md:size-40" /> : <AlertCircle size={32} className="md:size-40" />}
                 </div>
                 <h3 className="text-lg md:text-2xl font-black text-slate-900 uppercase tracking-tighter mb-2 md:mb-4">Confirm Action?</h3>
                 <p className="text-[9px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 md:mb-10 leading-relaxed px-2">

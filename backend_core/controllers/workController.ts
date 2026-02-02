@@ -1,3 +1,4 @@
+
 import { dbNode } from '../utils/db';
 
 /**
@@ -8,40 +9,34 @@ import { dbNode } from '../utils/db';
 export const workController = {
   createTask: async (req: any, res: any) => {
     const taskData = req.body;
-    // Fix: Added await to async db call
-    const db = await dbNode.getTasks();
+    const db = dbNode.getTasks();
     const newTask = { 
       ...taskData, 
       id: `TASK-${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
       createdAt: new Date().toISOString()
     };
-    // Fix: db is now the array from awaited promise
     db.unshift(newTask);
-    await dbNode.saveTasks(db);
+    dbNode.saveTasks(db);
     return res.status(201).json({ message: 'Daily Task Added.', task: newTask });
   },
 
   getAvailableTasks: async (req: any, res: any) => {
     const { userId } = req.query;
-    // Fix: Added await to async db calls
-    const user = await dbNode.findUserById(userId as string);
-    const db = await dbNode.getTasks();
+    const user = dbNode.findUserById(userId as string);
+    const db = dbNode.getTasks();
     
     if (!user) return res.status(404).json({ message: "Account not found." });
 
     const today = new Date().toISOString().split('T')[0];
-    // Fix: Proper access on awaited user object
     const completedIds = (user?.completedTasksToday || [])
       .filter((t: any) => t.date === today)
       .map((t: any) => t.taskId);
 
-    // Fix: db is now the array from awaited promise
     const filtered = db.filter((t: any) => {
       if (!t.isActive) return false;
       if (completedIds.includes(t.id)) return false;
       
       // 1. Plan Gating (If task requires a plan and it's not 'ANY')
-      // Fix: Proper access on awaited user object
       if (t.plan && t.plan !== 'ANY' && user?.currentPlan !== t.plan) {
          return false;
       }
@@ -61,11 +56,10 @@ export const workController = {
 
   submitPacket: async (req: any, res: any) => {
     const { userId, taskId, evidence, username, taskTitle, reward } = req.body;
-    // Fix: Added await to async db calls
-    const user = await dbNode.findUserById(userId);
+    const user = dbNode.findUserById(userId);
     if (!user) return res.status(404).json({ message: "Account node missing." });
 
-    const allTasks = await dbNode.getTasks();
+    const allTasks = dbNode.getTasks();
     const originalTask = allTasks.find((t: any) => t.id === taskId);
 
     const submissionPacket = {
@@ -81,14 +75,13 @@ export const workController = {
       timestamp: new Date().toISOString()
     };
 
-    // Fix: Proper access on awaited user object
     if (!user.workSubmissions) user.workSubmissions = [];
     user.workSubmissions.unshift(submissionPacket);
 
     if (!user.completedTasksToday) user.completedTasksToday = [];
     user.completedTasksToday.push({ taskId, date: new Date().toISOString().split('T')[0] });
 
-    await dbNode.updateUser(userId, { 
+    dbNode.updateUser(userId, { 
       workSubmissions: user.workSubmissions,
       completedTasksToday: user.completedTasksToday 
     });
@@ -97,8 +90,7 @@ export const workController = {
   },
 
   getAllSubmissions: async (req: any, res: any) => {
-    // Fix: Added await to async db call
-    const users = await dbNode.getUsers();
+    const users = dbNode.getUsers();
     let submissions: any[] = [];
     users.forEach((u: any) => {
       if (u.workSubmissions) {
@@ -116,11 +108,9 @@ export const workController = {
   reviewSubmission: async (req: any, res: any) => {
     try {
       const { userId, submissionId, status, reward } = req.body;
-      // Fix: Added await to async db calls
-      const user = await dbNode.findUserById(userId);
+      const user = dbNode.findUserById(userId);
       if (!user) return res.status(404).json({ message: "Account not found." });
 
-      // Fix: Proper access on awaited user object
       const subIdx = (user.workSubmissions || []).findIndex((s: any) => s.id === submissionId);
       if (subIdx === -1) return res.status(404).json({ message: "Submission history not found." });
 
@@ -148,8 +138,7 @@ export const workController = {
         user.transactions.unshift(rewardTrx);
       }
 
-      // Fix: Added await to updateUser call
-      await dbNode.updateUser(userId, { 
+      dbNode.updateUser(userId, { 
         workSubmissions: user.workSubmissions, 
         balance: user.balance,
         transactions: user.transactions || []

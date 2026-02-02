@@ -1,9 +1,9 @@
+
 import { dbNode } from '../utils/db';
 
 export const adminController = {
   getDashboardStats: async (req: any, res: any) => {
-    // Fix: Added await to async db call
-    const db = await dbNode.getUsers();
+    const db = dbNode.getUsers();
     const today = new Date().toISOString().split('T')[0];
     
     let totalRevenue = 0;
@@ -11,6 +11,7 @@ export const adminController = {
     let pendingRequests = 0;
     let totalCompletedTasks = 0;
     
+    // Generate L-7 Date nodes
     const last7Days = [...Array(7)].map((_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
@@ -19,8 +20,8 @@ export const adminController = {
 
     const revenueTrend = last7Days.map(date => ({ name: date.split('-')[2], revenue: 0, tasks: 0 }));
 
-    // Fix: db is now the array from awaited promise
     db.forEach((user: any) => {
+      // Calculate Revenue
       if (user.purchaseHistory) {
         user.purchaseHistory.forEach((p: any) => {
           if (p.status === 'active' || p.status === 'approved') {
@@ -35,6 +36,7 @@ export const adminController = {
         });
       }
 
+      // Calculate Work & Requests
       if (user.workSubmissions) {
         user.workSubmissions.forEach((s: any) => {
           if (s.status === 'pending') pendingRequests++;
@@ -47,6 +49,7 @@ export const adminController = {
         });
       }
       
+      // Calculate Finance Pending
       if (user.transactions) {
         user.transactions.forEach((t: any) => {
           if (t.status === 'pending') pendingRequests++;
@@ -64,21 +67,18 @@ export const adminController = {
     });
   },
 
+  // Added editUserBalance to fix property missing errors in admin modals
   editUserBalance: async (req: any, res: any) => {
     try {
       const { userId, amount, action } = req.body;
-      // Fix: Added await to async db call
-      const user = await dbNode.findUserById(userId);
-      if (!user) return res.status(404).json({ message: "User not found." });
+      const user = dbNode.findUserById(userId);
+      if (!user) return res.status(404).json({ message: "User not found in registry." });
 
       const amt = Number(amount);
-      if (isNaN(amt) || amt < 0) return res.status(400).json({ message: "Invalid amount." });
+      if (isNaN(amt) || amt < 0) return res.status(400).json({ message: "Invalid liquidity amount." });
 
-      // Fix: Property access on awaited user object
       let currentBalance = Number(user.balance) || 0;
       let newBalance = currentBalance;
-      let type = action === 'add' ? 'admin_bonus' : 'admin_deduction';
-      let gateway = action === 'add' ? 'Admin Deposit' : 'Admin Deduction';
 
       if (action === 'add') {
         newBalance = currentBalance + amt;
@@ -87,31 +87,14 @@ export const adminController = {
         newBalance = currentBalance - amt;
       }
 
-      // Generate history record
-      const historyLog = {
-        id: `ADM-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-        type: type,
-        amount: amt,
-        status: 'approved',
-        gateway: gateway,
-        note: `Manual adjustment by Support Team`,
-        date: new Date().toISOString().split('T')[0],
-        timestamp: new Date().toISOString()
-      };
-
-      // Fix: Property access on awaited user object
-      const trx = user.transactions || [];
-      trx.unshift(historyLog);
-
-      // Fix: Added await to updateUser call
-      await dbNode.updateUser(userId, { balance: newBalance, transactions: trx });
+      dbNode.updateUser(userId, { balance: newBalance });
       return res.status(200).json({ 
         success: true, 
-        message: "Wallet updated and logged.", 
+        message: "Liquidity sync complete.", 
         newBalance 
       });
     } catch (err) {
-      return res.status(500).json({ message: "Operation failed." });
+      return res.status(500).json({ message: "Ledger adjustment node failed." });
     }
   }
 };

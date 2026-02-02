@@ -5,7 +5,7 @@ import {
   Users, Copy, CheckCircle2, UserPlus, 
   ShieldCheck, Loader2, Zap, Network,
   Smartphone, TrendingUp, ChevronRight, Award, Share2, Globe, Heart,
-  RefreshCw, User, BarChart3, Target, Activity
+  RefreshCw, User
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuth } from '../../context/AuthContext';
@@ -18,23 +18,22 @@ const MyTeam = () => {
   const [teamData, setTeamData] = useState<{ t1: any[], t2: any[], t3: any[] }>({ t1: [], t2: [], t3: [] });
   const [loading, setLoading] = useState(true);
   
-  const fetchTeam = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/auth/team');
-      setTeamData({
-        t1: res.t1 || [],
-        t2: res.t2 || [],
-        t3: res.t3 || []
-      });
-    } catch (err) {
-      setTeamData({ t1: [], t2: [], t3: [] });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchTeam = async () => {
+      setLoading(true);
+      try {
+        const res = await api.get('/auth/team');
+        setTeamData(res && typeof res === 'object' ? {
+          t1: Array.isArray(res.t1) ? res.t1 : [],
+          t2: Array.isArray(res.t2) ? res.t2 : [],
+          t3: Array.isArray(res.t3) ? res.t3 : []
+        } : { t1: [], t2: [], t3: [] });
+      } catch (err) {
+        setTeamData({ t1: [], t2: [], t3: [] });
+      } finally {
+        setLoading(false);
+      }
+    };
     if (user?.referralCode) fetchTeam();
   }, [user?.referralCode]);
 
@@ -55,135 +54,113 @@ const MyTeam = () => {
   const totalTeam = teamData.t1.length + teamData.t2.length + teamData.t3.length;
 
   return (
-    <div className="max-w-5xl mx-auto pb-32 space-y-6 animate-fade-in px-2">
+    <div className="max-w-[480px] mx-auto pb-32 space-y-5 animate-fade-in px-1">
       
-      {/* 1. NETWORK POWER HEADER */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-         <div className="lg:col-span-8 bg-slate-950 p-8 md:p-10 rounded-[44px] text-white relative overflow-hidden shadow-2xl flex flex-col md:flex-row items-center gap-10">
-            <div className="absolute top-0 right-0 p-6 opacity-10 rotate-12 scale-150 text-indigo-400 pointer-events-none"><Network size={140} /></div>
-            
-            <div className="relative shrink-0 text-center md:text-left">
-               <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em] mb-3 italic">Network Power</p>
-               <h2 className="text-7xl font-black italic tracking-tighter leading-none mb-4">{totalTeam}</h2>
-               <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-indigo-300">
-                  <Activity size={12} className="animate-pulse" /> Live Structure
-               </div>
-            </div>
+      {/* COMPACT TEAM HEADER */}
+      <div className="bg-slate-900 p-6 rounded-[36px] text-white relative overflow-hidden shadow-xl mx-1">
+        <div className="absolute top-0 right-0 p-4 opacity-5 rotate-12 scale-150 text-sky-400"><Users size={80} /></div>
+        <div className="relative z-10 flex items-center justify-between">
+           <div>
+              <p className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-1 italic">TEAM SUMMARY</p>
+              <h2 className="text-4xl font-black italic tracking-tighter leading-none">{totalTeam} <span className="text-xs not-italic text-slate-500 ml-1">Members</span></h2>
+           </div>
+           <div className="flex gap-2">
+              {[1, 2, 3].map(t => (
+                <div key={t} className="bg-white/5 px-3 py-1.5 rounded-xl border border-white/5 text-center min-w-[50px]">
+                   <p className="text-[7px] font-bold text-slate-500 uppercase">L{t}</p>
+                   <p className="text-xs font-black text-white">{(teamData as any)[`t${t}`].length}</p>
+                </div>
+              ))}
+           </div>
+        </div>
+      </div>
 
-            <div className="flex-grow grid grid-cols-3 gap-3 w-full">
-               {[
-                 { label: 'Level 1', count: teamData.t1.length, rate: '15%' },
-                 { label: 'Level 2', count: teamData.t2.length, rate: '5%' },
-                 { label: 'Level 3', count: teamData.t3.length, rate: '2%' }
-               ].map(t => (
-                 <div key={t.label} className="bg-white/5 p-4 rounded-3xl border border-white/5 flex flex-col items-center justify-center gap-1">
-                    <p className="text-[8px] font-bold text-slate-500 uppercase">{t.label}</p>
-                    <p className="text-xl font-black text-white">{t.count}</p>
-                    <span className="text-[7px] font-black text-emerald-400 uppercase">{t.rate} Yield</span>
-                 </div>
-               ))}
-            </div>
+      {/* INVITE FRIENDS SECTION */}
+      <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm space-y-5 mx-1">
+         <div className="flex items-center justify-between px-1">
+            <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+              <Share2 size={14} className="text-indigo-600" /> Share & Earn
+            </h4>
          </div>
-
-         <div className="lg:col-span-4 bg-white p-8 rounded-[44px] border border-slate-100 shadow-sm space-y-6 flex flex-col justify-center relative overflow-hidden">
-            <div className="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500/5 blur-3xl rounded-full" />
-            <div className="flex items-center gap-4 relative z-10">
-               <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shadow-inner"><Share2 size={28}/></div>
-               <div>
-                  <h4 className="text-lg font-black text-slate-800 uppercase italic tracking-tighter">Growth Node</h4>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest italic">Invite for passive yield</p>
-               </div>
+         <div className="bg-slate-50 border border-slate-100 rounded-3xl p-4 space-y-4 shadow-inner">
+            <div className="bg-white px-4 py-3 rounded-xl border border-slate-100 overflow-hidden">
+               <span className="text-[9px] font-mono font-bold text-slate-400 truncate block">
+                 {referralLink}
+               </span>
             </div>
-            <div className="bg-slate-50 border border-slate-100 rounded-3xl p-4 space-y-4 shadow-inner relative z-10">
-               <div className="bg-white px-4 py-3 rounded-xl border border-slate-100 overflow-hidden shadow-sm">
-                  <span className="text-[9px] font-mono font-bold text-slate-500 truncate block">
-                    {referralLink}
-                  </span>
-               </div>
-               <button 
-                 onClick={handleCopy}
-                 className={clsx(
-                   "w-full h-14 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-xl flex items-center justify-center gap-3 active:scale-95",
-                   copied ? "bg-emerald-600 text-white" : "bg-slate-900 text-white hover:bg-indigo-600"
-                 )}
-               >
-                 {copied ? <CheckCircle2 size={18} /> : <Copy size={18} />} 
-                 {copied ? 'Copied' : 'Copy Link'}
-               </button>
-            </div>
+            <button 
+              onClick={handleCopy}
+              className={clsx(
+                "w-full h-12 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-2",
+                copied ? "bg-emerald-600 text-white" : "bg-slate-900 text-white active:scale-95"
+              )}
+            >
+              {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />} {copied ? 'Link Copied' : 'Invite Friends'}
+            </button>
          </div>
       </div>
 
-      {/* 2. TIER LIST INTERFACE */}
-      <div className="bg-white rounded-[48px] border border-slate-100 shadow-sm p-3">
-         <div className="flex p-2 bg-slate-50 rounded-[40px] gap-2 mb-6 overflow-x-auto no-scrollbar">
-            {[1, 2, 3].map((t) => (
-              <button 
-               key={t} onClick={() => setActiveTier(t as any)} 
-               className={clsx(
-                 "flex-1 py-4 px-6 rounded-[32px] text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                 activeTier === t ? "bg-slate-900 text-white shadow-xl" : "text-slate-400 hover:text-slate-900"
-               )}
+      {/* TIER SELECTOR */}
+      <div className="flex bg-white p-1.5 rounded-2xl border border-slate-100 shadow-sm mx-1">
+         {[1, 2, 3].map((t) => (
+           <button 
+            key={t} onClick={() => setActiveTier(t as any)} 
+            className={clsx(
+              "flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+              activeTier === t ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:text-slate-900"
+            )}
+           >
+             Level {t}
+           </button>
+         ))}
+      </div>
+
+      {/* TEAM MEMBER LIST */}
+      <div className="space-y-2.5 min-h-[300px] px-1">
+        <AnimatePresence mode="wait">
+        {loading ? (
+           <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-20 text-center flex flex-col items-center gap-3">
+             <RefreshCw size={32} className="text-indigo-500 animate-spin" />
+             <p className="text-slate-300 font-black uppercase text-[10px] tracking-widest italic">Syncing Team Network...</p>
+           </motion.div>
+        ) : currentList.length > 0 ? (
+          <motion.div key="list" className="space-y-2.5">
+            {currentList.map((member, idx) => (
+              <motion.div 
+                key={member.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}
+                className="bg-white p-4 rounded-[28px] border border-slate-100 flex items-center justify-between group shadow-sm hover:border-indigo-200 transition-all"
               >
-                Level {t} Registry
-              </button>
-            ))}
-         </div>
-
-         <div className="px-4 pb-8 min-h-[400px]">
-            <AnimatePresence mode="wait">
-               {loading ? (
-                  <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-32 text-center flex flex-col items-center gap-4">
-                    <RefreshCw size={44} className="text-indigo-500 animate-spin opacity-20" />
-                    <p className="text-slate-300 font-black uppercase text-[10px] tracking-widest italic">Auditing Structure Nodes...</p>
-                  </motion.div>
-               ) : currentList.length > 0 ? (
-                 <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                   {currentList.map((member, idx) => (
-                     <motion.div 
-                       key={member.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}
-                       className="bg-slate-50/50 p-6 rounded-[36px] border border-transparent hover:border-indigo-100 hover:bg-white hover:shadow-xl transition-all flex flex-col group h-[160px] justify-between"
-                     >
-                        <div className="flex items-center justify-between mb-4">
-                           <div className="w-12 h-12 rounded-2xl bg-white text-slate-400 flex items-center justify-center text-xl font-black italic shadow-sm group-hover:bg-slate-900 group-hover:text-sky-400 transition-all">
-                              {member.name?.charAt(0)}
-                           </div>
-                           <span className="px-3 py-1 rounded-lg bg-emerald-50 text-emerald-600 text-[8px] font-black uppercase border border-emerald-100 italic">Active Station</span>
-                        </div>
-                        <div>
-                           <h4 className="font-black text-slate-800 text-[13px] uppercase truncate mb-1">{member.name}</h4>
-                           <div className="flex items-center justify-between">
-                              <p className="text-[10px] font-black text-indigo-600 uppercase italic leading-none">{member.currentPlan || 'BASIC'}</p>
-                              <p className="text-[8px] font-bold text-slate-300 uppercase">ID: {member.id.slice(-8)}</p>
-                           </div>
-                        </div>
-                     </motion.div>
-                   ))}
-                 </motion.div>
-               ) : (
-                 <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-32 text-center flex flex-col items-center opacity-30">
-                    <div className="w-20 h-20 bg-slate-100 rounded-[35px] flex items-center justify-center mb-6">
-                      <Users size={40} className="text-slate-300" />
+                 <div className="flex items-center gap-4 overflow-hidden">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-500 font-black italic text-lg shadow-inner shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                       {member.name?.charAt(0)}
                     </div>
-                    <p className="text-slate-900 font-black uppercase text-[12px] tracking-widest leading-relaxed italic">No Nodes Detected in Level {activeTier}.</p>
-                    <p className="text-slate-400 font-bold uppercase text-[9px] mt-2">Deploy your link to expand network hierarchy</p>
-                 </motion.div>
-               )}
-            </AnimatePresence>
-         </div>
+                    <div className="overflow-hidden">
+                       <h4 className="font-black text-slate-800 text-[11px] uppercase truncate leading-none mb-1.5">{member.name}</h4>
+                       <div className="flex items-center gap-1.5">
+                          <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Active Member</span>
+                       </div>
+                    </div>
+                 </div>
+                 <div className="text-right shrink-0">
+                    <p className="text-[9px] font-black text-indigo-600 uppercase italic tracking-tighter leading-none">{member.currentPlan || 'BASIC'}</p>
+                    <p className="text-[7px] font-bold text-slate-300 uppercase mt-1.5">ID: {member.id.slice(-6)}</p>
+                 </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        ) : (
+          <motion.div key="empty" className="bg-white p-20 rounded-[44px] border border-dashed border-slate-100 text-center flex flex-col items-center opacity-40 shadow-inner">
+             <div className="w-16 h-16 bg-slate-50 text-slate-200 rounded-full flex items-center justify-center mb-6"><UserPlus size={32} /></div>
+             <p className="text-slate-900 font-black uppercase text-[10px] tracking-widest leading-relaxed">No members at Level {activeTier}</p>
+             <p className="text-slate-400 font-bold uppercase text-[8px] mt-2">Start inviting to grow your network</p>
+          </motion.div>
+        )}
+        </AnimatePresence>
       </div>
 
-      {/* 3. POLICY FOOTER */}
-      <div className="p-8 bg-indigo-50/50 rounded-[44px] border border-indigo-100 mx-1 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-         <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-indigo-600 shadow-sm"><ShieldCheck size={28}/></div>
-            <div>
-               <h4 className="text-[10px] font-black text-indigo-900 uppercase tracking-widest">Yield Protocol</h4>
-               <p className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest mt-1">Multi-Tier Automation</p>
-            </div>
-         </div>
-         <p className="text-[10px] text-indigo-700 font-bold leading-relaxed uppercase tracking-widest md:text-right">
-            Hierarchy distribution is automated. Commissions are instantly calculated and disbursed to your primary liquidity node upon downline upgrades.
+      <div className="bg-indigo-50/50 p-6 rounded-[36px] border border-indigo-100 text-center mx-1">
+         <p className="text-[10px] text-indigo-700 font-bold leading-relaxed uppercase tracking-widest">
+            You earn commission automatically when your team members upgrade their plans.
          </p>
       </div>
     </div>

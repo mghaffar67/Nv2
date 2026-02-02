@@ -1,3 +1,4 @@
+
 import { dbNode } from '../../utils/db';
 
 /**
@@ -8,11 +9,9 @@ export const pageContentController = {
   getPageContent: async (req: any, res: any) => {
     try {
       const { pageKey } = req.params;
-      // Fix: Added await to async db call
-      const db = await dbNode.getPageContents();
+      const db = dbNode.getPageContents();
       
       // Seed default if missing to prevent UI crashes
-      // Fix: db is now the object from awaited promise
       if (!db[pageKey]) {
         const defaults: any = {
           home: { sections: { heroTitle: "Start Earning Daily", heroSubtitle: "Pakistan's Most Trusted Node", planTitle: "Premium Plans" } },
@@ -31,10 +30,8 @@ export const pageContentController = {
   updatePageContent: async (req: any, res: any) => {
     try {
       const { pageKey, sections } = req.body;
-      // Fix: Added await to async db call
-      const db = await dbNode.getPageContents();
+      const db = dbNode.getPageContents();
       
-      // Fix: db is now the object from awaited promise
       db[pageKey] = {
         pageKey,
         sections: {
@@ -44,8 +41,7 @@ export const pageContentController = {
         updatedAt: new Date().toISOString()
       };
 
-      // Fix: Added await to async db call
-      await dbNode.savePageContents(db);
+      dbNode.savePageContents(db);
       return res.status(200).json({ 
         success: true, 
         message: "Production nodes synchronized.",

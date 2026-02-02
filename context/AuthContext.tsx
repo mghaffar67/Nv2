@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useLayoutEffect, useEffect } from 'react';
+
+import React, { createContext, useContext, useState, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../utils/api';
 
@@ -6,19 +7,11 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: 'user' | 'admin' | 'manager';
+  role: 'user' | 'admin';
   phone: string;
   balance: number;
   referralCode: string;
   currentPlan: string | null;
-  avatar?: string;
-  lastCheckIn?: string;
-  streak?: number;
-  isBanned?: boolean;
-  workSubmissions?: any[];
-  transactions?: any[];
-  planExpiry?: string;
-  purchaseHistory?: any[];
 }
 
 interface AuthContextType {
@@ -28,7 +21,6 @@ interface AuthContextType {
   register: (name: string, email: string, phone: string, password: string, referralCode?: string) => Promise<void>;
   demoLogin: (role: 'user' | 'admin') => Promise<void>;
   logout: () => void;
-  syncUser: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,36 +30,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const syncUser = async () => {
+  // STABLE SESSION RESTORATION
+  useLayoutEffect(() => {
     const token = localStorage.getItem('noor_token');
-    const cachedUserStr = localStorage.getItem('noor_user');
+    const savedUser = localStorage.getItem('noor_user');
     
-    if (token && cachedUserStr) {
+    if (token && savedUser) {
       try {
-        // First try to get fresh data from API
-        const res = await api.get('/auth/me');
-        if (res && res.user) {
-          localStorage.setItem('noor_user', JSON.stringify(res.user));
-          setUser(res.user);
-        } else {
-          // Fallback to cache if API fails
-          setUser(JSON.parse(cachedUserStr));
-        }
+        const parsed = JSON.parse(savedUser);
+        setUser(parsed);
       } catch (e) {
-        console.warn("Identity sync from API failed, using cache.");
-        setUser(JSON.parse(cachedUserStr));
+        console.error("Session corrupted detected. Purging.");
+        localStorage.removeItem('noor_token');
+        localStorage.removeItem('noor_user');
       }
     }
-  };
-
-  useLayoutEffect(() => {
-    syncUser().finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    // Listen for global database updates to refresh auth state
-    window.addEventListener('noor_db_update', syncUser);
-    return () => window.removeEventListener('noor_db_update', syncUser);
+    setLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -76,17 +54,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const data = await api.post('/auth/login', { email: email.trim(), password });
       
       if (data && data.token && data.user) {
+        // 1. SAVE TO STORAGE FIRST
         localStorage.setItem('noor_token', data.token);
         localStorage.setItem('noor_user', JSON.stringify(data.user));
+        
+        // 2. UPDATE REACT STATE
         setUser(data.user);
         
+        // 3. NAVIGATE AFTER STATE IS COMMITTED
         const target = data.user.role === 'admin' ? '/admin/dashboard' : '/user/dashboard';
+        
         setLoading(false);
         navigate(target, { replace: true });
+      } else {
+        throw new Error("Invalid response from auth node.");
       }
     } catch (error: any) {
       setLoading(false);
-      throw new Error(error.message || 'Identity verification failed.');
+      throw new Error(error.message || 'Login failed.');
     }
   };
 
@@ -103,12 +88,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error: any) {
       setLoading(false);
-      throw new Error(error.message || 'Account creation failed.');
+      throw new Error(error.message || 'Identity creation failed.');
     }
   };
 
   const demoLogin = async (role: 'user' | 'admin') => {
-    const email = role === 'admin' ? 'admin@noor.com' : 'ghaffar@mail.com';
+    const email = role === 'admin' ? 'admin@noor.com' : 'user@noor.com';
     const password = role === 'admin' ? 'admin123' : 'user123';
     await login(email, password);
   };
@@ -117,11 +102,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     localStorage.removeItem('noor_token');
     localStorage.removeItem('noor_user');
-    navigate('/login', { replace: true });
+    navigate('/', { replace: true }); // Logout to Landing
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, demoLogin, logout, syncUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, demoLogin, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -129,6 +114,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) throw new Error('useAuth must be used within an AuthProvider');
+  if (context === undefined) throw new Error('useAuth must be used within AuthProvider');
   return context;
 };

@@ -1,9 +1,9 @@
+
 import React, { useState } from 'react';
 import { useConfig } from '../../../context/ConfigContext';
 import { 
   Palette, Zap, Save, RefreshCw, Type, 
-  ShieldCheck, Image as ImageIcon, Smartphone, MessageCircle, HelpCircle,
-  FileText, Layers
+  ShieldCheck, Image as ImageIcon, Smartphone, MessageCircle, HelpCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
@@ -67,28 +67,18 @@ const GeneralSettings = () => {
            </section>
 
            <section className="bg-white p-6 md:p-8 rounded-[40px] border border-slate-100 shadow-sm space-y-6">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 flex items-center gap-2"><FileText size={16} /> Submission Protocol</h2>
+              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 flex items-center gap-2"><MessageCircle size={16} /> Official Contacts</h2>
               <div className="space-y-4">
-                 <div className="space-y-1">
-                    <label className="text-[8px] font-black text-slate-400 uppercase ml-3">Work Evidence Mode</label>
-                    <div className="grid grid-cols-3 gap-2">
-                       {['single_image', 'multi_image', 'auto_pdf'].map((mode) => (
-                         <button
-                           key={mode}
-                           onClick={() => updateConfig({ submissionMode: mode as any })}
-                           className={clsx(
-                             "py-3 rounded-xl border-2 text-[8px] font-black uppercase transition-all",
-                             config.submissionMode === mode ? "bg-slate-900 border-slate-900 text-white shadow-lg" : "bg-white border-slate-50 text-slate-300"
-                           )}
-                         >
-                           {mode.replace('_', ' ')}
-                         </button>
-                       ))}
-                    </div>
+                 <div className="space-y-1"><label className="text-[8px] font-black text-slate-400 uppercase ml-3">WhatsApp Official Link</label>
+                 <input type="text" value={config.contactInfo?.whatsapp} onChange={e => updateConfig({ contactInfo: { ...config.contactInfo, whatsapp: e.target.value } } as any)} className="w-full h-11 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs" /></div>
+                 <div className="space-y-1"><label className="text-[8px] font-black text-slate-400 uppercase ml-3">Support Phone</label>
+                 <input type="text" value={config.contactInfo?.supportPhone} onChange={e => updateConfig({ contactInfo: { ...config.contactInfo, supportPhone: e.target.value } } as any)} className="w-full h-11 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs" /></div>
+                 <div className="flex items-center justify-between p-4 bg-sky-50 rounded-2xl mt-2">
+                    <div className="flex items-center gap-3"><HelpCircle size={18} className="text-sky-600" /><span className="text-[10px] font-black uppercase text-sky-900">Show Help Section</span></div>
+                    <button onClick={() => updateConfig({ modules: { ...config.modules, showHelpSection: !config.modules.showHelpSection } } as any)} className={clsx("w-12 h-6 rounded-full relative flex items-center px-1", config.modules.showHelpSection ? "bg-sky-600" : "bg-slate-200")}>
+                       <motion.div animate={{ x: config.modules.showHelpSection ? 24 : 0 }} className="w-4 h-4 bg-white rounded-full" />
+                    </button>
                  </div>
-                 <p className="text-[8px] text-slate-400 font-bold uppercase italic px-2">
-                   {config.submissionMode === 'auto_pdf' ? 'Images will be converted to PDF on client side.' : 'Users will upload raw images.'}
-                 </p>
               </div>
            </section>
         </div>
@@ -106,19 +96,11 @@ const GeneralSettings = () => {
                        <option value="'Montserrat', sans-serif">Montserrat (Premium)</option>
                     </select></div>
               </div>
-           </section>
-
-           <section className="bg-white p-6 md:p-8 rounded-[40px] border border-slate-100 shadow-sm space-y-6">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 flex items-center gap-2"><MessageCircle size={16} /> Official Contacts</h2>
-              <div className="space-y-4">
-                 <div className="space-y-1"><label className="text-[8px] font-black text-slate-400 uppercase ml-3">WhatsApp Official Link</label>
-                 <input type="text" value={config.branding?.supportPhone} onChange={e => updateConfig({ branding: { ...config.branding, supportPhone: e.target.value } } as any)} className="w-full h-11 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs" /></div>
-                 <div className="flex items-center justify-between p-4 bg-sky-50 rounded-2xl mt-2">
-                    <div className="flex items-center gap-3"><HelpCircle size={18} className="text-sky-600" /><span className="text-[10px] font-black uppercase text-sky-900">Show Help Section</span></div>
-                    <button onClick={() => updateConfig({ modules: { ...config.modules, showHelpSection: !config.modules.showHelpSection } } as any)} className={clsx("w-12 h-6 rounded-full relative flex items-center px-1", config.modules.showHelpSection ? "bg-sky-600" : "bg-slate-200")}>
-                       <motion.div animate={{ x: config.modules.showHelpSection ? 24 : 0 }} className="w-4 h-4 bg-white rounded-full" />
-                    </button>
-                 </div>
+              <div className="p-6 bg-slate-950 rounded-[32px] text-white relative">
+                 <div className="absolute top-0 right-0 p-6 opacity-10 rotate-12 scale-150"><Zap size={48} fill="currentColor"/></div>
+                 <h4 className="text-lg font-black uppercase mb-4" style={{ color: config.theme.primaryColor }}>Preview.</h4>
+                 <p className="text-[10px] text-slate-400 font-bold leading-relaxed mb-6 italic">Visual identity changes apply instantly to all user nodes.</p>
+                 <button className="h-10 px-6 rounded-xl font-black text-[9px] uppercase tracking-widest" style={{ backgroundColor: config.theme.primaryColor }}>Sample Action</button>
               </div>
            </section>
         </div>

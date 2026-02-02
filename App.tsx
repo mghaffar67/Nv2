@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { PublicLayout, UserLayout, AdminLayout } from './components/Layouts';
@@ -22,18 +23,16 @@ import RequestsManager from './pages/admin/RequestsManager';
 import RewardManager from './pages/admin/RewardManager';
 import SettingsLayout from './pages/admin/settings/SettingsLayout';
 import AdvancedLayout from './pages/admin/advanced/AdvancedLayout';
+import AdvancedStats from './pages/admin/advanced/AdvancedStats';
 import CoreSettings from './pages/admin/settings/Settings';
 import BrandingSettings from './pages/admin/settings/BrandingSettings';
 import AppearanceSettings from './pages/admin/settings/AppearanceSettings';
 import SEOManager from './pages/admin/settings/SEOManager';
 import DatabaseManager from './pages/admin/settings/DatabaseManager';
+import IntegrationHub from './pages/admin/settings/IntegrationHub';
 import PageEditor from './pages/admin/settings/PageEditor';
-import UnifiedCampaignManager from './pages/admin/advanced/UnifiedCampaignManager';
-import GlobalEditor from './pages/admin/cms/GlobalEditor'; 
-import TeamManagement from './pages/admin/settings/TeamManagement'; 
-import RolePermissions from './pages/admin/settings/RolePermissions'; 
-import ModuleManager from './pages/admin/config/ModuleManager';
-
+import CampaignManager from './pages/admin/settings/CampaignManager';
+import GlobalEditor from './pages/admin/cms/GlobalEditor'; // New CMS Component
 import UserDashboard from './pages/user/UserDashboard';
 import DailyWork from './pages/user/DailyWork';
 import RewardHub from './pages/user/RewardHub';
@@ -41,7 +40,6 @@ import Plans from './pages/user/Plans';
 import PlanHistory from './pages/user/PlanHistory';
 import MyTeam from './pages/user/MyTeam';
 import Wallet from './pages/user/Wallet';
-import Deposit from './pages/user/finance/Deposit';
 import Withdraw from './pages/user/finance/Withdraw';
 import Transactions from './pages/user/finance/Transactions';
 import Settings from './pages/user/Settings';
@@ -74,7 +72,6 @@ const App: React.FC = () => (
               <Route path="achievements" element={<RewardHub />} />
               <Route path="team" element={<MyTeam />} />
               <Route path="wallet" element={<Wallet />} />
-              <Route path="wallet/deposit" element={<Deposit />} />
               <Route path="wallet/withdraw" element={<Withdraw />} />
               <Route path="history" element={<Transactions />} />
               <Route path="plans" element={<Plans />} />
@@ -101,17 +98,16 @@ const App: React.FC = () => (
                  <Route path="general" element={<CoreSettings />} />
                  <Route path="branding" element={<BrandingSettings />} />
                  <Route path="appearance" element={<AppearanceSettings />} />
-                 <Route path="team" element={<TeamManagement />} />
-                 <Route path="roles" element={<RolePermissions />} />
               </Route>
 
               <Route path="advanced" element={<AdvancedLayout />}>
-                 <Route index element={<Navigate to="modules" replace />} />
-                 <Route path="modules" element={<ModuleManager />} />
+                 <Route index element={<Navigate to="analytics" replace />} />
+                 <Route path="analytics" element={<AdvancedStats />} />
                  <Route path="page-editor" element={<PageEditor />} />
-                 <Route path="global-cms" element={<GlobalEditor />} />
-                 <Route path="campaigns" element={<UnifiedCampaignManager />} />
+                 <Route path="global-cms" element={<GlobalEditor />} /> {/* Linked CMS Editor */}
+                 <Route path="campaigns" element={<CampaignManager />} />
                  <Route path="seo" element={<SEOManager />} />
+                 <Route path="integration" element={<IntegrationHub />} />
                  <Route path="database" element={<DatabaseManager />} />
               </Route>
             </Route>

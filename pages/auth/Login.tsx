@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, ChevronRight, Zap, ShieldCheck, Loader2, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, ChevronRight, Zap, ShieldCheck, Loader2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -11,7 +12,6 @@ const Login = () => {
   const navigate = useNavigate();
   
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
 
@@ -30,6 +30,8 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[#f8fafc] relative overflow-hidden font-sans">
+      
+      {/* Decorative background elements */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-lg pointer-events-none opacity-50">
          <div className="absolute top-10 left-10 w-32 h-32 bg-indigo-200 blur-[80px] rounded-full" />
          <div className="absolute bottom-20 right-10 w-40 h-40 bg-sky-200 blur-[100px] rounded-full" />
@@ -41,6 +43,7 @@ const Login = () => {
         className="w-full max-w-[340px] z-10"
       >
         <div className="bg-white rounded-[32px] border border-slate-100 p-6 md:p-8 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)] relative overflow-hidden">
+          
           <div className="text-center mb-6">
             <div 
               className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl text-white transform -rotate-3"
@@ -79,18 +82,10 @@ const Login = () => {
               <div className="relative">
                 <Lock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
                 <input 
-                  type={showPassword ? "text" : "password"} 
-                  required placeholder="••••••••"
-                  className="w-full h-11 pl-11 pr-11 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-none transition-all focus:bg-white focus:ring-4 focus:ring-indigo-50/50"
+                  type="password" required placeholder="••••••••"
+                  className="w-full h-11 pl-11 pr-4 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-none transition-all focus:bg-white focus:ring-4 focus:ring-indigo-50/50"
                   onChange={e => setForm({...form, password: e.target.value})}
                 />
-                <button 
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-600 transition-colors"
-                >
-                  {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                </button>
               </div>
             </div>
 

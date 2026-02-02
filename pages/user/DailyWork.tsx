@@ -4,279 +4,245 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Zap, Clock, CheckCircle2, ShieldCheck, 
   Loader2, X, ChevronLeft, Briefcase, RefreshCw,
-  ArrowRight, History, ExternalLink,
-  ChevronRight, Play, FileCheck, Info,
-  Target, FileText, ListChecks, Smartphone,
-  XCircle, AlertCircle, Flame, Lock, Trophy, BarChart3,
-  ArrowUpRight, Sparkles, Timer, Calendar
+  Camera, Upload, ArrowRight, History, ExternalLink,
+  ChevronRight, Play, FileCheck, Info, MousePointer2,
+  Target, FileText, Download, ListChecks,
+  // Added missing Smartphone icon import
+  Smartphone
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../utils/api';
 import { clsx } from 'clsx';
-import { SubmissionModal } from '../../components/user/SubmissionModal';
-import StreakWidget from '../../components/user/StreakWidget';
-
-const TaskTimer = ({ seconds, onComplete }: { seconds: number, onComplete: () => void }) => {
-  const [timeLeft, setTimeLeft] = useState(seconds);
-
-  useEffect(() => {
-    if (timeLeft <= 0) {
-      onComplete();
-      return;
-    }
-    const timer = setInterval(() => setTimeLeft(t => t - 1), 1000);
-    return () => clearInterval(timer);
-  }, [timeLeft, onComplete]);
-
-  const formatTime = (s: number) => {
-    const mins = Math.floor(s / 60);
-    const secs = s % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const isLow = timeLeft < 300; // Under 5 minutes
-
-  return (
-    <div className={clsx(
-      "flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors",
-      isLow ? "bg-rose-50 text-rose-600 border-rose-100" : "bg-indigo-50 text-indigo-600 border-indigo-100"
-    )}>
-       <Timer size={14} className={clsx(isLow && "animate-pulse")} />
-       <span className="text-[11px] font-black font-mono">{formatTime(timeLeft)}</span>
-    </div>
-  );
-};
 
 const DailyWork = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<any[]>([]);
-  const [streak, setStreak] = useState(0);
-  const [limits, setLimits] = useState({ total: 0, used: 0, remaining: 0 });
   const [loading, setLoading] = useState(true);
   const [activeTask, setActiveTask] = useState<any>(null);
-  const [tab, setTab] = useState<'work' | 'history'>('work');
+  const [preview, setPreview] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const fetchWorkData = async () => {
+  const fetchTasks = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/work/tasks');
-      setTasks(res.tasks || []);
-      setStreak(res.streak || 0);
-      setLimits(res.limitInfo || { total: 0, used: 0, remaining: 0 });
+      const data = await api.get('/work/tasks');
+      setTasks(Array.isArray(data) ? data : []);
     } catch (e) {
-      console.error("Work Hub error.");
+      setTasks([]);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchWorkData(); }, []);
+  useEffect(() => { fetchTasks(); }, []);
 
-  const handleSubmitWork = async (evidence: string) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleTaskComplete = async () => {
+    if (!preview) return alert("Please upload evidence.");
+    setSubmitting(true);
     try {
       await api.post('/work/complete', { 
         taskId: activeTask.id, 
-        evidence, 
+        evidence: preview, 
+        username: user?.name, 
         taskTitle: activeTask.title, 
         reward: activeTask.reward 
       });
       confetti({ particleCount: 150, spread: 70, origin: { y: 0.8 } });
       setActiveTask(null);
-      fetchWorkData();
+      setPreview(null);
+      fetchTasks();
     } catch (err: any) {
-      alert(err.message || "Sync error.");
+      alert(err.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
+  const hasNoPlan = !user?.currentPlan || user.currentPlan === 'None';
+
   return (
-    <div className="w-full max-w-5xl mx-auto pb-32 space-y-6 animate-fade-in px-2">
-      
-      {/* 1. STREAK & STATS MODULE */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-        <div className="md:col-span-8">
-           <section className="bg-slate-950 p-6 md:p-8 rounded-[44px] relative overflow-hidden flex flex-col md:flex-row items-center gap-8 group shadow-2xl border border-white/5 h-full">
-              <div className="absolute top-0 right-0 p-8 opacity-10 scale-150 rotate-12 text-indigo-500 pointer-events-none group-hover:rotate-45 transition-transform duration-[3s]"><Zap size={120} /></div>
-              
-              <div className="relative shrink-0">
-                 <motion.div 
-                   animate={{ scale: [1, 1.05, 1] }} 
-                   transition={{ repeat: Infinity, duration: 3 }} 
-                   className="w-20 h-20 bg-indigo-600 rounded-[30px] flex flex-col items-center justify-center text-white border-2 border-white/20 shadow-xl shadow-indigo-500/20"
-                 >
-                    <Flame size={28} fill="currentColor" className="text-amber-400" />
-                    <span className="text-xl font-black italic">{streak}</span>
-                 </motion.div>
-              </div>
-
-              <div className="flex-grow space-y-4 text-center md:text-left">
-                 <div>
-                    <h2 className="text-xl md:text-2xl font-black text-white uppercase italic tracking-tighter leading-none">Yield Console.</h2>
-                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Authorized work nodes assigned to your station.</p>
-                 </div>
-                 
-                 <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-white/5 p-2.5 rounded-2xl border border-white/5 text-center">
-                       <p className="text-[7px] font-black text-slate-500 uppercase mb-1">ALLOCATED</p>
-                       <p className="text-xs font-black text-white">{limits.total}</p>
-                    </div>
-                    <div className="bg-white/5 p-2.5 rounded-2xl border border-white/5 text-center">
-                       <p className="text-[7px] font-black text-slate-500 uppercase mb-1">PROCESSED</p>
-                       <p className="text-xs font-black text-white">{limits.used}</p>
-                    </div>
-                    <div className="bg-white/5 p-2.5 rounded-2xl border border-white/5 text-center">
-                       <p className="text-[7px] font-black text-slate-500 uppercase mb-1">REMAINING</p>
-                       <p className="text-xs font-black text-sky-400">{limits.remaining}</p>
-                    </div>
-                 </div>
-              </div>
-           </section>
-        </div>
-        <div className="md:col-span-4">
-           <StreakWidget />
-        </div>
-      </div>
-
-      {/* 2. TAB CONTROL */}
-      <div className="flex bg-white p-1.5 rounded-[28px] border border-slate-100 shadow-sm w-fit gap-1 mx-auto md:mx-0">
-         <button onClick={() => setTab('work')} className={clsx("px-10 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all", tab === 'work' ? "bg-slate-900 text-white shadow-xl" : "text-slate-400")}>Available</button>
-         <button onClick={() => setTab('history')} className={clsx("px-10 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all", tab === 'history' ? "bg-slate-900 text-white shadow-xl" : "text-slate-400")}>Log</button>
-      </div>
+    <div className="w-full max-w-full pb-20 space-y-4 animate-fade-in">
+      <header className="flex items-center justify-between px-1">
+        <Link to="/user/dashboard" className="p-2 bg-white rounded-lg shadow-sm border border-slate-100 text-slate-400 active:scale-90 transition-all"><ChevronLeft size={16} /></Link>
+        <h1 className="text-sm font-black text-slate-900 tracking-tight italic uppercase">Work <span className="text-indigo-600">Protocol.</span></h1>
+        <button onClick={fetchTasks} className="w-8 h-8 bg-white border border-slate-100 rounded-lg flex items-center justify-center text-slate-400 shadow-sm active:scale-95">
+           <RefreshCw size={14} className={clsx(loading && "animate-spin")} />
+        </button>
+      </header>
 
       <AnimatePresence mode="wait">
-        {tab === 'work' ? (
-          <motion.div key="work" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-             {loading ? (
-               <div className="col-span-full py-32 text-center flex flex-col items-center gap-4">
-                  <RefreshCw className="animate-spin text-indigo-500" size={40} />
-                  <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Querying Registry...</p>
-               </div>
-             ) : tasks.length > 0 ? tasks.map((task) => (
-                <div key={task.id} className="relative group">
-                   <div className={clsx(
-                     "bg-white p-5 rounded-[40px] border transition-all flex flex-col h-[200px] shadow-sm hover:shadow-xl",
-                     task.myStatus === 'completed' ? "border-emerald-100 bg-emerald-50/10" : "border-slate-100"
-                   )}>
-                      <div className="flex justify-between items-start mb-4">
-                         <div className="w-11 h-11 bg-slate-950 text-sky-400 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-105">
-                            <Zap size={20} fill="currentColor" />
-                         </div>
-                         <div className="text-right">
-                            <p className="text-lg font-black text-slate-900 italic leading-none mb-1">Rs {task.reward}</p>
-                            <div className="flex flex-col items-end gap-1">
-                               <span className="text-[8px] font-black uppercase bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-md border border-indigo-100 italic">{task.plan} STATION</span>
-                               {task.validityDays && task.myStatus !== 'completed' && (
-                                 <span className={clsx(
-                                   "text-[7px] font-black uppercase tracking-widest flex items-center gap-1.5 px-2 py-0.5 rounded-md border",
-                                   task.validityDays < 5 ? "bg-rose-50 text-rose-600 border-rose-100" : "bg-slate-50 text-slate-400 border-slate-100"
-                                 )}>
-                                    <Calendar size={10} /> {task.validityDays}D LEFT
-                                 </span>
-                               )}
-                            </div>
-                         </div>
-                      </div>
-                      <h4 className="text-[12px] font-black text-slate-800 uppercase italic mb-1.5 truncate">{task.title}</h4>
-                      <p className="text-[10px] text-slate-400 font-medium line-clamp-2 italic mb-6 leading-relaxed">"{task.instruction}"</p>
-                      
-                      <div className="mt-auto pt-4 border-t border-slate-50 flex items-center justify-between">
-                         {task.myStatus === 'completed' ? (
-                           <div className="flex items-center gap-1.5 text-emerald-500 text-[9px] font-black uppercase tracking-widest">
-                              <CheckCircle2 size={14} /> Synced
-                           </div>
-                         ) : (
-                           <div className="flex items-center gap-3">
-                              <button 
-                                onClick={() => setActiveTask(task)}
-                                className="h-10 px-6 bg-slate-900 text-white rounded-[18px] font-black text-[9px] uppercase tracking-widest transition-all shadow-lg active:scale-95 group-hover:bg-indigo-600"
-                              >
-                                Process
-                              </button>
-                              {activeTask?.id === task.id && task.timeLimitSeconds && (
-                                <TaskTimer seconds={task.timeLimitSeconds} onComplete={() => { alert("Session Terminated. Buffer Timeout."); setActiveTask(null); }} />
-                              )}
-                           </div>
-                         )}
-                         <span className="text-[8px] font-black text-slate-200 uppercase tracking-widest">ID-{task.id.slice(-4)}</span>
-                      </div>
+        {activeTask ? (
+          <motion.div 
+            key="active-task" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}
+            className="bg-white p-5 rounded-[40px] border border-slate-100 shadow-xl space-y-6"
+          >
+             <div className="flex justify-between items-center border-b border-slate-50 pb-4">
+                <div className="flex items-center gap-3">
+                   <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shadow-inner"><Target size={20}/></div>
+                   <div>
+                      <h3 className="text-xs font-black text-slate-800 uppercase truncate max-w-[180px]">{activeTask.title}</h3>
+                      <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">Task ID: {activeTask.id}</p>
                    </div>
+                </div>
+                <button onClick={() => { setActiveTask(null); setPreview(null); }} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-rose-500 transition-colors"><X size={20}/></button>
+             </div>
 
-                   {task.isLocked && task.myStatus !== 'completed' && (
-                     <div className="absolute inset-0 z-10 bg-white/70 backdrop-blur-[1px] rounded-[40px] flex flex-col items-center justify-center p-6 text-center border-2 border-dashed border-indigo-100">
-                        <Lock size={20} className="text-slate-400 mb-3" />
-                        <h4 className="text-[11px] font-black text-slate-800 uppercase mb-1">STATION LOCKED</h4>
-                        <p className="text-[8px] font-bold text-slate-400 uppercase leading-relaxed mb-4">Upgrade to activate node</p>
-                        <button onClick={() => navigate('/user/plans')} className="h-9 px-6 bg-indigo-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest shadow-xl">Upgrade</button>
+             <div className="bg-slate-950 p-6 rounded-[32px] text-white space-y-4 relative overflow-hidden shadow-2xl">
+                <div className="absolute top-0 right-0 p-4 opacity-5 rotate-12 scale-150"><Zap size={100} fill="currentColor" /></div>
+                <div className="flex items-center gap-2 mb-2">
+                   <ListChecks size={14} className="text-indigo-400" />
+                   <p className="text-[9px] font-black text-indigo-400 uppercase tracking-[0.3em]">Deployment Protocol</p>
+                </div>
+                
+                <div className="space-y-3 relative z-10">
+                   <p className="text-xs font-bold leading-relaxed italic text-slate-200">
+                     {activeTask.instruction}
+                   </p>
+                   
+                   {/* Verification steps helper */}
+                   {activeTask.instruction.includes('screenshot') && (
+                     <div className="pt-2 flex flex-col gap-2">
+                        {[
+                          "Execute the required digital task.",
+                          "Capture a clear, visible screenshot of the result.",
+                          "Upload the image in the section below for audit."
+                        ].map((step, i) => (
+                          <div key={i} className="flex items-center gap-2 text-[8px] font-black uppercase text-indigo-300/80 tracking-widest">
+                             <div className="w-4 h-4 rounded-full bg-indigo-500/20 flex items-center justify-center text-white text-[6px] border border-white/10">{i+1}</div>
+                             {step}
+                          </div>
+                        ))}
                      </div>
                    )}
                 </div>
-             )) : (
-               <div className="col-span-full py-40 text-center flex flex-col items-center opacity-30">
-                  <Briefcase size={64} className="text-slate-200 mb-6" />
-                  <p className="text-[11px] font-black uppercase tracking-[0.4em]">Inventory Exhausted.</p>
-               </div>
-             )}
+                
+                {/* MEDIA ASSETS */}
+                {activeTask.mediaType === 'pdf' && (
+                  <div className="mt-4 p-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-between backdrop-blur-md">
+                     <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-rose-500/20 text-rose-400 rounded-lg flex items-center justify-center border border-rose-500/30">
+                           <FileText size={20} />
+                        </div>
+                        <div className="overflow-hidden">
+                           <p className="text-[10px] font-black uppercase text-white truncate">Assignment Node</p>
+                           <p className="text-[8px] font-bold text-slate-400 uppercase">Document Asset (PDF)</p>
+                        </div>
+                     </div>
+                     <a 
+                       href={activeTask.mediaUrl} 
+                       download={`${activeTask.title}.pdf`}
+                       className="h-10 px-4 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all shadow-lg active:scale-95"
+                     >
+                       Get File <Download size={14} />
+                     </a>
+                  </div>
+                )}
+
+                {activeTask.mediaType === 'link' && (
+                  <a href={activeTask.mediaUrl} target="_blank" className="flex items-center justify-center gap-2 h-12 w-full bg-white/10 hover:bg-white/20 text-white rounded-2xl text-[9px] font-black uppercase border border-white/5 transition-all mt-4">
+                    <ExternalLink size={16}/> Access External Resource
+                  </a>
+                )}
+             </div>
+
+             <div className="space-y-4">
+                <div className="relative h-44 group">
+                   <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer z-20" />
+                   <div className={clsx(
+                     "w-full h-full rounded-[36px] border-2 border-dashed flex flex-col items-center justify-center gap-4 transition-all duration-500",
+                     preview ? "bg-indigo-50 border-indigo-500 shadow-inner" : "bg-slate-50 border-slate-200 hover:border-indigo-300"
+                   )}>
+                      {preview ? (
+                        <div className="relative w-full h-full flex items-center justify-center p-4 animate-in zoom-in-95">
+                           <img src={preview} className="max-h-full max-w-full object-contain rounded-2xl shadow-xl border-4 border-white" />
+                           <div className="absolute top-2 right-2 bg-emerald-500 text-white rounded-full p-1.5 shadow-lg border-2 border-white">
+                              <CheckCircle2 size={16} />
+                           </div>
+                        </div>
+                      ) : (
+                        <>
+                           <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-slate-300 shadow-md border border-slate-100 group-hover:scale-110 transition-transform">
+                              <Camera size={32} />
+                           </div>
+                           <div className="text-center px-6">
+                              <p className="text-[9px] font-black text-slate-900 uppercase tracking-widest">Evidence Required</p>
+                              <p className="text-[7px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1 leading-relaxed">Upload screenshot of completed work</p>
+                           </div>
+                        </>
+                      )}
+                   </div>
+                </div>
+
+                <button 
+                  onClick={handleTaskComplete} 
+                  disabled={submitting || !preview}
+                  className="w-full h-16 bg-slate-950 text-white rounded-[32px] font-black text-[11px] uppercase tracking-[0.3em] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.3)] flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-40"
+                >
+                   {submitting ? <Loader2 size={24} className="animate-spin" /> : <><ShieldCheck size={20} className="text-sky-400" /> Submit for Audit</>}
+                </button>
+             </div>
+          </motion.div>
+        ) : hasNoPlan ? (
+          <motion.div key="lock" className="bg-white p-12 rounded-[56px] border border-slate-100 text-center flex flex-col items-center shadow-sm">
+             <div className="w-20 h-20 bg-rose-50 text-rose-500 rounded-[30px] flex items-center justify-center mb-8 shadow-inner border border-rose-100/50"><ShieldCheck size={40} /></div>
+             <h2 className="text-xl font-black text-slate-900 uppercase italic mb-3 tracking-tighter">Station Offline.</h2>
+             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-12 leading-relaxed max-w-[240px]">No active production station linked to your identity node. Activation is required to view daily assignments.</p>
+             <button onClick={() => navigate('/user/plans')} className="h-16 w-full bg-slate-950 text-white rounded-[24px] font-black text-[10px] uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all">Connect Station Hub</button>
           </motion.div>
         ) : (
-          <motion.div key="history" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-3">
-             {(user?.workSubmissions || []).length > 0 ? (
-               <div className="bg-white rounded-[44px] border border-slate-100 shadow-sm overflow-hidden p-2">
-                 <div className="divide-y divide-slate-50">
-                   {(user?.workSubmissions || []).map((sub: any, idx: number) => (
-                      <motion.div 
-                        key={idx} 
-                        initial={{ opacity: 0, x: -10 }} 
-                        animate={{ opacity: 1, x: 0 }} 
-                        transition={{ delay: idx * 0.03 }}
-                        className="p-5 flex items-center justify-between group hover:bg-slate-50 transition-all rounded-[32px]"
-                      >
-                         <div className="flex items-center gap-5">
-                            <div className={clsx(
-                              "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-110",
-                              sub.status === 'approved' ? "bg-emerald-50 text-emerald-600" : sub.status === 'rejected' ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-600"
-                            )}>
-                               {sub.status === 'approved' ? <CheckCircle2 size={24}/> : sub.status === 'rejected' ? <XCircle size={24}/> : <Clock size={24}/>}
-                            </div>
-                            <div>
-                               <h4 className="font-black text-slate-800 text-[12px] uppercase truncate max-w-[200px] mb-1.5">{sub.taskTitle}</h4>
-                               <div className="flex items-center gap-2">
-                                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest italic">{new Date(sub.timestamp).toLocaleDateString()}</span>
-                                  <span className="w-1 h-1 rounded-full bg-slate-200" />
-                                  <span className="text-[8px] font-black text-indigo-400 uppercase">NODE: {sub.id?.slice(-8)}</span>
-                               </div>
-                            </div>
-                         </div>
-                         <div className="text-right">
-                            <p className="font-black text-sm text-slate-900 italic mb-1.5 leading-none">Rs {sub.reward}</p>
-                            <span className={clsx(
-                              "text-[8px] font-black uppercase px-3 py-1 rounded-lg border shadow-sm",
-                              sub.status === 'approved' ? "bg-green-50 text-green-600 border-green-100" : 
-                              sub.status === 'pending' ? "bg-amber-50 text-amber-600 border-amber-100" : 
-                              "bg-rose-50 text-rose-600 border-rose-100"
-                            )}>{sub.status}</span>
-                         </div>
-                      </motion.div>
-                   ))}
-                 </div>
+          <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+            {loading ? (
+               <div className="py-32 text-center flex flex-col items-center gap-4">
+                  <RefreshCw className="animate-spin text-slate-200" size={32} />
+                  <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.4em]">Querying Hub...</p>
                </div>
-             ) : (
-               <div className="py-40 text-center opacity-30 flex flex-col items-center bg-white rounded-[44px] border border-dashed border-slate-200">
-                  <History size={48} className="text-slate-200 mb-6" />
-                  <p className="text-[11px] font-black uppercase tracking-[0.4em]">Ledger Stream Empty.</p>
+            ) : tasks.filter(t => t.myStatus === 'new').length > 0 ? (
+               tasks.filter(t => t.myStatus === 'new').map((task, idx) => (
+                  <motion.div 
+                    key={task.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}
+                    className="bg-white p-4 rounded-[32px] border border-slate-100 shadow-sm flex items-center justify-between gap-4 group hover:border-indigo-100 transition-all"
+                  >
+                     <div className="flex items-center gap-4 overflow-hidden">
+                        <div className="w-12 h-12 bg-slate-900 text-sky-400 rounded-[20px] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-lg border border-white/10">
+                           {task.mediaType === 'pdf' ? <FileText size={22}/> : <Zap size={22} fill="currentColor"/>}
+                        </div>
+                        <div className="overflow-hidden">
+                           <h4 className="font-black text-slate-800 text-[11px] uppercase truncate leading-none mb-1.5">{task.title}</h4>
+                           <div className="flex items-center gap-2">
+                              <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-1"><Smartphone size={8}/> Reward: Rs {task.reward}</span>
+                              {task.mediaType === 'pdf' && <span className="bg-rose-50 text-rose-500 px-1.5 py-0.5 rounded text-[6px] font-black uppercase border border-rose-100">DOC</span>}
+                           </div>
+                        </div>
+                     </div>
+                     <button 
+                       onClick={() => setActiveTask(task)}
+                       className="h-11 px-6 bg-slate-950 text-white rounded-2xl font-black text-[8px] uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-lg shrink-0"
+                     >
+                        Process
+                     </button>
+                  </motion.div>
+               ))
+            ) : (
+               <div className="py-24 text-center opacity-30">
+                  <CheckCircle2 size={48} className="mx-auto mb-4 text-slate-200" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.4em]">All assignments synchronized</p>
                </div>
-             )}
+            )}
           </motion.div>
         )}
       </AnimatePresence>
-
-      <SubmissionModal 
-        isOpen={!!activeTask} 
-        onClose={() => setActiveTask(null)} 
-        task={activeTask} 
-        onSubmit={handleSubmitWork}
-      />
     </div>
   );
 };

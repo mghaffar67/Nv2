@@ -1,30 +1,20 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useConfig } from '../context/ConfigContext';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShieldCheck, Zap, Loader2, ChevronRight, 
   Smartphone, Mail, Lock, User, ArrowLeft,
-  UserPlus, Target
+  UserPlus
 } from 'lucide-react';
 
 const Register = () => {
   const { register, loading: authLoading } = useAuth();
   const { config } = useConfig();
-  const location = useLocation();
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', referralCode: '' });
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    // Extract 'ref' from URL: /register?ref=GHAFFAR
-    const params = new URLSearchParams(location.search);
-    const refCode = params.get('ref');
-    if (refCode) {
-      setForm(prev => ({ ...prev, referralCode: refCode }));
-    }
-  }, [location.search]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,10 +103,7 @@ const Register = () => {
              </div>
 
              <div className="space-y-1.5">
-                <div className="flex justify-between items-center ml-3 mr-1">
-                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Referral Token</label>
-                   {form.referralCode && <span className="text-[7px] font-black text-emerald-500 uppercase flex items-center gap-1"><Target size={8} /> Active Invite</span>}
-                </div>
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-3">Referral Token</label>
                 <input 
                   type="text" placeholder="Invite Code (Optional)" 
                   value={form.referralCode} onChange={e => setForm({...form, referralCode: e.target.value})}
@@ -130,7 +117,7 @@ const Register = () => {
               className="w-full h-14 text-white rounded-[20px] font-black text-[10px] uppercase tracking-[0.3em] shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
               style={{ backgroundColor: config.theme.primaryColor }}
             >
-              {authLoading ? <Loader2 size={24} className="animate-spin" /> : <>Initialize Identity <ChevronRight size={16} /></>}
+              {authLoading ? <Loader2 size={24} className="animate-spin" /> : <>Join Network <ChevronRight size={16} /></>}
             </button>
           </form>
 

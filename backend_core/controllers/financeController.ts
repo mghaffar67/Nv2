@@ -1,3 +1,4 @@
+
 import { dbNode } from '../utils/db';
 
 /**
@@ -6,8 +7,7 @@ import { dbNode } from '../utils/db';
 export const financeController = {
   // 1. DATA RETRIEVAL NODES
   getAllDeposits: async (req: any, res: any) => {
-    // Fix: Added await to async db call
-    const users = await dbNode.getUsers();
+    const users = dbNode.getUsers();
     let deposits: any[] = [];
     users.forEach((user: any) => {
       if (user.transactions) {
@@ -27,8 +27,7 @@ export const financeController = {
   },
 
   getAllWithdrawals: async (req: any, res: any) => {
-    // Fix: Added await to async db call
-    const users = await dbNode.getUsers();
+    const users = dbNode.getUsers();
     let withdrawals: any[] = [];
     users.forEach((user: any) => {
       if (user.transactions) {
@@ -50,11 +49,9 @@ export const financeController = {
   // 2. DEPOSIT PROTOCOL
   approveDeposit: async (req: any, res: any) => {
     const { transactionId, userId } = req.body;
-    // Fix: Added await to async db call
-    const user = await dbNode.findUserById(userId);
+    const user = dbNode.findUserById(userId);
     if (!user) return res.status(404).json({ message: "Identity node missing." });
 
-    // Fix: Property access on awaited object
     const trxIndex = user.transactions.findIndex((t: any) => t.id === transactionId);
     if (trxIndex === -1) return res.status(404).json({ message: "Ledger entry not found." });
 
@@ -69,18 +66,15 @@ export const financeController = {
     const amount = Number(user.transactions[trxIndex].amount);
     user.balance = (Number(user.balance) || 0) + amount;
 
-    // Fix: Added await to async db call
-    await dbNode.updateUser(userId, { balance: user.balance, transactions: user.transactions });
+    dbNode.updateUser(userId, { balance: user.balance, transactions: user.transactions });
     return res.status(200).json({ success: true, message: "Funds Authorized." });
   },
 
   rejectDeposit: async (req: any, res: any) => {
     const { transactionId, userId, reason } = req.body;
-    // Fix: Added await to async db call
-    const user = await dbNode.findUserById(userId);
+    const user = dbNode.findUserById(userId);
     if (!user) return res.status(404).json({ message: "Identity node missing." });
 
-    // Fix: Property access on awaited user object
     const trxIndex = user.transactions.findIndex((t: any) => t.id === transactionId);
     if (trxIndex === -1) return res.status(404).json({ message: "Ledger entry not found." });
 
@@ -88,19 +82,16 @@ export const financeController = {
     user.transactions[trxIndex].adminNote = reason || "Evidence Invalid";
     user.transactions[trxIndex].processedAt = new Date().toISOString();
 
-    // Fix: Added await to async db call
-    await dbNode.updateUser(userId, { transactions: user.transactions });
+    dbNode.updateUser(userId, { transactions: user.transactions });
     return res.status(200).json({ success: true, message: "Request Terminated." });
   },
 
   // 3. WITHDRAWAL PROTOCOL (CRITICAL)
   approveWithdrawal: async (req: any, res: any) => {
     const { transactionId, userId } = req.body;
-    // Fix: Added await to async db call
-    const user = await dbNode.findUserById(userId);
+    const user = dbNode.findUserById(userId);
     if (!user) return res.status(404).json({ message: "Identity node missing." });
 
-    // Fix: Property access on awaited user object
     const trxIndex = user.transactions.findIndex((t: any) => t.id === transactionId);
     if (trxIndex === -1) return res.status(404).json({ message: "Payout record not found." });
 
@@ -112,18 +103,15 @@ export const financeController = {
     user.transactions[trxIndex].status = 'approved';
     user.transactions[trxIndex].processedAt = new Date().toISOString();
 
-    // Fix: Added await to async db call
-    await dbNode.updateUser(userId, { transactions: user.transactions });
+    dbNode.updateUser(userId, { transactions: user.transactions });
     return res.status(200).json({ success: true, message: "Payout Confirmed." });
   },
 
   rejectWithdrawal: async (req: any, res: any) => {
     const { transactionId, userId, reason } = req.body;
-    // Fix: Added await to async db call
-    const user = await dbNode.findUserById(userId);
+    const user = dbNode.findUserById(userId);
     if (!user) return res.status(404).json({ message: "Identity node missing." });
 
-    // Fix: Property access on awaited user object
     const trxIndex = user.transactions.findIndex((t: any) => t.id === transactionId);
     if (trxIndex === -1) return res.status(404).json({ message: "Payout record not found." });
 
@@ -152,8 +140,7 @@ export const financeController = {
     };
     user.transactions.unshift(refundTrace);
 
-    // Fix: Added await to async db call
-    await dbNode.updateUser(userId, { balance: user.balance, transactions: user.transactions });
+    dbNode.updateUser(userId, { balance: user.balance, transactions: user.transactions });
     return res.status(200).json({ success: true, message: "Payout Terminated & Refunded." });
   }
 };

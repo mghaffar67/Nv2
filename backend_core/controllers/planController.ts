@@ -1,3 +1,4 @@
+
 import { dbNode } from '../utils/db';
 import { distributeCommission } from '../utils/commissionHelper';
 
@@ -12,8 +13,7 @@ export const planController = {
   requestPlanPurchase: async (req: any, res: any) => {
     try {
       const { userId, planId, method, trxId, proofImage, senderNumber } = req.body;
-      // Fix: Added await to async db call
-      const user = await dbNode.findUserById(userId);
+      const user = dbNode.findUserById(userId);
 
       if (!user) return res.status(404).json({ message: 'User account not found.' });
       
@@ -21,7 +21,6 @@ export const planController = {
       const price = PLAN_PRICES[normalizedId] || 0;
 
       if (method === 'wallet') {
-        // Fix: Property access on awaited object
         const currentBalance = Number(user.balance) || 0;
         if (currentBalance < price) {
           return res.status(400).json({ message: 'Insufficient account balance.' });
@@ -43,23 +42,16 @@ export const planController = {
         const history = user.purchaseHistory || [];
         history.unshift(purchaseRecord);
 
-        // Capture the updated user object
-        // Fix: Added await to async db call
-        const updatedUser = await dbNode.updateUser(userId, { 
+        dbNode.updateUser(userId, { 
           balance: newBalance, 
           currentPlan: normalizedId, 
           planExpiry: expiryDate.toISOString(),
-          purchaseHistory: history,
-          completedTasksToday: [] // Reset daily limits for new plan
+          purchaseHistory: history
         });
 
         distributeCommission(userId, price);
 
-        return res.status(200).json({ 
-          success: true,
-          message: 'Plan activated successfully.', 
-          user: updatedUser 
-        });
+        return res.status(200).json({ message: 'Plan activated successfully.', user });
       }
 
       if (method === 'direct') {
@@ -82,9 +74,8 @@ export const planController = {
         const history = user.purchaseHistory || [];
         history.unshift(requestRecord);
 
-        // Fix: Added await to async db call
-        await dbNode.updateUser(userId, { purchaseHistory: history });
-        return res.status(201).json({ success: true, message: 'Activation request submitted for approval.' });
+        dbNode.updateUser(userId, { purchaseHistory: history });
+        return res.status(201).json({ message: 'Activation request submitted for approval.' });
       }
 
       return res.status(400).json({ message: 'Invalid activation method selected.' });

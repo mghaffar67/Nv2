@@ -1,3 +1,4 @@
+
 import { dbNode } from './db';
 
 /**
@@ -5,29 +6,22 @@ import { dbNode } from './db';
  * Distributes yield across 3 levels of network nodes.
  */
 export const distributeCommission = async (buyerId: string, amount: number) => {
-  // Fix: Added await to async db call
-  const buyer = await dbNode.findUserById(buyerId);
-  // Fix: Property access on awaited object
+  const buyer = dbNode.findUserById(buyerId);
   if (!buyer || !buyer.referredBy) return;
 
-  // Fix: Added await to async db call
-  const config = await dbNode.getConfig();
-  // Fix: Property access on awaited object
+  const config = dbNode.getConfig();
   const tiers = [
     { level: 1, percent: config.referralSettings.level1Percent || 15 },
     { level: 2, percent: config.referralSettings.level2Percent || 5 },
     { level: 3, percent: config.referralSettings.level3Percent || 2 }
   ];
 
-  // Fix: Property access on awaited object
   let currentUplineCode = buyer.referredBy;
 
   for (const tier of tiers) {
     if (!currentUplineCode) break;
 
-    // Fix: Added await to async db call
-    const allUsers = await dbNode.getUsers();
-    // Fix: allUsers is now the array from awaited promise
+    const allUsers = dbNode.getUsers();
     const upline = allUsers.find((u: any) => u.referralCode === currentUplineCode);
     
     // Integrity Check: Node must exist and not be banned
@@ -42,7 +36,6 @@ export const distributeCommission = async (buyerId: string, amount: number) => {
       amount: commissionAmount,
       status: 'approved',
       gateway: `L${tier.level} Referral Bonus`,
-      // Fix: Proper name access on buyer
       note: `Network Yield from node ${buyer.name}'s upgrade.`,
       date: new Date().toISOString().split('T')[0],
       timestamp: new Date().toISOString()
@@ -52,8 +45,7 @@ export const distributeCommission = async (buyerId: string, amount: number) => {
     trx.unshift(commissionTrx);
 
     // Save updated node state
-    // Fix: Added await to async db call
-    await dbNode.updateUser(upline.id, { 
+    dbNode.updateUser(upline.id, { 
       balance: newBalance, 
       transactions: trx 
     });

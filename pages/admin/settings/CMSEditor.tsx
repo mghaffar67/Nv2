@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   FileEdit, 
@@ -12,7 +13,7 @@ import {
   Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { api } from '../../../utils/api';
+import { pageController } from '../../../backend_core/controllers/pageController';
 import { clsx } from 'clsx';
 
 const CMSEditor = () => {
@@ -23,28 +24,24 @@ const CMSEditor = () => {
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
 
   const fetchSlugs = async () => {
-    try {
-      // Fetching from existing system/site-content endpoint or generic list
-      const defaults = [
-        { slug: 'privacy', title: 'Privacy Policy' },
-        { slug: 'terms', title: 'Terms of Service' },
-        { slug: 'about', title: 'About Noor Official' },
-        { slug: 'contact', title: 'Contact Support' }
-      ];
-      setPages(defaults);
-      if (defaults.length > 0 && !selectedSlug) setSelectedSlug(defaults[0].slug);
-    } catch (e) {}
+    const res = await new Promise<any>((resolve) => {
+      pageController.getAllSlugs({}, {
+        status: () => ({ json: (data: any) => resolve(data) })
+      });
+    });
+    setPages(res);
+    if (res.length > 0 && !selectedSlug) setSelectedSlug(res[0].slug);
   };
 
   const fetchPageContent = async (slug: string) => {
     setLoading(true);
     try {
-      const res = await api.get(`/system/site-content/${slug}`);
-      if (res && res.sections) {
-        setPageData({ title: res.sections.title || '', content: res.sections.content || '' });
-      }
-    } catch (e) {
-      console.error("Fetch failed");
+      const res = await new Promise<any>((resolve) => {
+        pageController.getPage({ params: { slug } }, {
+          status: () => ({ json: (data: any) => resolve(data) })
+        });
+      });
+      setPageData({ title: res.title, content: res.content });
     } finally {
       setLoading(false);
     }
@@ -62,14 +59,15 @@ const CMSEditor = () => {
     setLoading(true);
     setSaveStatus(null);
     try {
-      await api.post('/system/site-content', { 
-        slug: selectedSlug, 
-        sections: { title: pageData.title, content: pageData.content } 
+      await new Promise<any>((resolve) => {
+        pageController.updatePage({ 
+          body: { slug: selectedSlug, ...pageData } 
+        }, {
+          status: () => ({ json: (data: any) => resolve(data) })
+        });
       });
       setSaveStatus('success');
       setTimeout(() => setSaveStatus(null), 3000);
-    } catch (err: any) {
-      alert(err.message || "Save failed");
     } finally {
       setLoading(false);
     }
@@ -111,6 +109,9 @@ const CMSEditor = () => {
                      {p.title}
                    </button>
                  ))}
+                 <button className="w-full mt-4 p-3 border-2 border-dashed border-slate-100 text-slate-300 rounded-xl text-[9px] font-black uppercase flex items-center justify-center gap-2 hover:border-sky-200 hover:text-sky-500 transition-all">
+                    <Plus size={14} /> Create Custom
+                 </button>
               </div>
            </div>
 
@@ -161,23 +162,33 @@ const CMSEditor = () => {
                     type="text" 
                     value={pageData.title}
                     onChange={(e) => setPageData({...pageData, title: e.target.value})}
-                    className="w-full h-14 px-6 bg-slate-50 border border-slate-100 rounded-2xl md:rounded-3xl font-black text-slate-800 outline-none focus:ring-4 focus:ring-sky-50"
+                    className="w-full p-4 md:p-6 bg-slate-50 border border-slate-100 rounded-2xl md:rounded-3xl font-black text-slate-800 outline-none focus:ring-4 focus:ring-sky-50"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex justify-between items-center px-4 mb-2">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Document Source (HTML Allowed)</label>
+                    <div className="text-[8px] font-bold text-indigo-500 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded-md">Rich Mode</div>
                   </div>
                   <textarea 
                     rows={16}
                     value={pageData.content}
                     onChange={(e) => setPageData({...pageData, content: e.target.value})}
-                    className="w-full p-6 md:p-10 bg-slate-50 border border-slate-100 rounded-[32px] md:rounded-[44px] font-mono text-xs md:text-sm text-slate-600 outline-none focus:ring-4 focus:ring-sky-50 resize-none shadow-inner"
+                    className="w-full p-6 md:p-10 bg-slate-50 border border-slate-100 rounded-[32px] md:rounded-[44px] font-mono text-xs md:text-sm text-slate-600 outline-none focus:ring-4 focus:ring-sky-50 resize-none"
                     placeholder="<h1>Heading</h1> <p>Content...</p>"
                   />
                 </div>
               </div>
+           </div>
+
+           <div className="bg-amber-50 p-6 md:p-8 rounded-[32px] border border-amber-100 flex items-start gap-4">
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-amber-500 shadow-sm shrink-0">
+                <Monitor size={20} />
+              </div>
+              <p className="text-[9px] md:text-xs text-amber-700 font-medium leading-relaxed">
+                 <b>PRO TIP:</b> Use <code>&lt;h1&gt;</code> for big headlines, <code>&lt;h3&gt;</code> for sub-sections, and <code>&lt;p&gt;</code> for standard text. These are styled automatically by the public viewer node.
+              </p>
            </div>
         </div>
       </div>

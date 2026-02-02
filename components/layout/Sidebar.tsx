@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -20,9 +21,7 @@ import {
   FileText,
   Inbox,
   ShieldAlert,
-  Trophy,
-  ArrowDownCircle,
-  PlusCircle
+  Trophy
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
@@ -178,19 +177,6 @@ export const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose?: () => 
       </div>
 
       <nav className="flex-grow px-2 overflow-y-auto no-scrollbar py-3">
-        {/* Prominent Deposit Button for Users */}
-        {!isAdmin && (
-          <div className="px-2 mb-4">
-            <Link 
-              to="/user/wallet/deposit" 
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-600 text-white shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-all group"
-            >
-              <ArrowDownCircle size={16} className="group-hover:translate-y-0.5 transition-transform" />
-              <span className="font-black text-[9px] uppercase tracking-widest">Add Deposit</span>
-            </Link>
-          </div>
-        )}
-
         {menuStructure.map((item) => (
           <NavItem 
             key={item.label}

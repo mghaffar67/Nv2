@@ -1,3 +1,4 @@
+
 import { dbNode } from '../../utils/db';
 
 /**
@@ -8,11 +9,9 @@ export const settingsController = {
   updateCompanyProfile: async (req: any, res: any) => {
     try {
       const { appName, supportPhone, whatsappNumber, supportEmail, address } = req.body;
-      // Fix: Added await to async db call
-      const config = await dbNode.getConfig();
+      const config = dbNode.getConfig();
 
       // Identity Logic: Keep old assets if new ones aren't provided
-      // Fix: Property access on awaited config object
       const updatedBranding = {
         ...config.branding,
         companyName: appName || config.branding.companyName,
@@ -31,13 +30,11 @@ export const settingsController = {
       // Sync with Master Registry
       const newConfig = {
         ...config,
-        // Fix: Property access on awaited config object
         appName: appName || config.appName,
         branding: updatedBranding
       };
 
-      // Fix: Added await to async db call
-      await dbNode.saveConfig(newConfig);
+      dbNode.saveConfig(newConfig);
 
       return res.status(200).json({
         success: true,
