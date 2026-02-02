@@ -41,6 +41,7 @@ import Plans from './pages/user/Plans';
 import PlanHistory from './pages/user/PlanHistory';
 import MyTeam from './pages/user/MyTeam';
 import Wallet from './pages/user/Wallet';
+import Deposit from './pages/user/finance/Deposit';
 import Withdraw from './pages/user/finance/Withdraw';
 import Transactions from './pages/user/finance/Transactions';
 import Settings from './pages/user/Settings';
@@ -73,6 +74,7 @@ const App: React.FC = () => (
               <Route path="achievements" element={<RewardHub />} />
               <Route path="team" element={<MyTeam />} />
               <Route path="wallet" element={<Wallet />} />
+              <Route path="wallet/deposit" element={<Deposit />} />
               <Route path="wallet/withdraw" element={<Withdraw />} />
               <Route path="history" element={<Transactions />} />
               <Route path="plans" element={<Plans />} />

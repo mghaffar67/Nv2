@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
@@ -8,7 +7,7 @@ import {
   ChevronLeft
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { financeController } from '../../backend_core/controllers/financeController';
+import { api } from '../../utils/api';
 
 const LivePayouts = () => {
   const [payouts, setPayouts] = useState<any[]>([]);
@@ -18,9 +17,11 @@ const LivePayouts = () => {
     const fetchPayouts = async () => {
       setLoading(true);
       try {
-        const res = await new Promise<any>(r => financeController.getAllWithdrawals({}, { status: () => ({ json: r }) }));
-        // Only show approved payouts for public trust
+        const res = await api.get('/admin/finance/withdrawals');
+        // Filter approved ones for public feed (if allowed by api)
         setPayouts((res || []).filter((p: any) => p.status === 'approved'));
+      } catch (err) {
+        console.error("Payout sync failure");
       } finally {
         setLoading(false);
       }
@@ -110,38 +111,14 @@ const LivePayouts = () => {
                      <CheckCircle2 size={14} />
                      <span className="text-[10px] font-black uppercase tracking-widest">Processed</span>
                   </div>
-                  <p className="text-[8px] font-black text-slate-300 uppercase italic">{new Date(p.timestamp || p.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} • {p.date}</p>
+                  <p className="text-[8px] font-black text-slate-300 uppercase italic">{p.date}</p>
                </div>
             </motion.div>
           ))
         )}
-        
-        <div className="text-center pt-8">
-           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.4em] italic mb-8">End of Public Log Node</p>
-           <Link to="/register" className="h-16 px-12 bg-indigo-600 text-white rounded-[28px] font-black text-xs uppercase tracking-[0.3em] shadow-2xl active:scale-95 transition-all inline-flex items-center gap-3">
-              Start Your Journey <ArrowUpRight size={18} />
-           </Link>
-        </div>
-      </section>
-
-      {/* 3. TRUST BANNER */}
-      <section className="max-w-4xl mx-auto px-6 pt-24 grid grid-cols-1 md:grid-cols-3 gap-8">
-         <TrustPill icon={Award} title="Verified Payments" desc="Manual and automated verification by core team." />
-         <TrustPill icon={Star} title="Transparency" desc="Open logs of all successful system outflows." />
-         <TrustPill icon={ShieldCheck} title="Security" desc="Encrypted financial tunnels for all associates." />
       </section>
     </div>
   );
 };
-
-const TrustPill = ({ icon: Icon, title, desc }: any) => (
-  <div className="text-center space-y-3">
-     <div className="w-12 h-12 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center mx-auto text-indigo-600">
-        <Icon size={24} />
-     </div>
-     <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">{title}</h4>
-     <p className="text-[9px] font-bold text-slate-400 leading-relaxed px-4">{desc}</p>
-  </div>
-);
 
 export default LivePayouts;

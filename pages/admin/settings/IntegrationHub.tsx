@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -50,7 +49,7 @@ const TEMPLATES = {
   </div>
   <h2 style="font-size: 22px; font-weight: 900; color: #166534; margin-bottom: 8px;">Official Group</h2>
   <p style="font-size: 12px; color: #15803d; font-weight: 600; margin-bottom: 24px;">Join our verified community for daily earning updates and instant support.</p>
-  <a href="https://wa.me/923000000000" target="_blank" onclick="window.closeNoorPopup()" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 56px; background: #22c55e; color: white; border-radius: 20px; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; text-decoration: none; margin-bottom: 12px;">Join Community</a>
+  <a href="https://wa.me/923068665907" target="_blank" onclick="window.closeNoorPopup()" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 56px; background: #22c55e; color: white; border-radius: 20px; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; text-decoration: none; margin-bottom: 12px;">Join Community</a>
   <button onclick="window.closeNoorPopup()" style="background: none; border: none; font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 2px; cursor: pointer;">Dismiss</button>
 </div>`
 };
@@ -109,7 +108,7 @@ const IntegrationHub = () => {
   const startNew = () => {
     setEditing({
       name: '',
-      type: activeTab === 'scripts' ? 'script' : 'popup',
+      type: activeTab === 'scripts' ? 'script' : 'campaign',
       position: activeTab === 'scripts' ? 'head' : 'center_modal',
       content: '',
       isActive: true
@@ -153,7 +152,7 @@ const IntegrationHub = () => {
         <div className="xl:col-span-4 space-y-4">
            {loading ? (
              <div className="py-20 text-center"><RefreshCw className="animate-spin mx-auto text-slate-200" size={32}/></div>
-           ) : integrations.filter(i => i.type === (activeTab === 'scripts' ? 'script' : 'popup')).map(item => (
+           ) : integrations.filter(i => activeTab === 'scripts' ? i.type === 'script' : (i.type === 'campaign' || i.type === 'popup')).map(item => (
              <motion.div 
                key={item.id} 
                className={clsx(
@@ -187,12 +186,6 @@ const IntegrationHub = () => {
                 </div>
              </motion.div>
            ))}
-           {!loading && integrations.filter(i => i.type === (activeTab === 'scripts' ? 'script' : 'popup')).length === 0 && (
-             <div className="py-20 text-center border-4 border-dashed border-slate-50 rounded-[44px] opacity-30">
-                <Puzzle size={40} className="mx-auto mb-4" />
-                <p className="text-[10px] font-black uppercase tracking-widest italic">No Nodes Active</p>
-             </div>
-           )}
         </div>
 
         {/* Editor Column */}
@@ -241,18 +234,17 @@ const IntegrationHub = () => {
                      </div>
                   </div>
 
-                  {/* Templates for Popups */}
-                  {editing.type === 'popup' && (
+                  {editing.type === 'campaign' && (
                     <div className="space-y-4">
                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Quick Deploy Templates</p>
                        <div className="grid grid-cols-3 gap-3">
-                          <button type="button" onClick={() => setEditing({...editing, content: TEMPLATES.ALERT})} className="h-12 border-2 border-slate-100 rounded-xl flex items-center justify-center gap-2 hover:border-rose-200 hover:bg-rose-50 transition-all text-slate-400 hover:text-rose-600">
+                          <button type="button" onClick={() => setEditing({...editing, content: TEMPLATES.ALERT, name: 'System Alert'})} className="h-12 border-2 border-slate-100 rounded-xl flex items-center justify-center gap-2 hover:border-rose-200 hover:bg-rose-50 transition-all text-slate-400 hover:text-rose-600">
                              <AlertTriangle size={14} /> <span className="text-[8px] font-black uppercase">Warning</span>
                           </button>
-                          <button type="button" onClick={() => setEditing({...editing, content: TEMPLATES.OFFER})} className="h-12 border-2 border-slate-100 rounded-xl flex items-center justify-center gap-2 hover:border-amber-200 hover:bg-amber-50 transition-all text-slate-400 hover:text-amber-600">
+                          <button type="button" onClick={() => setEditing({...editing, content: TEMPLATES.OFFER, name: 'Promo Offer'})} className="h-12 border-2 border-slate-100 rounded-xl flex items-center justify-center gap-2 hover:border-amber-200 hover:bg-amber-50 transition-all text-slate-400 hover:text-amber-600">
                              <Gift size={14} /> <span className="text-[8px] font-black uppercase">Promo</span>
                           </button>
-                          <button type="button" onClick={() => setEditing({...editing, content: TEMPLATES.WHATSAPP})} className="h-12 border-2 border-slate-100 rounded-xl flex items-center justify-center gap-2 hover:border-green-200 hover:bg-green-50 transition-all text-slate-400 hover:text-green-600">
+                          <button type="button" onClick={() => setEditing({...editing, content: TEMPLATES.WHATSAPP, name: 'WhatsApp Link'})} className="h-12 border-2 border-slate-100 rounded-xl flex items-center justify-center gap-2 hover:border-green-200 hover:bg-green-50 transition-all text-slate-400 hover:text-green-600">
                              <MessageSquare size={14} /> <span className="text-[8px] font-black uppercase">Community</span>
                           </button>
                        </div>
@@ -272,13 +264,6 @@ const IntegrationHub = () => {
                         placeholder="<!-- Paste your code here -->"
                      />
                   </div>
-
-                  {showPreview && editing.content && (
-                    <div className="p-10 bg-slate-50 border border-slate-100 rounded-[32px] flex items-center justify-center min-h-[200px] relative overflow-hidden">
-                       <div className="absolute top-4 left-6 text-[8px] font-black text-slate-300 uppercase tracking-widest">Preview Area</div>
-                       <div dangerouslySetInnerHTML={{ __html: editing.content }} />
-                    </div>
-                  )}
 
                   <div className="flex gap-4">
                      <button 

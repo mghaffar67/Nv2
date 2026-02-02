@@ -1,10 +1,8 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Zap, CheckCircle2, Clock, Eye, Edit3, Trash2, X, Filter, RefreshCw, Briefcase, FileText, FileDown, Image as ImageIcon, Maximize2 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { workController } from '../../backend_core/controllers/workController';
-import { dbNode } from '../../backend_core/utils/db';
+import { api } from '../../utils/api';
 import TaskFormModal from '../../components/admin/TaskFormModal';
 
 const CATEGORIES = [
@@ -87,10 +85,12 @@ const WorkManager = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const taskRes = dbNode.getTasks();
+      const taskRes = await api.get('/admin/tasks');
       setTasks(Array.isArray(taskRes) ? taskRes : []);
-      const subsRes = await new Promise<any[]>(r => workController.getAllSubmissions({}, { status: () => ({ json: r }) }));
+      const subsRes = await api.get('/work/all-submissions'); // Update to real endpoint if different
       setSubmissions(Array.isArray(subsRes) ? subsRes : []);
+    } catch (e) {
+      console.error("Data fetch error");
     } finally {
       setLoading(false);
     }
@@ -100,9 +100,7 @@ const WorkManager = () => {
 
   const handleReview = async (sub: any, action: 'approved' | 'rejected') => {
     try {
-      await workController.reviewSubmission({ 
-        body: { userId: sub.userId, submissionId: sub.id, status: action, reward: sub.reward } 
-      }, { status: () => ({ json: () => {} }) });
+      await api.post('/work/review', { userId: sub.userId, submissionId: sub.id, status: action, reward: sub.reward });
       fetchData();
     } catch (err) { alert("Review synchronization failed."); }
   };
@@ -154,7 +152,7 @@ const WorkManager = () => {
               {filteredTasks.map(task => (
                 <div key={task.id} className="bg-white p-6 rounded-[40px] border border-slate-100 shadow-sm flex flex-col group hover:border-indigo-200 transition-all">
                    <div className="flex justify-between items-start mb-6">
-                      <div className="w-12 h-12 bg-slate-900 text-sky-400 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                      <div className="w-12 h-12 bg-slate-950 text-sky-400 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                         <Zap size={22} fill="currentColor"/>
                       </div>
                       <div className="text-right">
@@ -169,7 +167,7 @@ const WorkManager = () => {
                    <p className="text-[10px] font-medium text-slate-400 line-clamp-2 leading-relaxed mb-6 italic flex-grow">"{task.instruction}"</p>
                    <div className="flex gap-2 border-t border-slate-50 pt-4 mt-auto">
                       <button onClick={() => { setSelectedTask(task); setIsTaskModalOpen(true); }} className="flex-1 h-11 bg-slate-50 text-slate-400 rounded-xl font-black text-[9px] uppercase flex items-center justify-center gap-2 hover:bg-slate-900 hover:text-white transition-all"><Edit3 size={14}/> Edit</button>
-                      <button onClick={() => {if(window.confirm('Delete task node?')) { const db = tasks.filter(t => t.id !== task.id); dbNode.saveTasks(db); fetchData(); }}} className="w-11 h-11 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center active:scale-90 transition-all"><Trash2 size={16}/></button>
+                      <button onClick={async () => {if(window.confirm('Delete task node?')) { try { await api.delete(`/admin/tasks/${task.id}`); fetchData(); } catch(e){} }}} className="w-11 h-11 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center active:scale-90 transition-all"><Trash2 size={16}/></button>
                    </div>
                 </div>
               ))}

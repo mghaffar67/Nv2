@@ -13,7 +13,9 @@ const __dirname = path.dirname(__filename);
 import authRoutes from './plugins/auth/routes';
 import financeRoutes from './plugins/finance/routes';
 import workRoutes from './plugins/work/routes';
-import systemRoutes from './plugins/system/routes';
+import systemRoutes from './routes/systemRoutes';
+import rewardRoutes from './plugins/reward/routes';
+import adminRoutes from './plugins/admin/routes';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -26,16 +28,17 @@ app.get('/health', (req, res) => {
   res.status(200).json({
     status: "Healthy",
     node: "Production Cluster",
-    uptime: (process as any).uptime(),
     timestamp: new Date().toISOString()
   });
 });
 
-// Plugin Mounting
+// Primary Plugin Mounting - Unified /api prefix
 app.use('/api/auth', authRoutes);
 app.use('/api/finance', financeRoutes);
 app.use('/api/work', workRoutes);
-app.use('/api/system', systemRoutes);
+app.use('/api/system', systemRoutes); // Correctly mounts /api/system/public/...
+app.use('/api/rewards', rewardRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Production Build Assets
 const DIST_PATH = path.join(__dirname, '../dist');

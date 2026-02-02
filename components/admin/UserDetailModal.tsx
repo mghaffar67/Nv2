@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -8,7 +7,7 @@ import {
   Trash2, Eye, Network, CreditCard, ChevronRight
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { adminController } from '../../backend_core/controllers/adminController';
+import { api } from '../../utils/api';
 
 interface UserDetailModalProps {
   isOpen: boolean;
@@ -42,30 +41,36 @@ const UserDetailModal = ({ isOpen, onClose, user, onUpdate }: UserDetailModalPro
 
   const handleUpdateUser = async () => {
     setLoading(true);
-    // Simulate API update
-    const db = JSON.parse(localStorage.getItem('noor_v3_master_registry') || '[]');
-    const index = db.findIndex((u: any) => u.id === user.id);
-    if (index !== -1) {
-      db[index] = { ...db[index], ...formData };
-      localStorage.setItem('noor_v3_master_registry', JSON.stringify(db));
-    }
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      // In a production app, we would have a dedicated PUT /api/admin/users/:id endpoint
+      // For now we simulate the sync logic that doesn't use Node imports
+      const db = JSON.parse(localStorage.getItem('noor_v3_master_registry') || '[]');
+      const index = db.findIndex((u: any) => u.id === user.id);
+      if (index !== -1) {
+        db[index] = { ...db[index], ...formData };
+        localStorage.setItem('noor_v3_master_registry', JSON.stringify(db));
+      }
       onUpdate();
       onClose();
-    }, 600);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleBalanceAdjust = async (type: 'add' | 'deduct') => {
     if (!adjustment || Number(adjustment) <= 0) return alert("Please enter a valid amount.");
     setLoading(true);
     try {
-      await adminController.editUserBalance({
-        body: { userId: user.id, amount: adjustment, action: type }
-      }, { status: () => ({ json: () => {} }) });
+      await api.put('/admin/users/balance', {
+        userId: user.id,
+        amount: adjustment,
+        action: type
+      });
       setAdjustment('');
       onUpdate();
       alert("Account balance adjusted successfully.");
+    } catch (err: any) {
+      alert(err.message || "Adjustment failed");
     } finally {
       setLoading(false);
     }

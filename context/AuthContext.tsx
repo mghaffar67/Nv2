@@ -38,38 +38,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const syncUser = () => {
+  const syncUser = async () => {
     const token = localStorage.getItem('noor_token');
     const cachedUserStr = localStorage.getItem('noor_user');
     
     if (token && cachedUserStr) {
       try {
-        const parsedUser = JSON.parse(cachedUserStr);
-        const masterDbStr = localStorage.getItem('noor_v3_master_registry');
-        if (masterDbStr) {
-          const masterDb = JSON.parse(masterDbStr);
-          const liveUser = masterDb.find((u: any) => u.id === parsedUser.id);
-          
-          if (liveUser) {
-            const { password: _, ...safeUser } = liveUser;
-            // Update session cache and state
-            localStorage.setItem('noor_user', JSON.stringify(safeUser));
-            setUser(safeUser);
-          } else {
-            setUser(parsedUser);
-          }
+        // First try to get fresh data from API
+        const res = await api.get('/auth/me');
+        if (res && res.user) {
+          localStorage.setItem('noor_user', JSON.stringify(res.user));
+          setUser(res.user);
         } else {
-          setUser(parsedUser);
+          // Fallback to cache if API fails
+          setUser(JSON.parse(cachedUserStr));
         }
       } catch (e) {
-        console.error("Identity sync failed.");
+        console.warn("Identity sync from API failed, using cache.");
+        setUser(JSON.parse(cachedUserStr));
       }
     }
   };
 
   useLayoutEffect(() => {
-    syncUser();
-    setLoading(false);
+    syncUser().finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
