@@ -1,14 +1,13 @@
-
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, User, Wallet, Users, Info, 
   Calendar, Phone, ShieldCheck, Mail,
   TrendingUp, TrendingDown, Edit3, Save,
-  Zap, Award, Briefcase
+  Zap, Award, Briefcase, RefreshCw
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { adminController } from '../../backend_core/controllers/adminController';
+import { api } from '../../utils/api';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -27,16 +26,16 @@ const UserProfileModal = ({ isOpen, onClose, user, onUpdate }: UserProfileModalP
     if (!balanceAmount || isNaN(Number(balanceAmount))) return;
     setLoading(true);
     try {
-      await new Promise<any>((resolve) => {
-        adminController.editUserBalance({ 
-          body: { userId: user.id, amount: balanceAmount, action } 
-        }, {
-          status: () => ({ json: (data: any) => resolve(data) })
-        });
+      await api.put('/admin/users/balance', { 
+        userId: user.id, 
+        amount: balanceAmount, 
+        action 
       });
       setIsEditingBalance(false);
       setBalanceAmount('');
       onUpdate();
+    } catch (err: any) {
+      alert(err.message || "Balance adjustment failed.");
     } finally {
       setLoading(false);
     }
@@ -74,9 +73,9 @@ const UserProfileModal = ({ isOpen, onClose, user, onUpdate }: UserProfileModalP
                     </span>
                     <span className={clsx(
                       "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest",
-                      user.status === 'Active' ? "bg-green-500/20 text-green-400" : "bg-rose-500/20 text-rose-400"
+                      !user.isBanned ? "bg-green-500/20 text-green-400" : "bg-rose-500/20 text-rose-400"
                     )}>
-                      {user.status}
+                      {!user.isBanned ? 'Active' : 'Suspended'}
                     </span>
                   </div>
                 </div>
@@ -125,13 +124,13 @@ const UserProfileModal = ({ isOpen, onClose, user, onUpdate }: UserProfileModalP
                           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
                              <Zap size={12} /> Active Plan
                           </p>
-                          <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{user.plan || 'No Active Plan'}</p>
+                          <p className="text-sm font-black text-slate-800 uppercase tracking-tight">{user.currentPlan || 'No Active Plan'}</p>
                        </div>
                        <div className="p-5 bg-slate-50 rounded-3xl border border-slate-100">
                           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                             <Calendar size={12} /> Member Since
+                             <Calendar size={12} /> Created
                           </p>
-                          <p className="text-sm font-black text-slate-800">12 May, 2024</p>
+                          <p className="text-sm font-black text-slate-800">{new Date(user.createdAt).toLocaleDateString()}</p>
                        </div>
                     </div>
                   </motion.div>
@@ -142,7 +141,7 @@ const UserProfileModal = ({ isOpen, onClose, user, onUpdate }: UserProfileModalP
                     <div className="bg-slate-900 p-8 rounded-[36px] text-white flex justify-between items-center shadow-xl">
                        <div>
                          <p className="text-sky-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Wallet Liquidity</p>
-                         <h4 className="text-4xl font-black tracking-tight leading-none">Rs. {user.wallet?.toLocaleString()}</h4>
+                         <h4 className="text-4xl font-black tracking-tight leading-none">Rs. {(user.balance || 0).toLocaleString()}</h4>
                        </div>
                        <button onClick={() => setIsEditingBalance(true)} className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-sky-400 hover:bg-white hover:text-slate-900 transition-all">
                           <Edit3 size={20} />
@@ -161,26 +160,15 @@ const UserProfileModal = ({ isOpen, onClose, user, onUpdate }: UserProfileModalP
                             />
                          </div>
                          <div className="grid grid-cols-2 gap-3">
-                            <button onClick={() => handleEditBalance('add')} className="h-11 bg-green-500 text-white rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2">
-                               <TrendingUp size={14} /> Add Funds
+                            <button onClick={() => handleEditBalance('add')} disabled={loading} className="h-11 bg-green-500 text-white rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2">
+                               {loading ? <RefreshCw className="animate-spin" size={14}/> : <><TrendingUp size={14} /> Add Funds</>}
                             </button>
-                            <button onClick={() => handleEditBalance('deduct')} className="h-11 bg-rose-500 text-white rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2">
-                               <TrendingDown size={14} /> Deduct
+                            <button onClick={() => handleEditBalance('deduct')} disabled={loading} className="h-11 bg-rose-500 text-white rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2">
+                               {loading ? <RefreshCw className="animate-spin" size={14}/> : <><TrendingDown size={14} /> Deduct</>}
                             </button>
                          </div>
                       </motion.div>
                     )}
-
-                    <div className="grid grid-cols-2 gap-4">
-                       <div className="p-4 bg-green-50 rounded-3xl border border-green-100">
-                          <p className="text-[9px] font-black text-green-700 uppercase mb-1">Total Earned</p>
-                          <p className="text-lg font-black text-slate-800">Rs. 45,000</p>
-                       </div>
-                       <div className="p-4 bg-rose-50 rounded-3xl border border-rose-100">
-                          <p className="text-[9px] font-black text-rose-700 uppercase mb-1">Withdrawn</p>
-                          <p className="text-lg font-black text-slate-800">Rs. 12,000</p>
-                       </div>
-                    </div>
                   </motion.div>
                 )}
 
@@ -190,24 +178,20 @@ const UserProfileModal = ({ isOpen, onClose, user, onUpdate }: UserProfileModalP
                        <div className="flex items-center gap-4">
                          <div className="p-3 bg-sky-500 text-white rounded-2xl"><Users size={20} /></div>
                          <div>
-                            <h4 className="text-sm font-black text-sky-900">Referral Network</h4>
-                            <p className="text-[10px] font-bold text-sky-600 uppercase">12 Active Directs</p>
+                            <h4 className="text-sm font-black text-sky-900">Referral Code</h4>
+                            <p className="text-[10px] font-bold text-sky-600 uppercase">{user.referralCode}</p>
                          </div>
                        </div>
-                       <span className="text-xl font-black text-sky-600">Lvl 3</span>
                     </div>
-
                     <div className="space-y-3">
-                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Recent Tasks</p>
-                       {[1, 2, 3].map((i) => (
-                         <div key={i} className="bg-slate-50 p-4 rounded-2xl flex items-center justify-between border border-slate-100">
-                            <div className="flex items-center gap-3">
-                               <Briefcase size={16} className="text-slate-300" />
-                               <span className="text-[11px] font-black text-slate-700 uppercase tracking-tight">Handwriting Task #882</span>
-                            </div>
-                            <span className="text-[10px] font-black text-green-600">+Rs. 25</span>
-                         </div>
-                       ))}
+                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Engagement Metrics</p>
+                       <div className="p-4 bg-slate-50 rounded-2xl flex items-center justify-between border border-slate-100">
+                          <div className="flex items-center gap-3">
+                             <Briefcase size={16} className="text-slate-300" />
+                             <span className="text-[11px] font-black text-slate-700 uppercase tracking-tight">Work Submissions</span>
+                          </div>
+                          <span className="text-[10px] font-black text-indigo-600">{(user.workSubmissions || []).length}</span>
+                       </div>
                     </div>
                   </motion.div>
                 )}
@@ -216,11 +200,8 @@ const UserProfileModal = ({ isOpen, onClose, user, onUpdate }: UserProfileModalP
 
             {/* Bottom Actions */}
             <div className="p-8 pt-0 flex gap-4">
-               <button className="flex-1 h-14 bg-slate-900 text-white rounded-[24px] font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center justify-center gap-2">
-                 Audit Sessions
-               </button>
-               <button className="h-14 px-8 bg-rose-50 text-rose-600 rounded-[24px] font-black text-[10px] uppercase tracking-widest border border-rose-100">
-                 Ban ID
+               <button onClick={onClose} className="flex-1 h-14 bg-slate-900 text-white rounded-[24px] font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center justify-center gap-2">
+                 Close Profile
                </button>
             </div>
           </motion.div>

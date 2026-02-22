@@ -1,5 +1,4 @@
-
-import React, { createContext, useContext, useState, useLayoutEffect } from 'react';
+import React, { createContext, useContext, useState, useLayoutEffect, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../utils/api';
 
@@ -16,6 +15,16 @@ interface User {
   lastCheckIn?: string;
   streak?: number;
   isBanned?: boolean;
+  workSubmissions?: any[];
+  workHistory?: any[]; // New Array for detailed auditing
+  transactions?: any[];
+  planExpiry?: string;
+  purchaseHistory?: any[];
+  withdrawalInfo?: {
+    accountNumber: string;
+    accountTitle: string;
+    gateway: string;
+  };
 }
 
 interface AuthContextType {
@@ -25,6 +34,7 @@ interface AuthContextType {
   register: (name: string, email: string, phone: string, password: string, referralCode?: string) => Promise<void>;
   demoLogin: (role: 'user' | 'admin') => Promise<void>;
   logout: () => void;
+  syncUser: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,35 +44,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // SECURE SESSION RECOVERY PROTOCOL (For Vercel Deployment)
-  useLayoutEffect(() => {
-    const recoverSession = async () => {
-      const token = localStorage.getItem('noor_token');
-      const cachedUserStr = localStorage.getItem('noor_user');
-      
-      if (token && cachedUserStr) {
-        try {
-          const parsedUser = JSON.parse(cachedUserStr);
-          // Redundancy check: Sync user state with master database to ensure up-to-date data
-          const masterDb = JSON.parse(localStorage.getItem('noor_v3_master_registry') || '[]');
-          const liveUser = masterDb.find((u: any) => u.id === parsedUser.id);
-          
-          if (liveUser) {
-            const { password: _, ...safeUser } = liveUser;
-            setUser(safeUser);
-            localStorage.setItem('noor_user', JSON.stringify(safeUser));
-          } else {
-            setUser(parsedUser);
-          }
-        } catch (e) {
-          console.error("Session recovery failed.");
-          localStorage.removeItem('noor_token');
-          localStorage.removeItem('noor_user');
+  const syncUser = async () => {
+    const token = localStorage.getItem('noor_token');
+    const cachedUserStr = localStorage.getItem('noor_user');
+    
+    if (token && cachedUserStr) {
+      try {
+        const res = await api.get('/auth/me');
+        if (res && res.user) {
+          localStorage.setItem('noor_user', JSON.stringify(res.user));
+          setUser(res.user);
+        } else {
+          setUser(JSON.parse(cachedUserStr));
         }
+      } catch (e) {
+        setUser(JSON.parse(cachedUserStr));
       }
-      setLoading(false);
-    };
-    recoverSession();
+    }
+  };
+
+  useLayoutEffect(() => {
+    syncUser().finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('noor_db_update', syncUser);
+    return () => window.removeEventListener('noor_db_update', syncUser);
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -116,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, demoLogin, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, demoLogin, logout, syncUser }}>
       {children}
     </AuthContext.Provider>
   );

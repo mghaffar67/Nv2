@@ -1,94 +1,92 @@
 import { dbNode } from '../utils/db';
 
-/**
- * Noor Official V3 - Gamification Controller
- * Refined for dynamic reward pool management.
- */
 export const gamificationController = {
   claimReward: async (req: any, res: any) => {
     try {
       const { userId } = req.body;
-      const user = dbNode.findUserById(userId);
-
-      if (!user) {
-        return res.status(404).json({ success: false, message: "User account not found." });
-      }
+      const config = await dbNode.getConfig();
+      const streakRewards = config.streakRewards || [5, 10, 15, 20, 25, 30, 100];
+      
+      const user = await dbNode.findUserById(userId);
+      if (!user) return res.status(404).json({ success: false, message: "Registry node lost." });
 
       const now = new Date();
-      const todayStr = now.toISOString().split('T')[0];
+      const todayStr = now.toDateString();
       
-      // 1. DUPLICATE CLAIM CHECK
+      // Verification: Prevent duplicate daily claims
       if (user.lastCheckIn) {
-        const lastClaimDate = new Date(user.lastCheckIn).toISOString().split('T')[0];
-        if (lastClaimDate === todayStr) {
-          return res.status(400).json({ 
-            success: false, 
-            message: "Aap aaj ka reward pehle hi le chuke hain. Kal dobara koshish karein." 
-          });
+        const lastClaimStr = new Date(user.lastCheckIn).toDateString();
+        if (lastClaimStr === todayStr) {
+          return res.status(400).json({ success: false, message: "Aap aaj ka reward pehle hi le chuke hain." });
         }
       }
 
-      // 2. STREAK LOGIC (New User Friendly & Forgiving Window)
-      let newStreak = 1;
-      
+      // Logic: Calculate streak continuity
+      let newStreak = (user.streak || 0) + 1;
       if (user.lastCheckIn) {
         const lastDate = new Date(user.lastCheckIn);
-        const diffMs = now.getTime() - lastDate.getTime();
-        const diffHours = diffMs / (1000 * 60 * 60);
+        const diffTime = now.getTime() - lastDate.getTime();
+        const diffDays = diffTime / (1000 * 60 * 60 * 24);
 
-        // 48-hour window to keep the streak alive (handles midnight edge cases)
-        if (diffHours <= 48) {
-          newStreak = (user.streak || 0) + 1;
-          if (newStreak > 7) newStreak = 1; // Cycle resets after 7 days
-        } else {
-          newStreak = 1; // Streak broken
+        if (diffDays > 2) { 
+          newStreak = 1; 
+        } else if (newStreak > 7) {
+          newStreak = 1; 
         }
       } else {
-        newStreak = 1; // First claim ever
+        newStreak = 1;
       }
 
-      // 3. DYNAMIC REWARD CALCULATION (From Config)
-      const config = dbNode.getConfig();
-      const rewardsPool = config.streakRewards || [5, 10, 15, 20, 25, 30, 100];
-      
-      // Ensure we don't index out of bounds
-      const rewardAmount = Number(rewardsPool[newStreak - 1]) || 5;
-
-      // 4. LEDGER UPDATE
+      const rewardAmount = Number(streakRewards[newStreak - 1]) || 5;
       const updatedBalance = (Number(user.balance) || 0) + rewardAmount;
       
+      // Track Reward History (Last 5 Entries)
+      const claimEntry = {
+        amount: rewardAmount,
+        day: newStreak,
+        timestamp: now.toISOString(),
+        id: `RWD-${Math.random().toString(36).substr(2, 4).toUpperCase()}`
+      };
+      
+      const currentHistory = user.rewardHistory || [];
+      const updatedHistory = [claimEntry, ...currentHistory].slice(0, 5);
+
+      // Log Transaction in Ledger
       const newTrx = {
         id: `STRK-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
         type: 'reward',
         amount: rewardAmount,
         status: 'approved',
-        gateway: `Hazari Inam`,
-        note: `Day ${newStreak} Consistency Reward`,
-        date: todayStr,
-        timestamp: now.toISOString()
+        gateway: `Daily Day ${newStreak}`,
+        date: now.toISOString().split('T')[0],
+        timestamp: now.toISOString(),
+        note: `Daily Login Bonus: Day ${newStreak}`
       };
 
       const transactions = user.transactions || [];
       transactions.unshift(newTrx);
 
-      dbNode.updateUser(userId, { 
+      const updatedUser = await dbNode.updateUser(userId, {
         balance: updatedBalance,
         streak: newStreak,
         lastCheckIn: now.toISOString(),
+        rewardHistory: updatedHistory,
         transactions
       });
-      
+
+      if (updatedUser) {
+        // No need for localStorage or window event in the backend
+      }
+
       return res.status(200).json({
         success: true,
-        message: `Mubarak! Day ${newStreak} ka Inam Rs. ${rewardAmount} aapke wallet mein add kar diya gaya hai.`,
         rewardAmount,
         newStreak,
-        updatedBalance
+        history: updatedHistory
       });
-
     } catch (err) {
-      console.error("Gamification Protocol Error:", err);
-      return res.status(500).json({ success: false, message: "System logic error. Try again." });
+      console.error("Streak Audit Failure:", err);
+      return res.status(500).json({ success: false, message: "System Logic Error." });
     }
   }
 };

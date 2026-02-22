@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import { 
@@ -7,7 +6,8 @@ import {
   Lock,
   Users,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  ShieldAlert
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion } from 'framer-motion';
@@ -17,7 +17,7 @@ const SettingsLink = ({ to, label, icon: Icon }: { to: string; label: string; ic
     <NavLink 
       to={to} 
       className={({ isActive }) => clsx(
-        "flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative group shrink-0 border",
+        "flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative group shrink-0 border min-w-[140px] lg:min-w-0",
         isActive 
           ? "bg-slate-900 text-white border-slate-900 shadow-xl" 
           : "text-slate-500 bg-white border-slate-100 hover:bg-slate-50"
@@ -34,7 +34,9 @@ const SettingsLayout = () => {
     <div className="space-y-6 animate-fade-in max-w-7xl mx-auto px-1.5 pb-20">
       <div className="px-2">
          <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase italic leading-none">System <span className="text-indigo-600">Settings.</span></h1>
-         <p className="text-slate-400 font-bold uppercase tracking-widest text-[8px] mt-2 italic">General controls and brand management</p>
+         <p className="text-slate-400 font-bold uppercase tracking-widest text-[8px] mt-2 flex items-center gap-2 italic">
+            <ShieldAlert size={12} className="text-indigo-500" /> Platform Governance Hub
+         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -48,8 +50,10 @@ const SettingsLayout = () => {
           </div>
         </div>
 
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="lg:col-span-9 bg-white rounded-[40px] border border-slate-100 shadow-sm p-6 md:p-10 min-h-[500px]">
-          <Outlet />
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="lg:col-span-9">
+           <div className="bg-white rounded-[40px] md:rounded-[56px] border border-slate-100 shadow-sm p-6 md:p-10 min-h-[500px]">
+              <Outlet />
+           </div>
         </motion.div>
       </div>
     </div>

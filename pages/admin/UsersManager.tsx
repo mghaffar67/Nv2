@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Users, UserCog, Gem, ShieldCheck, Filter, Search, Smartphone, Wallet
@@ -6,8 +5,8 @@ import {
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import UserDetailModal from '../../components/admin/UserDetailModal';
-import { dbNode } from '../../backend_core/utils/db';
 import DataTable from '../../components/ui/DataTable';
+import { api } from '../../utils/api';
 
 const UserManager = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,13 +15,18 @@ const UserManager = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const refreshData = () => {
+  const refreshData = async () => {
     setLoading(true);
-    const list = dbNode.getUsers();
-    // Filter out Admin and Manager roles from Client User List
-    const clientUsers = (list || []).filter((u: any) => u.role === 'user');
-    setUsers(clientUsers);
-    setLoading(false);
+    try {
+      const list = await api.get('/admin/users');
+      // Filter out non-user roles from the standard management list if desired
+      const clientUsers = (list || []).filter((u: any) => u.role === 'user');
+      setUsers(clientUsers);
+    } catch (err) {
+      console.error("Failed to fetch users");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { refreshData(); }, []);
@@ -30,8 +34,12 @@ const UserManager = () => {
   const filteredData = useMemo(() => {
     return users.filter(user => {
       const term = searchTerm.toLowerCase();
-      const matchesSearch = user.name.toLowerCase().includes(term) || user.email.toLowerCase().includes(term) || user.phone.includes(term);
-      const matchesFilter = activeFilter === 'All' || (activeFilter === 'Active' && !user.isBanned) || (activeFilter === 'Banned' && user.isBanned);
+      const matchesSearch = (user.name?.toLowerCase().includes(term)) || 
+                           (user.email?.toLowerCase().includes(term)) || 
+                           (user.phone?.includes(term));
+      const matchesFilter = activeFilter === 'All' || 
+                           (activeFilter === 'Active' && !user.isBanned) || 
+                           (activeFilter === 'Banned' && user.isBanned);
       return matchesSearch && matchesFilter;
     });
   }, [searchTerm, activeFilter, users]);

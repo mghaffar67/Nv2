@@ -1,182 +1,157 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Trophy, Zap, Users, TrendingUp, Lock, 
-  CheckCircle2, Loader2, Sparkles, History,
-  ChevronRight, ArrowRight, RefreshCw, Star,
-  Award, ShieldCheck, Gift
-} from 'lucide-react';
+import { Trophy, Star, Zap, ChevronRight, CheckCircle2, Loader2, ArrowLeft, Gift, ShieldCheck, RefreshCw, Users, Briefcase, Target, Award, Sparkles, MapPin } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import confetti from 'canvas-confetti';
-import { clsx } from 'clsx';
 import { api } from '../../utils/api';
+import { clsx } from 'clsx';
 import { useAuth } from '../../context/AuthContext';
 
 const RewardHub = () => {
   const { user } = useAuth();
-  const [missions, setMissions] = useState<any[]>([]);
+  const [achievements, setAchievements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [claimingId, setClaimingId] = useState<string | null>(null);
+  const [claiming, setClaiming] = useState<string | null>(null);
 
-  const fetchUserMissions = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
-      // Logic simulated via controller helper for local consistency
-      const res = await api.get('/system/user/missions');
-      setMissions(res || []);
+      const res = await api.get('/rewards/my-achievements');
+      setAchievements(res || []);
     } catch (e) {
-      console.error("Mission audit failed.");
+      console.error("Audit failure.");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchUserMissions(); }, []);
+  useEffect(() => { fetchData(); }, []);
 
-  const handleClaim = async (mission: any) => {
-    if (claimingId || mission.isClaimed || !mission.canClaim) return;
-    setClaimingId(mission.id);
+  const handleClaim = async (reward: any) => {
+    if (claiming) return;
+    setClaiming(reward.id);
     try {
-      await api.post('/system/user/missions/claim', { missionId: mission.id });
+      await api.post('/rewards/claim', { rewardId: reward.id });
       confetti({ 
-        particleCount: 200, spread: 80, origin: { y: 0.6 },
-        colors: ['#4A6CF7', '#00D1FF', '#FFD700', '#FFFFFF']
+        particleCount: 150, 
+        spread: 70, 
+        origin: { y: 0.8 }, 
+        colors: ['#6366f1', '#10b981', '#f59e0b']
       });
-      await fetchUserMissions();
-      // Simple force refresh of user context balance
-      window.dispatchEvent(new Event('noor_db_update'));
-    } catch (err: any) {
-      alert(err.message || "Claim Node Rejected.");
-    } finally {
-      setClaimingId(null);
+      fetchData();
+    } catch (e: any) { 
+      alert(e.message); 
+    } finally { 
+      setClaiming(null); 
     }
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto pb-32 space-y-10 animate-fade-in px-4">
-      
-      {/* 1. HERO ACHIEVEMENTS HEADER */}
-      <section className="relative bg-slate-950 p-10 md:p-16 rounded-[60px] md:rounded-[80px] text-center overflow-hidden shadow-2xl border-b-[10px] border-indigo-600">
-         <div className="absolute inset-0 opacity-20">
-            <img src="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?q=80&w=2070" className="w-full h-full object-cover grayscale" alt="HUD" />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent" />
+    <div className="w-full max-w-4xl mx-auto pb-24 space-y-6 animate-fade-in px-1">
+      <header className="flex items-center justify-between pt-2 px-1">
+        <Link to="/user/dashboard" className="p-2 bg-white rounded-xl shadow-sm border border-slate-100 text-slate-400 active:scale-90 transition-all"><ArrowLeft size={18} /></Link>
+        <h1 className="text-lg font-black text-slate-900 tracking-tighter italic uppercase leading-none">Bonus <span className="text-indigo-600">Hub.</span></h1>
+        <button onClick={fetchData} className="w-9 h-9 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-slate-400 shadow-sm">
+           <RefreshCw size={16} className={clsx(loading && "animate-spin")} />
+        </button>
+      </header>
+
+      {/* Hero Achievement Node */}
+      <div className="bg-slate-950 p-6 md:p-8 rounded-[32px] shadow-xl relative overflow-hidden mx-1">
+         <div className="absolute top-0 right-0 p-6 opacity-5 rotate-12 scale-110 text-indigo-400"><Trophy size={100}/></div>
+         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-3 text-center md:text-left">
+              <p className="text-[7px] font-black text-indigo-400 uppercase tracking-[0.3em] italic leading-none">SYSTEM MILESTONES</p>
+              <h2 className="text-3xl font-black text-white italic tracking-tighter leading-none">Progress <span className="text-sky-400">Yield.</span></h2>
+              <div className="flex flex-wrap justify-center md:justify-start items-center gap-2">
+                 <div className="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg text-[7px] font-black uppercase tracking-widest border border-emerald-500/20">
+                    SECURE NODE
+                 </div>
+                 <div className="px-3 py-1 bg-white/5 text-slate-400 rounded-lg text-[7px] font-black uppercase tracking-widest border border-white/5">
+                    LIFETIME YIELD: Rs. 0
+                 </div>
+              </div>
+            </div>
+            <div className="shrink-0 flex items-center gap-3 bg-white/5 p-4 rounded-2xl border border-white/5 backdrop-blur-md">
+               <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg"><Star size={20} fill="currentColor" /></div>
+               <div>
+                  <p className="text-[7px] font-black text-slate-500 uppercase">Associate Rank</p>
+                  <p className="text-base font-black text-white italic tracking-tight uppercase">Elite Tier</p>
+               </div>
+            </div>
          </div>
-         
-         <div className="relative z-10 space-y-6">
-            <motion.div 
-               initial={{ scale: 0 }} animate={{ scale: 1 }}
-               className="w-24 h-24 bg-white/10 backdrop-blur-xl rounded-[40px] border border-white/20 flex items-center justify-center mx-auto mb-8 shadow-2xl"
-            >
-               <Trophy size={48} className="text-amber-400 animate-pulse" />
-            </motion.div>
-            <h1 className="text-5xl md:text-8xl font-black text-white italic tracking-tighter uppercase leading-[0.8]">
-              Achievement <br/><span className="text-indigo-500">Node.</span>
-            </h1>
-            <p className="text-slate-500 font-bold uppercase tracking-[0.4em] text-[10px] md:text-sm italic">Synchronize goals & unlock premium PKR yield</p>
+      </div>
+
+      {/* Achievement Track */}
+      <section className="bg-white p-6 md:p-8 rounded-[32px] border border-slate-100 shadow-sm relative mx-1">
+         <div className="flex items-center justify-between mb-8 px-2">
+            <h3 className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2 italic"><Target size={12} className="text-indigo-500" /> Milestone Audit</h3>
+            <p className="text-[7px] font-black text-indigo-600 uppercase italic">Interactive Feed</p>
+         </div>
+
+         <div className="overflow-x-auto no-scrollbar pb-6">
+            <div className="flex items-center min-w-[800px] relative px-6">
+               <div className="absolute left-6 right-6 h-1 bg-slate-100 rounded-full top-[32px] -translate-y-1/2" />
+               
+               {achievements.map((reward, i) => {
+                 const isComplete = reward.currentProgress >= reward.targetValue;
+                 const isLast = i === achievements.length - 1;
+
+                 return (
+                   <div key={reward.id} className="relative flex flex-col items-center flex-1">
+                      <div className={clsx(
+                        "absolute left-0 h-1 top-[32px] -translate-y-1/2 transition-all duration-700",
+                        isComplete ? "bg-indigo-600 w-full" : "bg-transparent w-0"
+                      )} style={{ right: isLast ? '50%' : '0' }} />
+
+                      <div className="relative z-10 mb-6">
+                        <div className={clsx(
+                          "w-16 h-16 rounded-[22px] flex items-center justify-center border-4 border-white shadow-lg transition-all duration-300 transform hover:scale-105",
+                          reward.isClaimed ? "bg-emerald-500 text-white" : isComplete ? "bg-indigo-600 text-white animate-pulse shadow-indigo-100" : "bg-slate-50 text-slate-300"
+                        )}>
+                          {reward.isClaimed ? <CheckCircle2 size={24} /> : reward.type === 'referral_count' ? <Users size={24} /> : <Briefcase size={24} />}
+                        </div>
+                      </div>
+
+                      <div className="text-center space-y-1">
+                         <h4 className="text-[9px] font-black text-slate-800 uppercase tracking-tight leading-none mb-1.5">{reward.title}</h4>
+                         <p className="text-[8px] font-black text-indigo-600 italic">Rs. {reward.rewardAmount}</p>
+                         <div className="mt-3">
+                           {reward.isClaimed ? (
+                             <span className="text-[6px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50 px-2.5 py-0.5 rounded-md">Synced</span>
+                           ) : isComplete ? (
+                             <button 
+                               onClick={() => handleClaim(reward)}
+                               disabled={!!claiming}
+                               className="h-8 px-4 bg-slate-950 text-white rounded-lg font-black text-[8px] uppercase tracking-widest shadow-md active:scale-95 transition-all"
+                             >
+                               {claiming === reward.id ? <Loader2 className="animate-spin" size={12}/> : 'Claim'}
+                             </button>
+                           ) : (
+                             <div className="space-y-1.5">
+                               <p className="text-[7px] font-bold text-slate-400 uppercase">{reward.currentProgress} / {reward.targetValue}</p>
+                               <div className="w-16 h-1 bg-slate-100 rounded-full mx-auto overflow-hidden">
+                                  <motion.div initial={{ width: 0 }} animate={{ width: `${(reward.currentProgress/reward.targetValue)*100}%` }} className="h-full bg-slate-300" />
+                               </div>
+                             </div>
+                           )}
+                         </div>
+                      </div>
+                   </div>
+                 );
+               })}
+            </div>
          </div>
       </section>
 
-      {/* 2. REWARD PROGRESS GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {loading ? (
-           <div className="col-span-full py-40 text-center flex flex-col items-center">
-              <RefreshCw className="animate-spin text-indigo-500 mb-6" size={56} />
-              <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest italic">Querying Global Progress Registry...</p>
-           </div>
-        ) : missions.map((m, idx) => (
-          <motion.div 
-            key={m.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
-            className={clsx(
-              "bg-white p-8 rounded-[56px] border flex flex-col relative transition-all group overflow-hidden",
-              m.isClaimed ? "border-emerald-100 bg-emerald-50/20" : 
-              m.canClaim ? "border-indigo-100 shadow-[0_40px_80px_-20px_rgba(99,102,241,0.15)]" : "border-slate-100 shadow-sm"
-            )}
-          >
-             {m.isClaimed && (
-                <div className="absolute top-0 right-0 p-8">
-                   <div className="bg-emerald-500 text-white p-2 rounded-full shadow-lg"><CheckCircle2 size={24} /></div>
-                </div>
-             )}
-
-             <div className="flex items-center gap-6 mb-10">
-                <div className={clsx(
-                   "w-20 h-20 rounded-[30px] flex items-center justify-center shadow-xl transition-all duration-500 group-hover:scale-110",
-                   m.isClaimed ? "bg-emerald-500 text-white" : 
-                   m.canClaim ? "bg-indigo-600 text-white animate-pulse" : "bg-slate-900 text-sky-400"
-                )}>
-                   {m.type === 'TASK_COUNT' ? <Zap size={36} fill="currentColor" /> : 
-                    m.type === 'REFERRAL_COUNT' ? <Users size={36} /> :
-                    m.type === 'STREAK_DAYS' ? <Star size={36} /> : <TrendingUp size={36} />}
-                </div>
-                <div className="overflow-hidden">
-                   <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter leading-none mb-2">{m.title}</h3>
-                   <div className="flex items-center gap-2">
-                      <p className="text-[10px] font-black text-emerald-600 uppercase italic">GET RS {m.rewardAmount}</p>
-                      <div className="w-1 h-1 rounded-full bg-slate-200" />
-                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest truncate">{m.description}</p>
-                   </div>
-                </div>
-             </div>
-
-             <div className="space-y-4 mb-10">
-                <div className="flex justify-between items-end">
-                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest italic">Sync Progress</span>
-                   <span className="text-[11px] font-black text-slate-900 italic">{m.currentProgress} / {m.targetValue} Units</span>
-                </div>
-                <div className="h-4 bg-slate-100 rounded-full p-1 border border-slate-200 shadow-inner overflow-hidden">
-                   <motion.div 
-                      initial={{ width: 0 }} animate={{ width: `${m.percentage}%` }}
-                      className={clsx(
-                        "h-full rounded-full transition-all duration-1000",
-                        m.isClaimed ? "bg-emerald-500" : "bg-gradient-to-r from-indigo-500 to-sky-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
-                      )}
-                   />
-                </div>
-             </div>
-
-             <div className="mt-auto">
-                {m.isClaimed ? (
-                  <div className="w-full h-16 bg-white border border-emerald-200 rounded-[28px] flex items-center justify-center gap-3 text-emerald-600 font-black text-[10px] uppercase tracking-widest italic">
-                     <CheckCircle2 size={18} /> Milestone Archived
-                  </div>
-                ) : m.canClaim ? (
-                  <button 
-                     onClick={() => handleClaim(m)}
-                     disabled={!!claimingId}
-                     className="w-full h-16 bg-indigo-600 hover:bg-slate-950 text-white rounded-[28px] font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-4 relative overflow-hidden group/btn"
-                  >
-                     <AnimatePresence mode="wait">
-                       {claimingId === m.id ? (
-                          <motion.div key="loader" initial={{ scale: 0.5 }} animate={{ scale: 1 }}><Loader2 className="animate-spin" size={24} /></motion.div>
-                       ) : (
-                          <motion.div key="text" initial={{ y: 20 }} animate={{ y: 0 }} className="flex items-center gap-3">
-                             <Sparkles size={20} className="text-amber-400 animate-pulse" /> 
-                             CLAIM RS {m.rewardAmount}
-                          </motion.div>
-                       )}
-                     </AnimatePresence>
-                     <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover/btn:translate-x-0 transition-transform duration-700" />
-                  </button>
-                ) : (
-                  <div className="w-full h-16 bg-slate-50 border border-slate-100 rounded-[28px] flex items-center justify-center gap-3 text-slate-300 font-black text-[10px] uppercase tracking-widest italic shadow-inner">
-                     <Lock size={16} /> Connection Pending
-                  </div>
-                )}
-             </div>
-          </motion.div>
-        ))}
-      </div>
-
-      <div className="p-10 bg-indigo-50/50 rounded-[60px] border border-indigo-100 flex flex-col md:flex-row items-center justify-between gap-8 mx-1">
-         <div className="flex items-center gap-6">
-            <div className="w-16 h-16 bg-white rounded-[24px] shadow-sm border border-indigo-100 flex items-center justify-center text-indigo-600"><History size={32}/></div>
-            <div>
-               <h4 className="text-xl font-black text-indigo-900 uppercase italic tracking-tighter leading-none mb-1">Rewards Archival Node.</h4>
-               <p className="text-[10px] text-indigo-600 font-bold uppercase tracking-widest">Claimed rewards are verified by root admin before final disbursement.</p>
-            </div>
+      <div className="p-6 bg-indigo-50/50 rounded-[32px] border border-indigo-100 flex items-center gap-5 mx-1">
+         <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-indigo-600 shadow-sm shrink-0"><Zap size={18} fill="currentColor" /></div>
+         <div>
+           <h4 className="text-[10px] font-black text-indigo-900 uppercase italic mb-1">Incentive Architecture</h4>
+           <p className="text-[8px] text-indigo-700 font-bold uppercase leading-relaxed tracking-wider opacity-80">
+              Bonuses are instantly credited to your primary wallet node. Fake activity results in permanent disqualification from all yield cycles.
+           </p>
          </div>
-         <button className="h-14 px-10 bg-white text-indigo-600 rounded-2xl font-black text-[9px] uppercase tracking-widest shadow-xl border border-indigo-100 flex items-center gap-2 active:scale-95 transition-all">
-            Audit Statements <ChevronRight size={16}/>
-         </button>
       </div>
     </div>
   );

@@ -1,278 +1,188 @@
-
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useConfig } from '../../context/ConfigContext';
 import { 
-  Wallet, Zap, Briefcase, CheckCircle2, Trophy,
-  Loader2, TrendingUp, ChevronRight,
-  ArrowUpRight, Gift, Clock, MoreHorizontal,
-  Lock, Sparkles, Users, History
+  Wallet, Zap, History as HistoryIcon, 
+  CheckSquare, TrendingUp, Clock,
+  ChevronRight, Trophy, Users, Star, 
+  ArrowRight, CreditCard, PlayCircle,
+  MessageSquare, Layout, ShieldCheck,
+  TrendingDown, Activity, Box, Sparkles, Target, Award,
+  UserCheck
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
+import StreakWidget from '../../components/user/StreakWidget';
+import { DailyRewardPopup } from '../../components/user/DailyRewardPopup';
 import { api } from '../../utils/api';
-import confetti from 'canvas-confetti';
 
-// --- IMPROVED PKR EARNING CHART ---
-const EarningReport = ({ history }: { history: any[] }) => {
-  const data = useMemo(() => {
-    const days = ['TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN', 'MON'];
-    const now = new Date();
-    return Array(7).fill(0).map((_, i) => {
-      const d = new Date();
-      d.setDate(now.getDate() - (6 - i));
-      const dateStr = d.toISOString().split('T')[0];
-      const earning = history
-        .filter(t => t.type === 'reward' && (t.date === dateStr || t.timestamp?.startsWith(dateStr)))
-        .reduce((sum, t) => sum + Number(t.amount), 0);
-      return { day: days[d.getDay()], val: earning || (Math.random() * 50) }; // Random padding for demo looks
-    });
-  }, [history]);
-
-  const vals = data.map(d => d.val);
-  const max = Math.max(...vals, 500); 
-  const points = data.map((d, i) => {
-    const x = (i / (data.length - 1)) * 100;
-    const y = 85 - (d.val / max) * 60; 
-    return `${x},${y}`;
-  }).join(' ');
-
+const DashboardCard = ({ title, value, icon: Icon, delay, gradient, path, subtext }: any) => {
   return (
-    <div className="w-full h-56 relative mt-6">
-      <div className="absolute inset-0 flex flex-col justify-between opacity-10 pointer-events-none">
-        {[1, 2, 3, 4, 5].map(i => <div key={i} className="border-b border-dashed border-slate-900 w-full h-0"></div>)}
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+      className={clsx(
+        "rounded-[24px] p-3.5 shadow-lg flex flex-col justify-between h-24 md:h-28 relative overflow-hidden group transition-all border border-white/5 hover:translate-y-[-2px]",
+        gradient
+      )}
+    >
+      <div className="relative z-10 flex justify-between items-start">
+        <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center text-white bg-white/10 backdrop-blur-md border border-white/20 shadow-sm group-hover:scale-105 transition-transform">
+          <Icon className="size-3.5 md:size-4" />
+        </div>
+        <div className="text-right">
+          <p className="text-[6px] font-black text-white/50 uppercase tracking-[0.15em] italic mb-0.5">{title}</p>
+          <h3 className="text-base md:text-lg font-black text-white tracking-tight leading-none italic">{value}</h3>
+        </div>
       </div>
-      
-      <svg className="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 100 100">
-        <defs>
-          <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#4A6CF7" stopOpacity="0.2" />
-            <stop offset="100%" stopColor="#4A6CF7" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <path d={`M0,100 L0,${data[0].val} ${points.split(' ').map(p => `L${p}`).join(' ')} L100,100 Z`} fill="url(#chartFill)" />
-        <polyline points={points} fill="none" stroke="#4A6CF7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-        {data.map((d, i) => {
-           const x = (i / (data.length - 1)) * 100;
-           const y = 85 - (d.val / max) * 60;
-           return <circle key={i} cx={x} cy={y} r="2" className="fill-white stroke-[#4A6CF7] stroke-[1.5]" />;
-        })}
-      </svg>
-      
-      <div className="flex justify-between mt-4 text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">
-        {data.map((d, i) => <span key={i}>{d.day}</span>)}
+      <div className="relative z-10 flex items-center justify-between border-t border-white/5 pt-2">
+        <span className="text-[6px] font-black text-white/60 uppercase tracking-widest italic">{subtext}</span>
+        {path && (
+          <Link to={path} className="w-5 h-5 md:w-6 md:h-6 bg-white/10 rounded-lg flex items-center justify-center text-white group-hover:bg-white group-hover:text-slate-900 transition-all">
+            <ChevronRight size={10} />
+          </Link>
+        )}
       </div>
-    </div>
+    </motion.div>
   );
 };
-
-const HeaderStat = ({ title, value, icon: Icon, iconColor, bg }: any) => (
-  <div className="bg-white p-5 rounded-[28px] border border-slate-50 shadow-sm flex items-center justify-between hover:shadow-md transition-all duration-300">
-    <div>
-      <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-1 italic">{title}</p>
-      <h3 className="text-xl font-black text-slate-900 italic tracking-tighter leading-none">{value}</h3>
-    </div>
-    <div className={clsx("w-10 h-10 rounded-xl flex items-center justify-center shadow-inner", bg, iconColor)}>
-      <Icon size={20} />
-    </div>
-  </div>
-);
 
 const UserDashboard = () => {
   const { user } = useAuth();
-  const [history, setHistory] = useState<any[]>([]);
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [teamCount, setTeamCount] = useState(0);
+  const [stats, setStats] = useState({ totalTasks: 0, pendingTasks: 0, todayIncome: 0, teamCount: 0 });
   const [loading, setLoading] = useState(true);
-  const [claimLoading, setClaimLoading] = useState(false);
+  const [isRewardOpen, setIsRewardOpen] = useState(false);
 
-  const fetchDashboard = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const [hist, tks, team] = await Promise.all([
+      const [history, teamData] = await Promise.all([
         api.get('/finance/history'),
-        api.get('/work/tasks'),
         api.get('/auth/team')
       ]);
-      setHistory(hist || []);
-      setTasks(tks?.tasks || []);
-      setTeamCount((team.t1?.length || 0) + (team.t2?.length || 0) + (team.t3?.length || 0));
-    } catch (e) { } finally { setLoading(false); }
+      
+      const today = new Date().toISOString().split('T')[0];
+      const incomeToday = (history || [])
+        .filter((t: any) => t.type === 'reward' && (t.date === today || t.timestamp?.startsWith(today)))
+        .reduce((a: number, b: any) => a + Number(b.amount), 0);
+      
+      const pendingCount = (user?.workSubmissions || []).filter((s: any) => s.status === 'pending').length;
+
+      setStats({
+        todayIncome: incomeToday,
+        pendingTasks: pendingCount,
+        totalTasks: user?.workSubmissions?.filter((s: any) => s.status === 'approved').length || 0,
+        teamCount: (teamData.t1?.length || 0) + (teamData.t2?.length || 0) + (teamData.t3?.length || 0)
+      });
+
+      const lastClaim = user?.lastCheckIn ? new Date(user.lastCheckIn).toDateString() : null;
+      const todayStr = new Date().toDateString();
+      if (lastClaim !== todayStr) {
+        setTimeout(() => setIsRewardOpen(true), 1500);
+      }
+    } catch (e) {
+      console.error("Sync failure.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { if (user?.id) fetchDashboard(); }, [user?.id]);
-
-  const handleClaim = async () => {
-    setClaimLoading(true);
-    try {
-      await api.post('/work/claim-streak', { userId: user?.id });
-      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-      fetchDashboard();
-    } catch (err: any) {
-      alert(err.message);
-    } finally { setClaimLoading(false); }
-  };
-
-  if (loading && history.length === 0) {
-    return (
-      <div className="h-[70vh] flex flex-col items-center justify-center gap-4">
-        <Loader2 className="animate-spin text-[#4A6CF7]" size={40} />
-        <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">Syncing Account...</p>
-      </div>
-    );
-  }
+  useEffect(() => { 
+    if (user?.id) fetchData(); 
+  }, [user?.id]);
 
   return (
-    <div className="w-full pb-28 space-y-8 animate-fade-in max-w-7xl mx-auto px-2">
-      
-      {/* 1. TOP STATS ROW */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <HeaderStat title="Total Balance" value={`Rs. ${(user?.balance || 0).toLocaleString()}`} icon={Wallet} iconColor="text-indigo-600" bg="bg-indigo-50" />
-        <HeaderStat title="Today's Earning" value={`Rs. ${history.filter(t => t.type === 'reward' && t.date === new Date().toISOString().split('T')[0]).reduce((a,b)=>a+b.amount,0)}`} icon={TrendingUp} iconColor="text-emerald-500" bg="bg-emerald-50" />
-        <HeaderStat title="Active Plan" value={user?.currentPlan || 'NONE'} icon={Zap} iconColor="text-amber-500" bg="bg-amber-50" />
-        <HeaderStat title="My Team" value={teamCount} icon={Users} iconColor="text-blue-500" bg="bg-blue-50" />
+    <div className="w-full pb-32 space-y-4 md:space-y-6 animate-fade-in max-w-5xl mx-auto px-1">
+      <DailyRewardPopup isOpen={isRewardOpen} onClose={() => setIsRewardOpen(false)} />
+
+      {/* Identity Header - Compact */}
+      <section className="flex flex-col md:flex-row justify-between items-center gap-3 p-3 md:px-5 bg-white rounded-[24px] border border-slate-100 shadow-sm relative overflow-hidden group">
+        <div className="flex items-center gap-3.5 relative z-10 w-full md:w-auto">
+           <div className="w-10 h-10 bg-slate-950 rounded-xl flex items-center justify-center text-lg font-black text-sky-400 italic shadow-md shrink-0">
+             {user?.name?.charAt(0) || 'A'}
+           </div>
+           <div className="overflow-hidden">
+             <h2 className="text-base font-black text-slate-900 tracking-tight uppercase italic leading-none mb-1 truncate">Salam, <span className="text-indigo-600">{user?.name}!</span></h2>
+             <div className="flex flex-wrap gap-1.5">
+                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-md text-[6.5px] font-black uppercase tracking-widest border border-indigo-100 italic">Tier: {user?.currentPlan || 'BASIC'}</span>
+                <span className="px-2 py-0.5 bg-slate-50 text-slate-400 rounded-md text-[6.5px] font-black uppercase tracking-widest border border-slate-100 flex items-center gap-1 shrink-0">
+                   <UserCheck size={8} /> Verified
+                </span>
+             </div>
+           </div>
+        </div>
+        <div className="flex items-center gap-2 bg-slate-50/80 p-1.5 px-3 rounded-lg border border-slate-100 relative z-10">
+            <p className="text-[6.5px] font-black text-slate-400 uppercase tracking-widest">ID</p>
+            <p className="text-[9px] font-black text-slate-900 italic tracking-tight">#{user?.id?.slice(-8)}</p>
+            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+        </div>
+      </section>
+
+      {/* Financial Matrix - Compacted */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+         <DashboardCard 
+           title="Liquidity Node" 
+           value={`Rs. ${(user?.balance || 0).toLocaleString()}`} 
+           icon={Wallet} delay={0.1} gradient="bg-slate-950" path="/user/wallet"
+           subtext="Ready for withdrawal"
+         />
+         <DashboardCard 
+           title="Yield Cycle" 
+           value={`Rs. ${stats.todayIncome.toLocaleString()}`} 
+           icon={Sparkles} delay={0.2} gradient="bg-indigo-600" path="/user/history"
+           subtext="Active profit sync"
+         />
+         <DashboardCard 
+           title="Network Nodes" 
+           value={`${stats.teamCount} Associates`} 
+           icon={Users} delay={0.3} gradient="bg-emerald-600" path="/user/team"
+           subtext="Network growth"
+         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* 2. EARNING REPORT (Chart) */}
-        <div className="lg:col-span-8 bg-white p-8 rounded-[44px] shadow-sm border border-slate-50 flex flex-col justify-between">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h3 className="text-lg font-black text-slate-800 uppercase italic tracking-tighter">Earning Report.</h3>
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Weekly Profit Tracking</p>
-                </div>
-                <div className="flex bg-slate-50 p-1 rounded-xl gap-1">
-                    <button className="px-4 py-1.5 text-[8px] font-black uppercase bg-white text-indigo-600 shadow-sm rounded-lg">Cycle</button>
-                    <button className="px-4 py-1.5 text-[8px] font-black uppercase text-slate-400">Total</button>
-                </div>
-            </div>
-            
-            <EarningReport history={history} />
-            
-            <div className="mt-8 grid grid-cols-3 gap-4 border-t border-slate-50 pt-8">
-                <div className="text-center">
-                    <p className="text-[8px] font-black text-slate-300 uppercase mb-1 italic">Avg. Daily</p>
-                    <p className="font-black text-slate-900 text-lg italic tracking-tighter leading-none">Rs. 240</p>
-                </div>
-                <div className="text-center border-x border-slate-50">
-                    <p className="text-[8px] font-black text-slate-300 uppercase mb-1 italic">Growth Delta</p>
-                    <p className="font-black text-emerald-600 text-lg italic tracking-tighter leading-none">+12.5%</p>
-                </div>
-                <div className="text-center">
-                    <p className="text-[8px] font-black text-slate-300 uppercase mb-1 italic">Total Paid</p>
-                    <p className="font-black text-slate-900 text-lg italic tracking-tighter leading-none">Rs. {history.filter(t => t.type === 'withdraw' && t.status === 'approved').reduce((a,b)=>a+b.amount,0)}</p>
-                </div>
-            </div>
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
+         <div className="lg:col-span-4 h-full">
+            <StreakWidget />
+         </div>
 
-        {/* 3. DAILY REWARD (HAZARI) */}
-        <div className="lg:col-span-4 bg-gradient-to-br from-[#4A6CF7] to-[#2D4CC8] p-8 rounded-[48px] text-white shadow-xl relative overflow-hidden flex flex-col justify-between group">
-            <div className="absolute top-[-10%] right-[-10%] p-8 opacity-10 rotate-12 scale-[2.5] text-white group-hover:rotate-45 transition-transform duration-1000"><Zap size={100} fill="currentColor" /></div>
-            
-            <div>
-                <div className="flex justify-between items-start mb-10 relative z-10">
-                    <div className="w-12 h-12 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/20">
-                        <Trophy size={28} className="text-amber-400" />
-                    </div>
-                    <span className="text-[9px] font-black bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 uppercase tracking-widest italic">Reset: 00h 04m</span>
-                </div>
-                <h3 className="text-3xl font-black italic uppercase tracking-tighter mb-2 leading-none">HAZARI HUB.</h3>
-                <p className="text-indigo-100 text-[10px] font-bold uppercase tracking-widest leading-relaxed mb-10 opacity-80">Keep your node synchronized for 7 consecutive days to unlock the bumper vault payload.</p>
-            
-                <div className="flex justify-between items-center bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-[32px] mb-10">
-                    <div className="text-center">
-                        <span className="block text-3xl font-black italic tracking-tighter">{user?.streak || 0}</span>
-                        <span className="text-[8px] font-black text-indigo-200 uppercase tracking-widest">Active Days</span>
-                    </div>
-                    <div className="h-10 w-[1px] bg-white/10"></div>
-                    <div className="text-center">
-                        <span className="block text-3xl font-black text-amber-400 italic tracking-tighter">07</span>
-                        <span className="text-[8px] font-black text-indigo-200 uppercase tracking-widest">Target Node</span>
-                    </div>
-                </div>
-            </div>
-
-            <button 
-              onClick={handleClaim}
-              disabled={claimLoading}
-              className="w-full h-16 bg-white text-[#4A6CF7] rounded-[28px] font-black text-xs uppercase tracking-[0.2em] shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 relative z-10"
-            >
-                {claimLoading ? <Loader2 className="animate-spin" size={18} /> : <><Sparkles size={18} /> Sync Hazari</>}
-            </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* 4. DAILY TASKS LIST */}
-        <div className="bg-white p-8 rounded-[44px] shadow-sm border border-slate-50 flex flex-col min-h-[400px]">
-            <div className="flex justify-between items-center mb-8 px-2">
-                <div>
-                   <h3 className="text-lg font-black text-slate-800 flex items-center gap-3 uppercase italic tracking-tighter leading-none">
-                      <Briefcase size={22} className="text-indigo-600" /> Operational Tasks
-                   </h3>
-                   <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-2">Assignments Ready for Processing</p>
-                </div>
-                <div className="w-10 h-10 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300"><MoreHorizontal size={20}/></div>
-            </div>
-
-            <div className="space-y-4 flex-grow">
-                {tasks.length > 0 ? tasks.slice(0, 3).map((task, i) => (
-                    <Link key={task.id} to="/user/work" className="flex items-center justify-between p-6 rounded-[32px] bg-slate-50/50 border border-transparent hover:border-indigo-100 hover:bg-white hover:shadow-xl transition-all group">
-                        <div className="flex items-center gap-5 overflow-hidden">
-                           <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-sm text-indigo-600 font-black text-lg border border-slate-50 group-hover:rotate-6 transition-transform italic">0{i + 1}</div>
-                           <div className="overflow-hidden">
-                              <h4 className="font-black text-slate-800 text-[13px] uppercase truncate mb-1 leading-none">{task.title}</h4>
-                              <p className="text-[9px] font-black text-emerald-600 uppercase">Yield: Rs {task.reward}</p>
-                           </div>
-                        </div>
-                        <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg transform group-hover:translate-x-1 transition-transform">
-                            <ArrowUpRight size={18} />
-                        </div>
-                    </Link>
-                )) : (
-                  <div className="flex-grow flex flex-col items-center justify-center text-center opacity-30 p-10">
-                     <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6 shadow-inner"><Lock size={40} className="text-slate-300" /></div>
-                     <p className="text-[11px] font-black uppercase tracking-[0.4em]">Inventory Node Dry</p>
+         <div className="lg:col-span-8 flex flex-col gap-3.5">
+            <section className="bg-white p-4 md:p-5 rounded-[28px] border border-slate-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-5 overflow-hidden relative group hover:border-indigo-100 transition-all">
+               <div className="absolute top-0 right-0 p-8 opacity-[0.02] rotate-12 scale-110 group-hover:rotate-45 transition-transform duration-[4s]"><CheckSquare size={70} fill="currentColor"/></div>
+               <div className="flex items-center gap-4 relative z-10 w-full md:w-auto">
+                  <div className="w-10 h-10 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center shadow-inner shrink-0"><PlayCircle size={20} /></div>
+                  <div>
+                    <h4 className="text-sm font-black text-slate-900 uppercase italic leading-none mb-1 tracking-tight">Work Inventory.</h4>
+                    <p className="text-[7.5px] font-bold text-slate-400 uppercase tracking-widest">
+                       Available: <span className="text-slate-900 font-black">9+ Assignments</span>
+                    </p>
                   </div>
-                )}
-            </div>
-        </div>
+               </div>
+               <Link to="/user/work" className="relative z-10 w-full md:w-auto h-9 px-5 bg-slate-950 text-white rounded-lg font-black text-[8px] uppercase tracking-[0.2em] shadow-md flex items-center justify-center gap-2 hover:bg-indigo-600 shrink-0 transition-all active:scale-95">
+                  Launch <ArrowRight size={12} />
+               </Link>
+            </section>
 
-        {/* 5. INVITE & EARN (REFERRAL) */}
-        <div className="bg-[#0A1021] p-8 rounded-[44px] text-white shadow-2xl relative overflow-hidden flex flex-col justify-center group min-h-[400px]">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none group-hover:scale-125 transition-transform duration-1000"></div>
-            
-            <div className="relative z-10 flex flex-col items-center text-center space-y-6">
-                <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest text-amber-500">
-                    <Zap size={10} fill="currentColor" /> Network Growth Node
-                </div>
-                
-                <div className="w-24 h-24 rounded-[32px] bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center shadow-2xl rotate-6 group-hover:rotate-12 transition-all duration-500">
-                    <Gift size={48} className="text-white" />
-                </div>
-                
-                <div className="space-y-3">
-                   <h3 className="text-4xl font-black italic tracking-tighter uppercase leading-none">Referral <br/><span className="text-amber-400">Inam.</span></h3>
-                   <p className="text-slate-400 text-xs font-medium leading-relaxed max-w-xs mx-auto">Expand the Noor Official infrastructure. Earn <span className="text-emerald-400 font-black italic">Rs. 500</span> for every active station associate invited.</p>
-                </div>
-
-                <div className="flex gap-4 pt-4 w-full justify-center">
-                    <button 
-                      onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/#/register?ref=${user?.referralCode}`); alert("Referral Link Copied!"); }}
-                      className="h-14 px-10 bg-white text-slate-900 rounded-[22px] font-black text-[10px] uppercase tracking-widest shadow-xl active:scale-95 transition-all"
-                    >
-                        Copy Link
-                    </button>
-                    <Link to="/user/team" className="h-14 px-10 bg-white/5 border border-white/10 text-white rounded-[22px] font-black text-[10px] uppercase tracking-widest hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center gap-2">
-                        My Team <Users size={16} />
-                    </Link>
-                </div>
+            <div className="grid grid-cols-2 gap-3">
+               <QuickAction to="/user/plans" label="Plans" sub="Upgrade Node" icon={Award} color="text-amber-500" bg="bg-amber-50" />
+               <QuickAction to="/user/history" label="Activity" sub="Audit Logs" icon={HistoryIcon} color="text-indigo-500" bg="bg-indigo-50" />
+               <QuickAction to="/support" label="Support" sub="Help Desk" icon={MessageSquare} color="text-emerald-500" bg="bg-emerald-50" />
+               <QuickAction to="/user/settings" label="Profile" sub="Registry" icon={Layout} color="text-slate-500" bg="bg-slate-50" />
             </div>
-        </div>
+         </div>
       </div>
     </div>
   );
 };
+
+const QuickAction = ({ to, label, sub, icon: Icon, color, bg }: any) => (
+  <Link to={to} className="bg-white p-3 md:p-4 rounded-xl border border-slate-100 shadow-sm flex items-center gap-3 hover:border-indigo-100 transition-all active:scale-95 group">
+    <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform shadow-inner shrink-0", bg, color)}><Icon size={16}/></div>
+    <div className="overflow-hidden">
+      <h4 className="text-[8px] md:text-[9px] font-black text-slate-900 uppercase tracking-tight truncate leading-none mb-0.5">{label}</h4>
+      <p className="text-[6.5px] font-bold text-slate-400 uppercase tracking-widest italic leading-none">{sub}</p>
+    </div>
+  </Link>
+);
 
 export default UserDashboard;

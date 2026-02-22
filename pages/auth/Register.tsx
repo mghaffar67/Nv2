@@ -8,7 +8,7 @@ import { useTheme } from '../../context/ThemeContext';
 
 const Register = () => {
   const { register } = useAuth();
-  const { config: theme } = useTheme();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   
   const [loading, setLoading] = useState(false);

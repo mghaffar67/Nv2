@@ -1,49 +1,59 @@
 import { dbNode } from './db';
 
 /**
- * Noor Official V3 - Fixed Referral Bonus Protocol
- * Credits the direct upline a specific amount based on the plan purchased.
+ * Noor Official V3 - Multi-Tier Commission Protocol
+ * Distributes yield across 3 levels of network nodes.
  */
-export const distributeCommission = async (buyerId: string, planName: string) => {
-  const buyer = dbNode.findUserById(buyerId);
-  if (!buyer || !buyer.referredBy) return;
+export const distributeCommission = async (buyerId: string, amount: number) => {
+  const buyer = await dbNode.findUserById(buyerId);
+  if (!buyer) return;
 
-  // 1. Identify the referral bonus from registry
-  const plansRegistry = JSON.parse(localStorage.getItem('noor_plans_registry') || '[]');
-  const purchasedPlan = plansRegistry.find((p: any) => p.name === planName.toUpperCase());
-  
-  if (!purchasedPlan) return;
+  const currentUplineCode = buyer.referredBy || buyer.referred_by;
+  if (!currentUplineCode) return;
 
-  const bonusAmount = purchasedPlan.referralBonus;
-  const uplineCode = buyer.referredBy;
+  const config = await dbNode.getConfig();
+  const tiers = [
+    { level: 1, percent: config.referralSettings?.level1Percent || 15 },
+    { level: 2, percent: config.referralSettings?.level2Percent || 5 },
+    { level: 3, percent: config.referralSettings?.level3Percent || 2 }
+  ];
 
-  const allUsers = dbNode.getUsers();
-  const upline = allUsers.find((u: any) => u.referralCode === uplineCode);
-  
-  // Security Check: Node must exist and not be banned
-  if (!upline || upline.isBanned) return;
+  let nextUplineCode = currentUplineCode;
 
-  const newBalance = (Number(upline.balance) || 0) + bonusAmount;
+  for (const tier of tiers) {
+    if (!nextUplineCode) break;
 
-  const bonusTrx = {
-    id: `REF-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-    type: 'reward',
-    amount: bonusAmount,
-    status: 'approved',
-    gateway: `Referral Bonus`,
-    note: `Incentive for inviting ${buyer.name} (Plan: ${planName})`,
-    date: new Date().toISOString().split('T')[0],
-    timestamp: new Date().toISOString()
-  };
+    const allUsers = await dbNode.getUsers();
+    const upline = allUsers.find((u: any) => (u.referralCode === nextUplineCode || u.referral_code === nextUplineCode));
+    
+    // Integrity Check: Node must exist and not be banned
+    if (!upline || upline.isBanned || upline.is_banned) break;
 
-  const trx = upline.transactions || [];
-  trx.unshift(bonusTrx);
+    const commissionAmount = Math.floor((amount * tier.percent) / 100);
+    const currentBalance = Number(upline.balance) || 0;
+    const newBalance = currentBalance + commissionAmount;
 
-  // Update direct referrer's ledger
-  dbNode.updateUser(upline.id, { 
-    balance: newBalance, 
-    transactions: trx 
-  });
-  
-  console.log(`💰 Credited Rs. ${bonusAmount} to ${upline.name} for referral.`);
+    const commissionTrx = {
+      id: `COM-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+      type: 'reward',
+      amount: commissionAmount,
+      status: 'approved',
+      gateway: `Tier ${tier.level} Bonus`,
+      note: `Network Yield from Associate node ${buyer.name}'s upgrade.`,
+      date: new Date().toISOString().split('T')[0],
+      timestamp: new Date().toISOString()
+    };
+
+    const trx = upline.transactions || [];
+    trx.unshift(commissionTrx);
+
+    // Save updated node state
+    await dbNode.updateUser(upline.id, { 
+      balance: newBalance, 
+      transactions: trx 
+    });
+
+    // Move up the hierarchy
+    nextUplineCode = upline.referredBy || upline.referred_by;
+  }
 };

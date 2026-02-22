@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -7,7 +6,7 @@ import {
   History, Activity, BarChart3, Zap
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { dbNode } from '../../../backend_core/utils/db';
+import { api } from '../../../utils/api';
 
 const GlobalLedgerCard = ({ label, value, icon: Icon, gradient, delay }: any) => (
   <motion.div 
@@ -40,20 +39,10 @@ const FinanceManager = () => {
   const fetchGlobalLedger = async () => {
     setLoading(true);
     try {
-      const users = dbNode.getUsers();
-      let allEntries: any[] = [];
-      users.forEach((u: any) => {
-        (u.transactions || []).filter((t: any) => t.type === 'reward' && t.gateway === 'Daily Income').forEach((y: any) => {
-           allEntries.push({ ...y, userName: u.name, userPhone: u.phone, userId: u.id, reportType: 'task' });
-        });
-        (u.transactions || []).filter((t: any) => t.type === 'withdraw').forEach((w: any) => {
-           allEntries.push({ ...w, userName: u.name, userPhone: u.phone, userId: u.id, reportType: 'withdraw' });
-        });
-        (u.purchaseHistory || []).forEach((p: any) => {
-           allEntries.push({ ...p, userName: u.name, userPhone: u.phone, userId: u.id, reportType: 'plan', amount: p.amount });
-        });
-      });
-      setData(allEntries.sort((a, b) => new Date(b.timestamp || b.date).getTime() - new Date(a.timestamp || a.date).getTime()));
+      const res = await api.get('/admin/finance/ledger');
+      setData(res || []);
+    } catch (e) {
+      console.error("Ledger sync failure.");
     } finally {
       setLoading(false);
     }
@@ -64,16 +53,17 @@ const FinanceManager = () => {
   const stats = useMemo(() => {
     const approved = data.filter(i => i.status === 'approved' || i.status === 'active');
     return {
-      totalYield: approved.filter(i => i.reportType === 'task').reduce((a, b) => a + Number(b.amount), 0),
-      totalPayouts: approved.filter(i => i.reportType === 'withdraw').reduce((a, b) => a + Number(b.amount), 0),
-      totalPlanSales: approved.filter(i => i.reportType === 'plan').reduce((a, b) => a + Number(b.amount), 0)
+      totalYield: approved.filter(i => i.type === 'reward').reduce((a, b) => a + Number(b.amount), 0),
+      totalPayouts: approved.filter(i => i.type === 'withdraw').reduce((a, b) => a + Number(b.amount), 0),
+      totalPlanSales: approved.filter(i => i.source === 'plan').reduce((a, b) => a + Number(b.amount), 0)
     };
   }, [data]);
 
   const filteredEntries = useMemo(() => {
     return data.filter(entry => {
-      const matchesType = activeReport === 'all' || entry.reportType === activeReport;
-      const matchesSearch = entry.userName?.toLowerCase().includes(searchTerm.toLowerCase()) || entry.userPhone?.includes(searchTerm);
+      const typeMap: Record<string, string> = { task: 'reward', withdraw: 'withdraw', plan: 'purchase' };
+      const matchesType = activeReport === 'all' || entry.type === typeMap[activeReport] || (activeReport === 'plan' && entry.source === 'plan');
+      const matchesSearch = entry.userName?.toLowerCase().includes(searchTerm.toLowerCase()) || entry.id?.includes(searchTerm);
       return matchesType && matchesSearch;
     });
   }, [data, activeReport, searchTerm]);
@@ -106,7 +96,7 @@ const FinanceManager = () => {
          </div>
          <div className="relative w-full md:w-96">
             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
-            <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full h-11 pl-11 pr-4 bg-slate-50 border border-slate-100 rounded-xl font-bold text-[10px] outline-none" placeholder="Filter by name or mobile..." />
+            <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full h-11 pl-11 pr-4 bg-slate-50 border border-slate-100 rounded-xl font-bold text-[10px] outline-none" placeholder="Filter by name or reference..." />
          </div>
       </div>
 
@@ -132,15 +122,15 @@ const FinanceManager = () => {
                              <div className="w-11 h-11 rounded-[18px] bg-slate-900 text-sky-400 flex items-center justify-center font-black italic shadow-lg shrink-0 border border-white/5">{item.userName?.charAt(0)}</div>
                              <div>
                                 <p className="font-black text-slate-900 text-[11px] uppercase leading-none">{item.userName}</p>
-                                <p className="text-[8px] font-bold text-slate-400 uppercase mt-2 tracking-widest">{item.userPhone}</p>
+                                <p className="text-[8px] font-bold text-slate-400 uppercase mt-2 tracking-widest">UID: {item.userId?.slice(-6)}</p>
                              </div>
                           </div>
                        </td>
                        <td className="px-8 py-6">
-                          <span className={clsx("px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border", item.reportType === 'task' ? "bg-indigo-50 text-indigo-600 border-indigo-100" : item.reportType === 'withdraw' ? "bg-rose-50 text-rose-600 border-rose-100" : "bg-emerald-50 text-emerald-600 border-emerald-100")}>{item.planId || item.reportType}</span>
+                          <span className={clsx("px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border", item.type === 'reward' ? "bg-indigo-50 text-indigo-600 border-indigo-100" : item.type === 'withdraw' ? "bg-rose-50 text-rose-600 border-rose-100" : "bg-emerald-50 text-emerald-600 border-emerald-100")}>{item.planId || item.gateway || item.type}</span>
                        </td>
                        <td className="px-8 py-6">
-                          <p className={clsx("font-black text-sm italic", item.reportType === 'withdraw' ? "text-slate-900" : "text-emerald-600")}>{item.reportType === 'withdraw' ? '-' : '+'} Rs {item.amount?.toLocaleString()}</p>
+                          <p className={clsx("font-black text-sm italic", item.type === 'withdraw' ? "text-slate-900" : "text-emerald-600")}>{item.type === 'withdraw' ? '-' : '+'} Rs {item.amount?.toLocaleString()}</p>
                        </td>
                        <td className="px-8 py-6">
                           <p className="text-[10px] font-black text-slate-800 uppercase italic">{new Date(item.timestamp || item.date).toLocaleDateString()}</p>

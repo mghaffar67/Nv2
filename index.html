@@ -3,38 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Noor V3 - Premium Earning Platform</title>
-    <meta name="description" content="Join Noor V3, the #1 trusted platform for youth earning in Pakistan. Fast payouts via EasyPaisa and JazzCash.">
-    <meta name="keywords" content="online earning pakistan, easypaisa earning, jazzcash earning">
+    <title>Noor V3 - Professional Earning Infrastructure</title>
+    <meta name="description" content="Noor Official V3: Pakistan's elite digital earning infrastructure. Automated work packets, secure payouts.">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
-            --primary: #4A6CF7;
-            --accent: #2EC4B6;
+            --primary: #6366f1;
+            --accent: #0ea5e9;
             --font-main: 'Plus Jakarta Sans', sans-serif;
         }
         
-        html { font-size: 11px; } 
-        @media (min-width: 768px) { html { font-size: 13px; } }
-        @media (min-width: 1280px) { html { font-size: 14px; } }
+        /* Fluid Typography Node: Reduced base sizes to prevent "oversized" look */
+        html { 
+          font-size: 13px; 
+          scroll-behavior: smooth;
+        } 
+        @media (min-width: 640px) { html { font-size: 14px; } }
+        @media (min-width: 768px) { html { font-size: 14px; } }
+        @media (min-width: 1280px) { html { font-size: 15px; } }
 
         body {
             font-family: var(--font-main);
-            background-color: #F8FAFC;
-            color: #0F172A;
+            background-color: #f8fafc;
+            color: #0f172a;
             -webkit-tap-highlight-color: transparent;
             overflow-x: hidden;
-            letter-spacing: -0.01em;
+            letter-spacing: -0.015em;
         }
+
+        /* Fluid sizing utilities */
+        .text-fluid-xs { font-size: clamp(0.6rem, 0.4vw + 0.4rem, 0.75rem); }
+        .text-fluid-sm { font-size: clamp(0.75rem, 0.5vw + 0.6rem, 0.85rem); }
+        .text-fluid-base { font-size: clamp(0.85rem, 0.6vw + 0.6rem, 1rem); }
+        .text-fluid-lg { font-size: clamp(1rem, 1vw + 0.8rem, 1.5rem); }
+        .text-fluid-xl { font-size: clamp(1.5rem, 2vw + 1rem, 3rem); }
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
         .glass-card {
             background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(8px);
+            backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        /* Specialized Chat Bubble Styles */
+        .bubble-user {
+          border-radius: 20px 20px 20px 4px;
+          position: relative;
+        }
+        .bubble-admin {
+          border-radius: 20px 20px 4px 20px;
+          position: relative;
         }
 
         @keyframes aurora {
@@ -61,21 +82,26 @@
     "clsx": "https://esm.sh/clsx@2.1.1",
     "tailwind-merge": "https://esm.sh/tailwind-merge@2.5.2",
     "canvas-confetti": "https://esm.sh/canvas-confetti@1.9.3",
-    "date-fns": "https://esm.sh/date-fns@4.1.0",
-    "jspdf": "https://esm.sh/jspdf@2.5.1",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.3",
     "vite": "https://esm.sh/vite@^7.3.1",
-    "path": "https://esm.sh/path@^0.12.7",
     "url": "https://esm.sh/url@^0.11.4",
+    "path": "https://esm.sh/path@^0.12.7",
+    "date-fns": "https://esm.sh/date-fns@^4.1.0",
+    "jspdf": "https://esm.sh/jspdf@2.5.1",
     "express": "https://esm.sh/express@^5.2.1",
     "cors": "https://esm.sh/cors@^2.8.6",
-    "@google/genai": "https://esm.sh/@google/genai@^1.39.0"
+    "multer": "https://esm.sh/multer@^2.0.2",
+    "multer-s3": "https://esm.sh/multer-s3@^3.0.1",
+    "@vercel/functions": "https://esm.sh/@vercel/functions@^3.4.0",
+    "pg": "https://esm.sh/pg@^8.18.0",
+    "@aws-sdk/client-s3": "https://esm.sh/@aws-sdk/client-s3@^3.980.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.40.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.4"
   }
 }
 </script>
 </head>
-<body class="antialiased bg-[#F8FAFC]">
+<body class="antialiased">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>

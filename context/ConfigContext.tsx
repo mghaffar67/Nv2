@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { GlobalConfig } from '../types';
 
@@ -11,6 +10,7 @@ const defaultConfig: GlobalConfig = {
   appName: "Noor V3",
   currency: "PKR",
   maintenanceMode: false,
+  submissionMode: 'auto_pdf',
   broadcastMessage: "Welcome to Noor! Withdrawals take 24 hours to process.",
   branding: {
     companyName: "Noor",
@@ -37,11 +37,16 @@ const defaultConfig: GlobalConfig = {
     { name: 'JazzCash', accountNumber: '03451122334', accountTitle: 'Noor Admin' }
   ],
   modules: {
-    allowDeposits: true,
-    allowWithdrawals: true,
-    isRegistrationOpen: true,
+    isMaintenanceMode: false,
+    allowRegistration: true,
+    allowDemoLogin: true,
+    enableDeposits: true,
+    enableWithdrawals: true,
+    enableDailyTasks: true,
+    enableReferralSystem: true,
+    showPopups: true,
+    enableDailyCheckIn: true,
     allowTaskSubmission: true,
-    showHelpSection: true
   },
   theme: {
     primaryColor: '#6366f1',
@@ -66,7 +71,8 @@ const defaultConfig: GlobalConfig = {
     metaDescription: "Earn daily earnings with simple tasks in Pakistan.",
     keywords: "earning app, pakistan, online work"
   },
-  streakRewards: [5, 10, 15, 20, 25, 50, 100]
+  streakRewards: [5, 10, 15, 20, 25, 50, 100],
+  popups: []
 };
 
 const ConfigContext = createContext<ConfigContextType | undefined>(undefined);
@@ -90,10 +96,16 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     root.style.setProperty('--primary-color', config.theme.primaryColor);
     root.style.setProperty('--global-font', config.theme.fontFamily);
     localStorage.setItem('noor_config', JSON.stringify(config));
+    
+    // Feature Gating: Auto-Maintenance Mode Sync
+    if (config.modules.isMaintenanceMode) {
+       // Logic handled by MaintenanceGuard component
+    }
   }, [config]);
 
   const updateConfig = (newConfig: any) => {
     setConfig(prev => ({ ...prev, ...newConfig }));
+    window.dispatchEvent(new Event('noor_db_update'));
   };
 
   return (

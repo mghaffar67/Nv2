@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -9,10 +8,9 @@ import {
   ShieldCheck,
   ChevronRight,
   Info,
-  // Added missing Zap icon import
   Zap
 } from 'lucide-react';
-import { pageController } from '../../backend_core/controllers/pageController';
+import { api } from '../../utils/api';
 
 const DynamicPage = () => {
   const { slug } = useParams();
@@ -23,12 +21,10 @@ const DynamicPage = () => {
     const fetchPage = async () => {
       setLoading(true);
       try {
-        const res = await new Promise<any>((resolve) => {
-          pageController.getPage({ params: { slug } }, {
-            status: () => ({ json: (data: any) => resolve(data) })
-          });
-        });
+        const res = await api.get(`/system/site-content/${slug}`);
         setPage(res);
+      } catch (err) {
+        console.error("CMS Fetch error");
       } finally {
         setLoading(false);
       }
@@ -46,7 +42,7 @@ const DynamicPage = () => {
     );
   }
 
-  if (!page) {
+  if (!page || !page.sections) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center text-center p-6 bg-[#f8f9fb]">
         <div className="w-20 h-20 bg-slate-100 rounded-[28px] flex items-center justify-center text-slate-300 mb-6">
@@ -58,6 +54,10 @@ const DynamicPage = () => {
       </div>
     );
   }
+
+  // Use the title and content from the sections (where it's stored in system content controller)
+  const title = page.sections.title || "Page Document";
+  const content = page.sections.content || "<p>No content synced.</p>";
 
   return (
     <div className="bg-[#f8f9fb] min-h-screen pt-12 pb-24 px-4">
@@ -80,7 +80,7 @@ const DynamicPage = () => {
             </div>
           </div>
           <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-none mb-6">
-            {page.title}
+            {title}
           </h1>
           <div className="flex flex-wrap gap-3">
              <div className="px-3 py-1 bg-white border border-slate-100 rounded-full text-[9px] font-black uppercase tracking-widest text-slate-500 shadow-sm flex items-center gap-1.5">
@@ -104,7 +104,7 @@ const DynamicPage = () => {
 
           <div 
             className="cms-render text-slate-600 leading-relaxed font-medium relative z-10"
-            dangerouslySetInnerHTML={{ __html: page.content }} 
+            dangerouslySetInnerHTML={{ __html: content }} 
           />
 
           <style dangerouslySetInnerHTML={{ __html: `
@@ -116,19 +116,6 @@ const DynamicPage = () => {
             .cms-render li { margin-bottom: 0.5rem; }
           `}} />
         </motion.article>
-
-        {/* Payout Disclaimer */}
-        <div className="mt-12 p-8 bg-indigo-50 rounded-[32px] border border-indigo-100 flex items-start gap-4">
-           <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-indigo-500 shadow-sm shrink-0">
-             <ShieldCheck size={20} />
-           </div>
-           <div>
-              <h4 className="text-xs font-black text-indigo-900 uppercase tracking-widest mb-1">Authenticity Guaranteed</h4>
-              <p className="text-[10px] text-indigo-700 font-medium leading-relaxed">
-                 All platform policies are governed by the Noor Core Risk Management team. Updates to these terms are logged and timestamped for transparency.
-              </p>
-           </div>
-        </div>
       </div>
     </div>
   );

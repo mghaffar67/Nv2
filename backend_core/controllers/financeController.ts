@@ -4,9 +4,10 @@ import { dbNode } from '../utils/db';
  * Noor V3 - Advanced Financial Controller (Admin Logic)
  */
 export const financeController = {
-  // ... existing getAllDeposits and getAllWithdrawals nodes ...
+  // 1. DATA RETRIEVAL NODES
   getAllDeposits: async (req: any, res: any) => {
-    const users = dbNode.getUsers();
+    // Fix: Added await to async db call
+    const users = await dbNode.getUsers();
     let deposits: any[] = [];
     users.forEach((user: any) => {
       if (user.transactions) {
@@ -26,7 +27,8 @@ export const financeController = {
   },
 
   getAllWithdrawals: async (req: any, res: any) => {
-    const users = dbNode.getUsers();
+    // Fix: Added await to async db call
+    const users = await dbNode.getUsers();
     let withdrawals: any[] = [];
     users.forEach((user: any) => {
       if (user.transactions) {
@@ -45,11 +47,14 @@ export const financeController = {
     return res.status(200).json(withdrawals.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
   },
 
+  // 2. DEPOSIT PROTOCOL
   approveDeposit: async (req: any, res: any) => {
     const { transactionId, userId } = req.body;
-    const user = dbNode.findUserById(userId);
+    // Fix: Added await to async db call
+    const user = await dbNode.findUserById(userId);
     if (!user) return res.status(404).json({ message: "Identity node missing." });
 
+    // Fix: Property access on awaited object
     const trxIndex = user.transactions.findIndex((t: any) => t.id === transactionId);
     if (trxIndex === -1) return res.status(404).json({ message: "Ledger entry not found." });
 
@@ -57,21 +62,25 @@ export const financeController = {
       return res.status(400).json({ message: "Transaction already processed." });
     }
 
+    // Logic: Finalize Status and Add Balance
     user.transactions[trxIndex].status = 'approved';
     user.transactions[trxIndex].processedAt = new Date().toISOString();
     
     const amount = Number(user.transactions[trxIndex].amount);
     user.balance = (Number(user.balance) || 0) + amount;
 
-    dbNode.updateUser(userId, { balance: user.balance, transactions: user.transactions });
+    // Fix: Added await to async db call
+    await dbNode.updateUser(userId, { balance: user.balance, transactions: user.transactions });
     return res.status(200).json({ success: true, message: "Funds Authorized." });
   },
 
   rejectDeposit: async (req: any, res: any) => {
     const { transactionId, userId, reason } = req.body;
-    const user = dbNode.findUserById(userId);
+    // Fix: Added await to async db call
+    const user = await dbNode.findUserById(userId);
     if (!user) return res.status(404).json({ message: "Identity node missing." });
 
+    // Fix: Property access on awaited user object
     const trxIndex = user.transactions.findIndex((t: any) => t.id === transactionId);
     if (trxIndex === -1) return res.status(404).json({ message: "Ledger entry not found." });
 
@@ -79,15 +88,19 @@ export const financeController = {
     user.transactions[trxIndex].adminNote = reason || "Evidence Invalid";
     user.transactions[trxIndex].processedAt = new Date().toISOString();
 
-    dbNode.updateUser(userId, { transactions: user.transactions });
+    // Fix: Added await to async db call
+    await dbNode.updateUser(userId, { transactions: user.transactions });
     return res.status(200).json({ success: true, message: "Request Terminated." });
   },
 
+  // 3. WITHDRAWAL PROTOCOL (CRITICAL)
   approveWithdrawal: async (req: any, res: any) => {
     const { transactionId, userId } = req.body;
-    const user = dbNode.findUserById(userId);
+    // Fix: Added await to async db call
+    const user = await dbNode.findUserById(userId);
     if (!user) return res.status(404).json({ message: "Identity node missing." });
 
+    // Fix: Property access on awaited user object
     const trxIndex = user.transactions.findIndex((t: any) => t.id === transactionId);
     if (trxIndex === -1) return res.status(404).json({ message: "Payout record not found." });
 
@@ -95,18 +108,22 @@ export const financeController = {
       return res.status(400).json({ message: "Payout already processed." });
     }
 
+    // Logic: Status change only (Balance was already locked/deducted at request time)
     user.transactions[trxIndex].status = 'approved';
     user.transactions[trxIndex].processedAt = new Date().toISOString();
 
-    dbNode.updateUser(userId, { transactions: user.transactions });
+    // Fix: Added await to async db call
+    await dbNode.updateUser(userId, { transactions: user.transactions });
     return res.status(200).json({ success: true, message: "Payout Confirmed." });
   },
 
   rejectWithdrawal: async (req: any, res: any) => {
     const { transactionId, userId, reason } = req.body;
-    const user = dbNode.findUserById(userId);
+    // Fix: Added await to async db call
+    const user = await dbNode.findUserById(userId);
     if (!user) return res.status(404).json({ message: "Identity node missing." });
 
+    // Fix: Property access on awaited user object
     const trxIndex = user.transactions.findIndex((t: any) => t.id === transactionId);
     if (trxIndex === -1) return res.status(404).json({ message: "Payout record not found." });
 
@@ -114,28 +131,29 @@ export const financeController = {
 
     const amount = Number(user.transactions[trxIndex].amount);
     
-    // --- V3 AUTO-REFUND LOGIC ---
+    // Logic: Reject status and REFUND balance
     user.transactions[trxIndex].status = 'rejected';
-    user.transactions[trxIndex].adminNote = reason || "Declined by Admin";
+    user.transactions[trxIndex].adminNote = reason || "Information Discrepancy";
     user.transactions[trxIndex].processedAt = new Date().toISOString();
 
-    // Mandatory Refund of locked funds
+    // Refund Logic
     user.balance = (Number(user.balance) || 0) + amount;
 
-    // Log the refund event in history
+    // Create Refund Trace in Ledger
     const refundTrace = {
       id: `REF-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
       type: 'reward',
       amount: amount,
       status: 'approved',
-      gateway: 'Auto-Refund',
-      note: `Refund for rejected payout #${transactionId}`,
+      gateway: 'System Refund',
+      note: `Auto-refund for declined payout #${transactionId}`,
       date: new Date().toISOString().split('T')[0],
       timestamp: new Date().toISOString()
     };
     user.transactions.unshift(refundTrace);
 
-    dbNode.updateUser(userId, { balance: user.balance, transactions: user.transactions });
-    return res.status(200).json({ success: true, message: "Payout Rejected & Raqam Refunded." });
+    // Fix: Added await to async db call
+    await dbNode.updateUser(userId, { balance: user.balance, transactions: user.transactions });
+    return res.status(200).json({ success: true, message: "Payout Terminated & Refunded." });
   }
 };

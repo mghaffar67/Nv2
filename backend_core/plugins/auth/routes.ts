@@ -1,4 +1,3 @@
-
 import express from 'express';
 import { authPluginController } from './controller';
 import { authMiddleware } from './middleware';
@@ -6,7 +5,6 @@ import { uploadMiddleware } from '../../middleware/upload';
 
 /**
  * Noor Official V3 - Security Protocol Router
- * Unified Entry/Exit Nodes
  */
 const router = express.Router();
 
@@ -16,6 +14,9 @@ router.post('/login', authPluginController.login);
 
 // Profile Sync Node
 router.get('/me', authMiddleware, authPluginController.getMe);
+
+// Support Relay Node
+router.post('/support-message', authMiddleware, authPluginController.submitSupportMessage);
 
 // Management Nodes
 router.put('/profile', authMiddleware, uploadMiddleware.single('image'), authPluginController.updateProfile);

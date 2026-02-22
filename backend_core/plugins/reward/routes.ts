@@ -1,3 +1,4 @@
+
 import express from 'express';
 import { authMiddleware } from '../auth/middleware';
 import { rewardController } from './controller';

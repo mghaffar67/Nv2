@@ -1,80 +1,57 @@
-
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
-// Fix: Added import to help define __dirname in an ES module environment
 import { fileURLToPath } from 'url';
 
 /**
- * Noor Official V3 - Purified Core Server
- * Architecture: Modular Plugin Protocol
+ * Noor V3 - Hardened Core Server (AWS/Vercel Ready)
  */
 
-// Fix: Define __filename and __dirname for ESM compatibility
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 1. PLUGIN SOURCE OF TRUTH
 import authRoutes from './plugins/auth/routes';
 import financeRoutes from './plugins/finance/routes';
 import workRoutes from './plugins/work/routes';
 import systemRoutes from './plugins/system/routes';
+import rewardRoutes from './plugins/reward/routes';
+import adminRoutes from './plugins/admin/routes';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// 2. MIDDLEWARE STACK
-app.use(cors());
-app.use(express.json({ limit: '50mb' }) as any);
-app.use(express.urlencoded({ extended: true }) as any);
+app.use(cors({ origin: true, credentials: true }));
+app.use(express.json({ limit: '15mb' }) as any);
 
-// Security Header Injection
-app.use((req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-Powered-By', 'Noor-Core-V3');
-  next();
+// Health Monitor Protocol
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: "Healthy",
+    node: "Production Cluster",
+    timestamp: new Date().toISOString()
+  });
 });
 
-// 3. API DOMAIN MOUNTING
+// Primary Plugin Mounting - Unified /api prefix
 app.use('/api/auth', authRoutes);
 app.use('/api/finance', financeRoutes);
 app.use('/api/work', workRoutes);
-app.use('/api/system', systemRoutes);
+app.use('/api/system', systemRoutes); // Correctly mounts /api/system/public/...
+app.use('/api/rewards', rewardRoutes);
+app.use('/api/admin', adminRoutes);
 
-// 4. PRODUCTION ASSET PIPELINE (React Integration)
+// Production Build Assets
 const DIST_PATH = path.join(__dirname, '../dist');
-
-// Serve static assets from the frontend build
 app.use(express.static(DIST_PATH) as any);
 
-// SPA Catch-all: Ensure client-side routing works for all URLs
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api')) {
     res.sendFile(path.join(DIST_PATH, 'index.html'));
   }
 });
 
-// 5. GLOBAL EXCEPTION HANDLER
-app.use((err: any, req: any, res: any, next: any) => {
-  console.error('🔥 [CORE_ALERT]:', err.message);
-  res.status(500).json({ 
-    success: false, 
-    message: 'Internal Logic Conflict. Audit Logs Generated.' 
-  });
-});
-
-app.listen(PORT, () => {
-  console.log(`
-  -----------------------------------------
-  🚀 NOOR OFFICIAL V3 CORE: ACTIVE
-  -----------------------------------------
-  PORT:      ${PORT}
-  ARCH:      Modular Plugin System
-  DOMAIN:    http://localhost:${PORT}
-  STATUS:    Hardened & Purified
-  -----------------------------------------
-  `);
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => console.log(`🚀 NOOR CORE V3 Dev Node Active: ${PORT}`));
+}
 
 export default app;

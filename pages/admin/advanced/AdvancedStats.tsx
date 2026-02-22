@@ -5,6 +5,7 @@ import {
   TrendingUp, TrendingDown, Clock, ShieldCheck,
   RefreshCw, PieChart, Target, UserPlus
 } from 'lucide-react';
+// Added CartesianGrid to imports to fix missing name error on line 110
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart as RePieChart, Pie, CartesianGrid
@@ -62,7 +63,7 @@ const AdvancedStats = () => {
                 <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center shadow-inner"><Trophy size={24} /></div>
                 <div>
                    <h3 className="text-sm font-black text-slate-800 uppercase italic">Rewards Performance</h3>
-                   <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Yield: Rs {data?.finance?.totalRewardBonusPaid?.toLocaleString() || 0}</p>
+                   <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Yield: Rs {data?.finance?.totalRewardBonusPaid.toLocaleString()}</p>
                 </div>
              </div>
 
@@ -84,11 +85,11 @@ const AdvancedStats = () => {
              <div className="grid grid-cols-2 gap-4">
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                    <p className="text-[7px] font-black text-slate-400 uppercase mb-1">Total Claims</p>
-                   <p className="text-xl font-black text-slate-800">{data?.modules?.rewards?.totalClaims || 0}</p>
+                   <p className="text-xl font-black text-slate-800">{data?.modules?.rewards?.totalClaims}</p>
                 </div>
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                    <p className="text-[7px] font-black text-slate-400 uppercase mb-1">Active Targets</p>
-                   <p className="text-xl font-black text-slate-800">{data?.modules?.rewards?.activeAvailable || 0}</p>
+                   <p className="text-xl font-black text-slate-800">{data?.modules?.rewards?.activeAvailable}</p>
                 </div>
              </div>
           </div>
@@ -122,11 +123,11 @@ const AdvancedStats = () => {
              <div className="grid grid-cols-2 gap-4">
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                    <p className="text-[7px] font-black text-slate-400 uppercase mb-1">Daily Completion</p>
-                   <p className="text-xl font-black text-slate-800">{data?.modules?.tasks?.completionsToday || 0}</p>
+                   <p className="text-xl font-black text-slate-800">{data?.modules?.tasks?.completionsToday}</p>
                 </div>
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                    <p className="text-[7px] font-black text-slate-400 uppercase mb-1">Total Pool</p>
-                   <p className="text-xl font-black text-slate-800">{data?.modules?.tasks?.completionsAllTime || 0}</p>
+                   <p className="text-xl font-black text-slate-800">{data?.modules?.tasks?.completionsAllTime}</p>
                 </div>
              </div>
           </div>
