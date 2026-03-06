@@ -8,7 +8,7 @@ export const distributeCommission = async (buyerId: string, amount: number) => {
   const buyer = await dbNode.findUserById(buyerId);
   if (!buyer) return;
 
-  const currentUplineCode = buyer.referredBy || buyer.referred_by;
+  let currentUplineCode = buyer.referred_by || buyer.referredBy;
   if (!currentUplineCode) return;
 
   const config = await dbNode.getConfig();
@@ -18,42 +18,35 @@ export const distributeCommission = async (buyerId: string, amount: number) => {
     { level: 3, percent: config.referralSettings?.level3Percent || 2 }
   ];
 
-  let nextUplineCode = currentUplineCode;
-
   for (const tier of tiers) {
-    if (!nextUplineCode) break;
+    if (!currentUplineCode) break;
 
-    const allUsers = await dbNode.getUsers();
-    const upline = allUsers.find((u: any) => (u.referralCode === nextUplineCode || u.referral_code === nextUplineCode));
+    const upline = await dbNode.findUserByReferralCode(currentUplineCode);
     
     // Integrity Check: Node must exist and not be banned
-    if (!upline || upline.isBanned || upline.is_banned) break;
+    if (!upline || upline.is_banned || upline.isBanned) break;
 
     const commissionAmount = Math.floor((amount * tier.percent) / 100);
-    const currentBalance = Number(upline.balance) || 0;
-    const newBalance = currentBalance + commissionAmount;
+    if (commissionAmount > 0) {
+      const currentBalance = Number(upline.balance) || 0;
+      const newBalance = currentBalance + commissionAmount;
 
-    const commissionTrx = {
-      id: `COM-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-      type: 'reward',
-      amount: commissionAmount,
-      status: 'approved',
-      gateway: `Tier ${tier.level} Bonus`,
-      note: `Network Yield from Associate node ${buyer.name}'s upgrade.`,
-      date: new Date().toISOString().split('T')[0],
-      timestamp: new Date().toISOString()
-    };
+      // Create transaction record
+      await dbNode.createTransaction({
+        userId: upline.id,
+        type: 'reward',
+        amount: commissionAmount,
+        status: 'approved',
+        gateway: `Tier ${tier.level} Bonus`,
+        adminNote: `Network Yield from Associate node ${buyer.name}'s upgrade.`,
+        trxId: `COM-${Math.random().toString(36).substr(2, 6).toUpperCase()}`
+      });
 
-    const trx = upline.transactions || [];
-    trx.unshift(commissionTrx);
-
-    // Save updated node state
-    await dbNode.updateUser(upline.id, { 
-      balance: newBalance, 
-      transactions: trx 
-    });
+      // Update user balance
+      await dbNode.updateUser(upline.id, { balance: newBalance });
+    }
 
     // Move up the hierarchy
-    nextUplineCode = upline.referredBy || upline.referred_by;
+    currentUplineCode = upline.referred_by || upline.referredBy;
   }
 };

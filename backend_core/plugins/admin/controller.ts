@@ -62,7 +62,8 @@ export const adminPluginController = {
             amount: amount,
             status: 'approved',
             gateway: 'System Refund',
-            adminNote: `Refund for Payout #${transactionId}`
+            adminNote: `Refund for Payout #${transactionId}`,
+            trxId: `REF-${Math.random().toString(36).substr(2, 6).toUpperCase()}`
           });
         }
       }

@@ -73,14 +73,19 @@ export const authPluginController = {
 
   // Manual Support Node Handler
   submitSupportMessage: async (req: any, res: any) => {
-    const { userId, message } = req.body;
+    const { userId, message, subject } = req.body;
     try {
-      // Support messages are not yet fully migrated to a table, 
-      // but we can store them in a JSON column or just ignore for now as per schema request.
-      // The user didn't ask for a support_messages table.
-      // We'll skip this or implement a basic version if needed.
+      if (!message) return res.status(400).json({ message: "Empty transmission." });
+      
+      await dbNode.createSupportTicket({
+        userId: userId || req.user?.id,
+        subject: subject || 'General Inquiry',
+        message
+      });
+      
       return res.status(200).json({ success: true, message: "Transmitted to Support Registry." });
     } catch (e) {
+      console.error("Support Error:", e);
       return res.status(500).json({ message: "Relay failure." });
     }
   },

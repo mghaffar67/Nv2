@@ -95,6 +95,50 @@ const createTables = async () => {
       );
     `);
 
+    // 7. Support Tickets Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS support_tickets (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id),
+        subject TEXT,
+        message TEXT NOT NULL,
+        status TEXT DEFAULT 'open', -- open, closed
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        admin_reply TEXT
+      );
+    `);
+
+    // 8. User Rewards Table (Claims)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS user_rewards (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id),
+        reward_id TEXT NOT NULL, -- ID from settings json
+        claimed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+    `);
+
+    // Add plan_expiry to users if not exists
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_expiry TIMESTAMP WITH TIME ZONE;
+    `);
+
+    // 9. Plan Purchases Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS plan_purchases (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id),
+        plan_id TEXT NOT NULL,
+        amount NUMERIC NOT NULL,
+        method TEXT NOT NULL, -- wallet, direct
+        status TEXT DEFAULT 'pending', -- pending, active, expired
+        trx_id TEXT,
+        proof_image TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        expires_at TIMESTAMP WITH TIME ZONE
+      );
+    `);
+
     await client.query('COMMIT');
     console.log('Database schema initialized successfully.');
   } catch (e) {

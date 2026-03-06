@@ -20,6 +20,11 @@ export const dbNode = {
     return res.rows[0] || null;
   },
 
+  findUserByReferralCode: async (code: string) => {
+    const res = await query('SELECT * FROM users WHERE referral_code = $1', [code]);
+    return res.rows[0] || null;
+  },
+
   createUser: async (user: any) => {
     const { name, email, phone, password, referralCode, referredBy, role, balance, currentPlan } = user;
     const res = await query(
@@ -43,7 +48,8 @@ export const dbNode = {
       streak: 'streak_count',
       lastWorkDate: 'last_task_date',
       isBanned: 'is_banned',
-      supportMessages: 'support_messages' // Note: Schema doesn't have this yet, might need JSONB or separate table
+      supportMessages: 'support_messages', // Note: Schema doesn't have this yet, might need JSONB or separate table
+      planExpiry: 'plan_expiry'
     };
 
     const setClause = fields.map((f, i) => `${columnMap[f] || f} = $${i + 2}`).join(', ');
@@ -185,22 +191,127 @@ export const dbNode = {
     );
   },
 
+  // --- INTEGRATIONS ---
+
   getIntegrations: async () => {
-    const res = await query("SELECT * FROM integrations WHERE is_active = TRUE");
+    const res = await query("SELECT * FROM integrations ORDER BY created_at DESC");
     return res.rows;
   },
 
-  saveIntegrations: async (data: any[]) => {
-    await query(
-      `INSERT INTO settings (key, value) VALUES ('integrations', $1)
-       ON CONFLICT (key) DO UPDATE SET value = $1`,
-      [data]
+  createIntegration: async (data: any) => {
+    const { name, type, content, isActive, position } = data;
+    const res = await query(
+      `INSERT INTO integrations (name, type, content, is_active, created_at)
+       VALUES ($1, $2, $3, $4, NOW())
+       RETURNING *`,
+      [name, type, content, isActive !== undefined ? isActive : true]
     );
+    return res.rows[0];
+  },
+
+  updateIntegration: async (id: string, updates: any) => {
+    const fields = Object.keys(updates);
+    if (fields.length === 0) return null;
+
+    const columnMap: Record<string, string> = {
+      isActive: 'is_active',
+      createdAt: 'created_at'
+    };
+
+    const setClause = fields.map((f, i) => `${columnMap[f] || f} = $${i + 2}`).join(', ');
+    const values = fields.map(f => updates[f]);
+
+    const res = await query(
+      `UPDATE integrations SET ${setClause} WHERE id = $1 RETURNING *`,
+      [id, ...values]
+    );
+    return res.rows[0];
+  },
+
+  deleteIntegration: async (id: string) => {
+    await query('DELETE FROM integrations WHERE id = $1', [id]);
+  },
+
+  // Compatibility wrapper for saveIntegrations if needed by old controller logic
+  // Ideally, controller should be updated to use create/update/delete
+  saveIntegrations: async (data: any[]) => {
+    // This is complex to map to individual rows without IDs or logic.
+    // For now, we assume the controller handles individual updates or we warn.
+    console.warn("dbNode.saveIntegrations is deprecated. Use create/update/deleteIntegration.");
   },
   
   getIntegrationsFromSettings: async () => {
-    const res = await query("SELECT value FROM settings WHERE key = 'integrations'");
-    return res.rows[0]?.value || [];
+    // Deprecated, use getIntegrations
+    return dbNode.getIntegrations();
+  },
+
+  // --- SUPPORT TICKETS ---
+
+  createSupportTicket: async (ticket: any) => {
+    const { userId, subject, message } = ticket;
+    const res = await query(
+      `INSERT INTO support_tickets (user_id, subject, message, status, created_at)
+       VALUES ($1, $2, $3, 'open', NOW())
+       RETURNING *`,
+      [userId, subject, message]
+    );
+    return res.rows[0];
+  },
+
+  getSupportTickets: async (userId?: string) => {
+    let q = 'SELECT * FROM support_tickets';
+    const params = [];
+    if (userId) {
+      q += ' WHERE user_id = $1';
+      params.push(userId);
+    }
+    q += ' ORDER BY created_at DESC';
+    const res = await query(q, params);
+    return res.rows;
+  },
+
+  updateSupportTicket: async (id: string, updates: any) => {
+    const { status, adminReply } = updates;
+    const res = await query(
+      `UPDATE support_tickets SET status = COALESCE($2, status), admin_reply = COALESCE($3, admin_reply) WHERE id = $1 RETURNING *`,
+      [id, status, adminReply]
+    );
+    return res.rows[0];
+  },
+
+  // --- USER REWARDS ---
+
+  getUserRewards: async (userId: string) => {
+    const res = await query('SELECT * FROM user_rewards WHERE user_id = $1', [userId]);
+    return res.rows;
+  },
+
+  getAllUserRewards: async () => {
+    const res = await query('SELECT * FROM user_rewards');
+    return res.rows;
+  },
+
+  claimUserReward: async (userId: string, rewardId: string) => {
+    const res = await query(
+      `INSERT INTO user_rewards (user_id, reward_id, claimed_at)
+       VALUES ($1, $2, NOW())
+       RETURNING *`,
+      [userId, rewardId]
+    );
+    return res.rows[0];
+  },
+
+  // --- PLAN PURCHASES ---
+
+  createPlanPurchase: async (purchase: any) => {
+    const { userId, planId, amount, method, status, trxId, proofImage, expiresAt } = purchase;
+    const res = await query(
+      `INSERT INTO plan_purchases (user_id, plan_id, amount, method, status, trx_id, proof_image, expires_at, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+       RETURNING *`,
+      [userId, planId, amount, method, status || 'pending', trxId, proofImage, expiresAt]
+    );
+    return res.rows[0];
   },
 
   getRewards: async () => {

@@ -31,26 +31,21 @@ export const planController = {
         const expiryDate = new Date();
         expiryDate.setDate(expiryDate.getDate() + 30);
 
-        const purchaseRecord = {
-          id: `PH-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+        // Create purchase record
+        await dbNode.createPlanPurchase({
+          userId,
           planId: normalizedId,
           amount: price,
           method: 'wallet',
           status: 'active',
-          date: new Date().toISOString()
-        };
-
-        const history = user.purchaseHistory || [];
-        history.unshift(purchaseRecord);
+          expiresAt: expiryDate.toISOString()
+        });
 
         // Capture the updated user object
-        // Fix: Added await to async db call
         const updatedUser = await dbNode.updateUser(userId, { 
           balance: newBalance, 
           currentPlan: normalizedId, 
-          planExpiry: expiryDate.toISOString(),
-          purchaseHistory: history,
-          completedTasksToday: [] // Reset daily limits for new plan
+          planExpiry: expiryDate.toISOString()
         });
 
         distributeCommission(userId, price);
@@ -67,23 +62,17 @@ export const planController = {
           return res.status(400).json({ message: 'Transaction details and proof are required.' });
         }
 
-        const requestRecord = {
-          id: `REQ-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+        await dbNode.createPlanPurchase({
+          userId,
           planId: normalizedId,
           amount: price,
           method: 'direct',
           status: 'pending',
           trxId,
           senderNumber,
-          proofImage: proofImage || req.body.proofImage,
-          date: new Date().toISOString()
-        };
+          proofImage: proofImage || req.body.proofImage
+        });
 
-        const history = user.purchaseHistory || [];
-        history.unshift(requestRecord);
-
-        // Fix: Added await to async db call
-        await dbNode.updateUser(userId, { purchaseHistory: history });
         return res.status(201).json({ success: true, message: 'Activation request submitted for approval.' });
       }
 
