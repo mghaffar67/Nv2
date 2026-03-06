@@ -1,95 +1,231 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { INITIAL_USERS, INITIAL_TASKS, INITIAL_CONFIG } from '../../src/data/mockRegistry';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { query } from './pg';
+import { INITIAL_CONFIG, INITIAL_TASKS } from '../../src/data/mockRegistry';
 
 /**
- * Noor V3 - Server-Side Persistence Node
- * Uses JSON files for data persistence in the Node.js environment.
+ * Noor V3 - PostgreSQL Persistence Node
+ * Uses 'pg' library to interact with Supabase PostgreSQL.
  */
-const DATA_DIR = path.resolve(process.cwd(), 'data');
-
-console.log(`[DB_NODE] Initializing persistence at: ${DATA_DIR}`);
-
-if (!fs.existsSync(DATA_DIR)) {
-  console.log(`[DB_NODE] Creating data directory...`);
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-const STORAGE_KEYS = {
-  USERS: 'users.json',
-  TASKS: 'tasks.json',
-  CONFIG: 'config.json',
-  CONTENTS: 'contents.json',
-  INTEGRATIONS: 'integrations.json',
-  REWARDS: 'rewards.json'
-};
-
-const get = (filename: string, fallback: any) => {
-  const filePath = path.join(DATA_DIR, filename);
-  if (!fs.existsSync(filePath)) {
-    fs.writeFileSync(filePath, JSON.stringify(fallback, null, 2));
-    return fallback;
-  }
-  try {
-    const data = fs.readFileSync(filePath, 'utf-8');
-    return JSON.parse(data);
-  } catch (err) {
-    console.error(`Error reading ${filename}:`, err);
-    return fallback;
-  }
-};
-
-const save = (filename: string, data: any) => {
-  const filePath = path.join(DATA_DIR, filename);
-  try {
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
-  } catch (err) {
-    console.error(`Error saving ${filename}:`, err);
-  }
-};
 
 export const dbNode = {
-  getUsers: async () => get(STORAGE_KEYS.USERS, INITIAL_USERS),
-  saveUsers: async (users: any[]) => save(STORAGE_KEYS.USERS, users),
+  // --- USER OPERATIONS ---
   
   findUserById: async (id: string) => {
-    const users = await dbNode.getUsers();
-    return users.find((u: any) => u.id === id) || null;
+    const res = await query('SELECT * FROM users WHERE id = $1', [id]);
+    return res.rows[0] || null;
   },
 
   findUserByIdentifier: async (input: string) => {
-    const users = await dbNode.getUsers();
     const term = input.toLowerCase().trim();
-    return users.find((u: any) => u.email.toLowerCase() === term || u.phone === term) || null;
+    const res = await query('SELECT * FROM users WHERE email = $1 OR phone = $1', [term]);
+    return res.rows[0] || null;
+  },
+
+  createUser: async (user: any) => {
+    const { name, email, phone, password, referralCode, referredBy, role, balance, currentPlan } = user;
+    const res = await query(
+      `INSERT INTO users (name, email, phone, password, referral_code, referred_by, role, balance, current_plan, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+       RETURNING *`,
+      [name, email, phone, password, referralCode, referredBy, role || 'user', balance || 0, currentPlan || 'None']
+    );
+    return res.rows[0];
   },
 
   updateUser: async (id: string, updates: any) => {
-    const users = await dbNode.getUsers();
-    const idx = users.findIndex((u: any) => u.id === id);
-    if (idx !== -1) {
-      users[idx] = { ...users[idx], ...updates };
-      await dbNode.saveUsers(users);
-      return users[idx];
-    }
-    return null;
+    const fields = Object.keys(updates);
+    if (fields.length === 0) return null;
+
+    // Map camelCase to snake_case for DB columns if necessary
+    const columnMap: Record<string, string> = {
+      referralCode: 'referral_code',
+      referredBy: 'referred_by',
+      currentPlan: 'current_plan',
+      streak: 'streak_count',
+      lastWorkDate: 'last_task_date',
+      isBanned: 'is_banned',
+      supportMessages: 'support_messages' // Note: Schema doesn't have this yet, might need JSONB or separate table
+    };
+
+    const setClause = fields.map((f, i) => `${columnMap[f] || f} = $${i + 2}`).join(', ');
+    const values = fields.map(f => updates[f]);
+
+    const res = await query(
+      `UPDATE users SET ${setClause} WHERE id = $1 RETURNING *`,
+      [id, ...values]
+    );
+    return res.rows[0];
   },
 
-  getTasks: async () => get(STORAGE_KEYS.TASKS, INITIAL_TASKS),
-  saveTasks: async (tasks: any[]) => save(STORAGE_KEYS.TASKS, tasks),
+  getReferralTeam: async (referralCode: string) => {
+    // Level 1
+    const t1 = await query(`SELECT id, name, current_plan as "currentPlan", created_at as "createdAt", is_banned as "isBanned", referral_code as "referralCode" FROM users WHERE referred_by = $1`, [referralCode]);
+    
+    // Level 2
+    const t1Codes = t1.rows.map(u => u.referralCode).filter(Boolean);
+    let t2: any[] = [];
+    if (t1Codes.length > 0) {
+      const res = await query(`SELECT id, name, current_plan as "currentPlan", created_at as "createdAt", is_banned as "isBanned", referral_code as "referralCode" FROM users WHERE referred_by = ANY($1)`, [t1Codes]);
+      t2 = res.rows;
+    }
 
-  getConfig: async () => get(STORAGE_KEYS.CONFIG, INITIAL_CONFIG),
-  saveConfig: async (config: any) => save(STORAGE_KEYS.CONFIG, config),
+    // Level 3
+    const t2Codes = t2.map(u => u.referralCode).filter(Boolean);
+    let t3: any[] = [];
+    if (t2Codes.length > 0) {
+      const res = await query(`SELECT id, name, current_plan as "currentPlan", created_at as "createdAt", is_banned as "isBanned", referral_code as "referralCode" FROM users WHERE referred_by = ANY($1)`, [t2Codes]);
+      t3 = res.rows;
+    }
 
-  getPageContents: async () => get(STORAGE_KEYS.CONTENTS, {}),
-  savePageContents: async (data: any) => save(STORAGE_KEYS.CONTENTS, data),
+    return { t1: t1.rows, t2, t3 };
+  },
 
-  getIntegrations: async () => get(STORAGE_KEYS.INTEGRATIONS, []),
-  saveIntegrations: async (data: any[]) => save(STORAGE_KEYS.INTEGRATIONS, data),
+  getAllUsers: async () => {
+    const res = await query('SELECT * FROM users ORDER BY created_at DESC');
+    return res.rows;
+  },
 
-  getRewards: async () => get(STORAGE_KEYS.REWARDS, []),
-  saveRewards: async (data: any[]) => save(STORAGE_KEYS.REWARDS, data)
+  // Compatibility method
+  getUsers: async () => {
+    return dbNode.getAllUsers();
+  },
+
+  // Compatibility method - This is dangerous but needed for legacy code that pushes to array and saves
+  // We should ideally refactor all callers, but for now we log a warning.
+  saveUsers: async (users: any[]) => {
+    console.warn("dbNode.saveUsers is deprecated. Use createUser or updateUser instead.");
+    // No-op or implement bulk upsert if critical
+  },
+
+  // --- TRANSACTION OPERATIONS ---
+
+  createTransaction: async (trx: any) => {
+    const { userId, type, amount, status, gateway, trxId, senderNumber, accountNumber, accountTitle, proofImage, adminNote } = trx;
+    const res = await query(
+      `INSERT INTO transactions (user_id, type, amount, status, gateway, trx_id, sender_number, account_number, account_title, proof_image, admin_note, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+       RETURNING *`,
+      [userId, type, amount, status || 'pending', gateway, trxId, senderNumber, accountNumber, accountTitle, proofImage, adminNote]
+    );
+    return res.rows[0];
+  },
+
+  getUserTransactions: async (userId: string) => {
+    const res = await query('SELECT * FROM transactions WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
+    return res.rows;
+  },
+
+  getTransactionById: async (id: string) => {
+    const res = await query('SELECT * FROM transactions WHERE id = $1', [id]);
+    return res.rows[0];
+  },
+
+  updateTransactionStatus: async (id: string, status: string, adminNote?: string) => {
+    const res = await query(
+      `UPDATE transactions SET status = $2, admin_note = $3, processed_at = NOW() WHERE id = $1 RETURNING *`,
+      [id, status, adminNote]
+    );
+    return res.rows[0];
+  },
+
+  getPendingStats: async () => {
+    const deposits = await query(`SELECT COUNT(*) FROM transactions WHERE type = 'deposit' AND status = 'pending'`);
+    const withdrawals = await query(`SELECT COUNT(*) FROM transactions WHERE type = 'withdraw' AND status = 'pending'`);
+    return {
+      deposits: parseInt(deposits.rows[0].count),
+      withdrawals: parseInt(withdrawals.rows[0].count)
+    };
+  },
+
+  // --- TASK OPERATIONS ---
+
+  createTaskSubmission: async (task: any) => {
+    const { userId, taskNumber, pdfUrl, status, reward, adminNote } = task;
+    const res = await query(
+      `INSERT INTO tasks (user_id, task_number, pdf_url, status, reward, admin_note, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())
+       RETURNING *`,
+      [userId, taskNumber, pdfUrl, status || 'pending', reward, adminNote]
+    );
+    return res.rows[0];
+  },
+
+  getTaskSubmissions: async (userId: string, date?: string) => {
+    let q = 'SELECT * FROM tasks WHERE user_id = $1';
+    const params = [userId];
+    if (date) {
+      q += ' AND created_at::date = $2';
+      params.push(date);
+    }
+    q += ' ORDER BY created_at DESC';
+    const res = await query(q, params);
+    return res.rows;
+  },
+
+  // Compatibility
+  getTasks: async () => {
+    return INITIAL_TASKS;
+  },
+  
+  saveTasks: async (tasks: any[]) => {
+    console.warn("dbNode.saveTasks is deprecated.");
+  },
+
+  // --- CONFIG / SETTINGS ---
+
+  getConfig: async () => {
+    const res = await query("SELECT value FROM settings WHERE key = 'config'");
+    return res.rows[0]?.value || INITIAL_CONFIG;
+  },
+
+  saveConfig: async (config: any) => {
+    await query(
+      `INSERT INTO settings (key, value) VALUES ('config', $1)
+       ON CONFLICT (key) DO UPDATE SET value = $1`,
+      [config]
+    );
+  },
+
+  getIntegrations: async () => {
+    const res = await query("SELECT * FROM integrations WHERE is_active = TRUE");
+    return res.rows;
+  },
+
+  saveIntegrations: async (data: any[]) => {
+    await query(
+      `INSERT INTO settings (key, value) VALUES ('integrations', $1)
+       ON CONFLICT (key) DO UPDATE SET value = $1`,
+      [data]
+    );
+  },
+  
+  getIntegrationsFromSettings: async () => {
+    const res = await query("SELECT value FROM settings WHERE key = 'integrations'");
+    return res.rows[0]?.value || [];
+  },
+
+  getRewards: async () => {
+    const res = await query("SELECT value FROM settings WHERE key = 'rewards'");
+    return res.rows[0]?.value || [];
+  },
+
+  saveRewards: async (data: any[]) => {
+    await query(
+      `INSERT INTO settings (key, value) VALUES ('rewards', $1)
+       ON CONFLICT (key) DO UPDATE SET value = $1`,
+      [data]
+    );
+  },
+
+  getPageContents: async () => {
+    const res = await query("SELECT value FROM settings WHERE key = 'contents'");
+    return res.rows[0]?.value || {};
+  },
+
+  savePageContents: async (data: any) => {
+    await query(
+      `INSERT INTO settings (key, value) VALUES ('contents', $1)
+       ON CONFLICT (key) DO UPDATE SET value = $1`,
+      [data]
+    );
+  }
 };

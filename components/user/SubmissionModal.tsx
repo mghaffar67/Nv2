@@ -52,7 +52,7 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
       preview: file.type === 'application/pdf' ? 'pdf_icon' : URL.createObjectURL(file)
     }));
 
-    const limit = config.submissionMode === 'single_image' ? 1 : 10;
+    const limit = 10; // Always allow up to 10 files
     setFiles(prev => [...prev, ...newFiles].slice(0, limit));
     
     // Reset input for same-file re-uploads if needed
@@ -80,43 +80,35 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
     try {
       let finalPayload = "";
 
-      if (config.submissionMode === 'auto_pdf') {
-        setStatus('processing');
-        const doc = new jsPDF('p', 'mm', 'a4');
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const pageHeight = doc.internal.pageSize.getHeight();
-        const margin = 10;
-        const availableWidth = pageWidth - (margin * 2);
+      // Always generate PDF for multiple images
+      setStatus('processing');
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 10;
+      const availableWidth = pageWidth - (margin * 2);
+      
+      for (let i = 0; i < files.length; i++) {
+        if (i > 0) doc.addPage();
         
-        for (let i = 0; i < files.length; i++) {
-          if (i > 0) doc.addPage();
-          
-          if (files[i].file.type === 'application/pdf') {
-             // For simple mock we skip nested PDF embedding, in real app use pdf-lib
-             continue; 
-          }
-
-          const imgData = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.readAsDataURL(files[i].file);
-          });
-
-          doc.addImage(imgData, 'JPEG', margin, margin, availableWidth, 0, undefined, 'MEDIUM');
-          doc.setFontSize(8);
-          doc.setTextColor(150);
-          doc.text(`Noor V3 Evidence - Task ID: ${task?.id} - User Timestamp: ${new Date().toLocaleString()}`, margin, pageHeight - 5);
+        if (files[i].file.type === 'application/pdf') {
+           // For simple mock we skip nested PDF embedding, in real app use pdf-lib
+           continue; 
         }
-        
-        finalPayload = doc.output('datauristring');
-      } else {
-        const results = await Promise.all(files.map(f => new Promise<string>(r => {
-           const reader = new FileReader();
-           reader.onload = () => r(reader.result as string);
-           reader.readAsDataURL(f.file);
-        })));
-        finalPayload = config.submissionMode === 'single_image' ? results[0] : JSON.stringify(results);
+
+        const imgData = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(files[i].file);
+        });
+
+        doc.addImage(imgData, 'JPEG', margin, margin, availableWidth, 0, undefined, 'MEDIUM');
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(`Noor V3 Evidence - Task ID: ${task?.id} - User Timestamp: ${new Date().toLocaleString()}`, margin, pageHeight - 5);
       }
+      
+      finalPayload = doc.output('datauristring');
 
       // Final Size Check for the Base64/PDF string (approx 8MB limit for sync safety)
       if (finalPayload.length > 8 * 1024 * 1024) {
@@ -185,8 +177,8 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
 
                <div className="space-y-5">
                   <div className="flex justify-between items-end px-2">
-                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Verification Artifacts ({files.length}/{config.submissionMode === 'single_image' ? 1 : 10})</label>
-                     {config.submissionMode !== 'single_image' && files.length < 10 && (
+                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Verification Artifacts ({files.length}/10)</label>
+                     {files.length < 10 && (
                        <button onClick={() => fileInputRef.current?.click()} className="text-[9px] font-black text-indigo-600 uppercase flex items-center gap-1.5 hover:underline">
                           <Plus size={12} /> Add More
                        </button>
@@ -211,7 +203,7 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
                        </motion.div>
                      ))}
 
-                     {(files.length === 0 || (config.submissionMode !== 'single_image' && files.length < 10)) && (
+                     {(files.length < 10) && (
                        <div 
                          onClick={() => fileInputRef.current?.click()}
                          className={clsx(
@@ -226,7 +218,7 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
                        </div>
                      )}
                   </div>
-                  <input type="file" ref={fileInputRef} onChange={handleFileChange} multiple={config.submissionMode !== 'single_image'} accept="image/*,application/pdf" className="hidden" />
+                  <input type="file" ref={fileInputRef} onChange={handleFileChange} multiple accept="image/*,application/pdf" className="hidden" />
                </div>
 
                {loading && (
@@ -255,7 +247,7 @@ export const SubmissionModal = ({ isOpen, onClose, task, onSubmit }: SubmissionM
                   ) : (
                     <>
                       <ShieldCheck size={26} className="text-sky-400" />
-                      {config.submissionMode === 'auto_pdf' ? 'Finish PDF & Submit' : 'Confirm Submission'}
+                      Finish PDF & Submit
                     </>
                   )}
                </button>

@@ -4,24 +4,11 @@ export const adminPluginController = {
   // 1. GET PENDING STATS FOR SIDEBAR BADGES
   getPendingStats: async (req: any, res: any) => {
     try {
-      const users = await dbNode.getUsers();
-      let deposits = 0;
-      let withdrawals = 0;
-
-      users.forEach((u: any) => {
-        const trxs = Array.isArray(u.transactions) ? u.transactions : [];
-        trxs.forEach((t: any) => {
-          if (t.status === 'pending') {
-            if (t.type === 'deposit') deposits++;
-            if (t.type === 'withdraw') withdrawals++;
-          }
-        });
-      });
-
+      const stats = await dbNode.getPendingStats();
       return res.status(200).json({
-        deposits,
-        withdrawals,
-        total: deposits + withdrawals
+        deposits: stats.deposits,
+        withdrawals: stats.withdrawals,
+        total: stats.deposits + stats.withdrawals
       });
     } catch (e) {
       return res.status(500).json({ message: "Registry audit failed." });
@@ -36,10 +23,9 @@ export const adminPluginController = {
       const user = await dbNode.findUserById(userId);
       if (!user) return res.status(404).json({ message: "Member node not found." });
 
-      const trxIndex = (user.transactions || []).findIndex((t: any) => t.id === transactionId);
-      if (trxIndex === -1) return res.status(404).json({ message: "Voucher record missing." });
+      const transaction = await dbNode.getTransactionById(transactionId);
+      if (!transaction) return res.status(404).json({ message: "Voucher record missing." });
 
-      const transaction = user.transactions[trxIndex];
       if (transaction.status !== 'pending') {
         return res.status(400).json({ message: "Voucher already processed." });
       }
@@ -47,34 +33,40 @@ export const adminPluginController = {
       const amount = Number(transaction.amount);
 
       if (action === 'approve') {
-        transaction.status = 'approved';
-        transaction.processedAt = new Date().toISOString();
+        // Update Transaction Status
+        await dbNode.updateTransactionStatus(transactionId, 'approved');
         
         if (type === 'deposit') {
-          user.balance = (Number(user.balance) || 0) + amount;
+          // Add balance
+          await dbNode.updateUser(userId, { 
+            balance: (Number(user.balance) || 0) + amount 
+          });
         }
       } else {
-        transaction.status = 'rejected';
-        transaction.adminNote = reason || "Data Discrepancy";
+        // Reject
+        await dbNode.updateTransactionStatus(transactionId, 'rejected', reason || "Data Discrepancy");
         
         if (type === 'withdraw') {
-          user.balance = (Number(user.balance) || 0) + amount;
+          // Refund balance
+          await dbNode.updateUser(userId, { 
+            balance: (Number(user.balance) || 0) + amount 
+          });
           
-          const refundLog = {
-            id: `REF-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-            type: 'reward',
+          // Optionally create a refund transaction record if needed, 
+          // but usually updating the status to rejected and refunding balance is enough.
+          // The old code created a separate 'refund' transaction. 
+          // Let's create a refund transaction to keep the ledger clear.
+          await dbNode.createTransaction({
+            userId: user.id,
+            type: 'reward', // or 'refund'
             amount: amount,
             status: 'approved',
             gateway: 'System Refund',
-            note: `Refund for Payout #${transactionId}`,
-            date: new Date().toISOString().split('T')[0],
-            timestamp: new Date().toISOString()
-          };
-          user.transactions.unshift(refundLog);
+            adminNote: `Refund for Payout #${transactionId}`
+          });
         }
       }
 
-      await dbNode.updateUser(userId, { balance: user.balance, transactions: user.transactions });
       return res.status(200).json({ success: true, message: "Ledger Synchronized." });
     } catch (err) {
       console.error("Ledger Node Failure:", err);

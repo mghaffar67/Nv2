@@ -9,19 +9,22 @@ export const workPluginController = {
       const user = await dbNode.findUserById(req.user.id);
       if (!user) return res.status(404).json({ message: "Account not found." });
 
-      const allTasks = await dbNode.getTasks();
+      // Static tasks definition (could be moved to DB later if needed)
+      const allTasks = await dbNode.getTasks(); 
       const today = new Date().toISOString().split('T')[0];
       
-      let currentStreak = user.streak || 0;
+      let currentStreak = user.streak_count || user.streak || 0;
       
-      if (user.lastWorkDate) {
-        const lastDate = new Date(user.lastWorkDate);
+      // Check if streak is broken
+      if (user.last_task_date || user.lastWorkDate) {
+        const lastDate = new Date(user.last_task_date || user.lastWorkDate);
         const todayDate = new Date(today);
         const diffTime = todayDate.getTime() - lastDate.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
         if (diffDays > 1) {
           currentStreak = 0; 
+          // Optionally update DB here, but maybe wait for next action
         }
       }
 
@@ -36,16 +39,14 @@ export const workPluginController = {
       const userPlan = user.current_plan || user.currentPlan || 'None';
       const userLimit = PLAN_LIMITS[userPlan] || 0;
       
-      const submissionsToday = (user.workSubmissions || []).filter((s: any) => 
-        s.timestamp.startsWith(today)
-      ).length;
+      // Fetch submissions from DB
+      const submissions = await dbNode.getTaskSubmissions(user.id, today);
+      const submissionsToday = submissions.length;
 
       const remainingSlots = Math.max(0, userLimit - submissionsToday);
 
       const tasksWithMeta = allTasks.map((task: any) => {
-        const isCompletedToday = (user.workSubmissions || []).some((s: any) => 
-          s.taskId === task.id && s.timestamp.startsWith(today)
-        );
+        const isCompletedToday = submissions.some((s: any) => s.task_number === task.id || s.taskId === task.id);
 
         const isLocked = !isCompletedToday && (submissionsToday >= userLimit);
 
@@ -68,6 +69,7 @@ export const workPluginController = {
         nextMilestone: `Day ${((currentStreak) % 7) + 1}: Bonus Ready`
       });
     } catch (err) {
+      console.error(err);
       return res.status(500).json({ message: "Work Hub Logic Error." });
     }
   },
@@ -79,54 +81,40 @@ export const workPluginController = {
       
       if (!user) return res.status(404).json({ message: "Account verification failed. Logout karke dubara login karein." });
       if (!taskId) return res.status(400).json({ message: "Task ID missing. Dubara try karein." });
+      // evidence is now pdfUrl or image url
       if (!evidence) return res.status(400).json({ message: "Sabot (Evidence) upload karna zaroori hai." });
 
       const today = new Date().toISOString().split('T')[0];
       
-      let newStreak = user.streak || 0;
-      if (user.lastWorkDate !== today) {
-        if (!user.lastWorkDate) {
+      let newStreak = user.streak_count || user.streak || 0;
+      const lastWorkDate = user.last_task_date || user.lastWorkDate;
+
+      if (lastWorkDate !== today) {
+        if (!lastWorkDate) {
           newStreak = 1;
         } else {
-          const lastDate = new Date(user.lastWorkDate);
+          const lastDate = new Date(lastWorkDate);
           const todayDate = new Date(today);
           const diffDays = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
           newStreak = diffDays === 1 ? newStreak + 1 : 1;
         }
       }
 
-      const submissionPacket = {
-        id: `SUB-${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
+      // Create submission in DB
+      await dbNode.createTaskSubmission({
         userId: user.id,
-        taskId,
-        taskTitle,
-        reward,
-        userAnswer: evidence, 
+        taskNumber: taskId, // Assuming taskId maps to task_number or ID
+        pdfUrl: evidence,
         status: 'pending',
-        timestamp: new Date().toISOString(),
+        reward: reward,
         adminNote: ''
-      };
+      });
 
-      const submissions = user.workSubmissions || [];
-      submissions.unshift(submissionPacket);
-
-      try {
-        const updateResult = await dbNode.updateUser(user.id, { 
-          workSubmissions: submissions,
-          streak: newStreak,
-          lastWorkDate: today
-        });
-        
-        if (!updateResult) {
-           throw new Error("Registry Update Failed");
-        }
-      } catch (err: any) {
-        // Handle database specific errors (like size limits in Postgres/LocalDB)
-        if (err.message?.includes('too large') || err.code === '57014') {
-           return res.status(413).json({ message: "File ka size bohot bara hai. Baraye meharbani choti file upload karein." });
-        }
-        return res.status(500).json({ message: "System Registry full hai ya connection issue hai. Support se rabta karein." });
-      }
+      // Update user stats
+      await dbNode.updateUser(user.id, { 
+        streak: newStreak,
+        lastWorkDate: today
+      });
       
       return res.status(201).json({ 
         success: true, 
@@ -134,6 +122,7 @@ export const workPluginController = {
         streak: newStreak
       });
     } catch (err: any) {
+      console.error(err);
       return res.status(500).json({ message: "Submission protocol failure. Technical error." });
     }
   }

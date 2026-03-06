@@ -1,18 +1,10 @@
 import { dbNode } from '../../utils/db';
-import { distributeCommission } from '../../utils/commissionHelper';
-/* Import planController to fix missing property activatePlan in financePluginController */
 import { planController } from '../../controllers/planController';
 
 export const financePluginController = {
   getHistory: async (req: any, res: any) => {
     try {
-      const user = await dbNode.findUserById(req.user.id);
-      if (!user) return res.status(404).json({ message: "Account lost." });
-      
-      const history = typeof user.transactions === 'string' 
-        ? JSON.parse(user.transactions) 
-        : (user.transactions || []);
-        
+      const history = await dbNode.getUserTransactions(req.user.id);
       return res.status(200).json(history);
     } catch (err) {
       return res.status(500).json({ message: "Failed to load history." });
@@ -26,7 +18,6 @@ export const financePluginController = {
       if (!user) return res.status(404).json({ message: 'Identity missing.' });
 
       const depositPacket = {
-        id: `DEP-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
         userId: user.id,
         type: 'deposit',
         amount: Number(amount),
@@ -35,26 +26,18 @@ export const financePluginController = {
         senderNumber,
         proofImage: image || null,
         status: 'pending',
-        date: new Date().toISOString().split('T')[0],
-        timestamp: new Date().toISOString()
+        adminNote: ''
       };
 
-      const currentTrx = Array.isArray(user.transactions) 
-        ? user.transactions 
-        : (typeof user.transactions === 'string' ? JSON.parse(user.transactions) : []);
-      
-      currentTrx.unshift(depositPacket);
-      
-      await dbNode.updateUser(user.id, { 
-        transactions: currentTrx 
-      });
+      const transaction = await dbNode.createTransaction(depositPacket);
 
       return res.status(201).json({ 
         success: true, 
         message: 'Deposit synced to ledger.', 
-        transaction: depositPacket 
+        transaction 
       });
     } catch (err) {
+      console.error(err);
       return res.status(500).json({ message: "Ledger writing failed." });
     }
   },
@@ -69,7 +52,6 @@ export const financePluginController = {
       if (Number(user.balance) < amt) return res.status(400).json({ message: 'Insufficient balance.' });
 
       const newTrx = {
-        id: `WD-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
         userId: user.id,
         type: 'withdraw',
         amount: amt,
@@ -77,19 +59,15 @@ export const financePluginController = {
         accountNumber,
         accountTitle,
         status: 'pending',
-        date: new Date().toISOString().split('T')[0],
-        timestamp: new Date().toISOString()
+        adminNote: ''
       };
 
-      const currentTrx = Array.isArray(user.transactions) 
-        ? user.transactions 
-        : (typeof user.transactions === 'string' ? JSON.parse(user.transactions) : []);
-        
-      currentTrx.unshift(newTrx);
+      // Create transaction
+      await dbNode.createTransaction(newTrx);
       
+      // Deduct balance immediately
       await dbNode.updateUser(user.id, { 
-        balance: Number(user.balance) - amt, 
-        transactions: currentTrx 
+        balance: Number(user.balance) - amt
       });
 
       return res.status(201).json({ success: true, message: 'Withdrawal locked.' });
