@@ -116,32 +116,30 @@ const IntegrationHub = () => {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in pb-24">
-      <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-slate-50 pb-8">
+    <div className="space-y-8 animate-fade-in pb-20">
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-slate-200 pb-8">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
-            Connection <span className="text-indigo-600">Hub.</span>
-          </h1>
-          <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-3 italic flex items-center gap-2">
-            <ShieldCheck size={14} className="text-indigo-500" /> Dynamic Code Injection & Popup Management
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">Connection <span className="text-indigo-600">Hub</span></h2>
+          <p className="text-sm text-slate-500 mt-2 flex items-center gap-2">
+            <ShieldCheck size={16} className="text-indigo-500" /> Dynamic Code Injection & Popup Management
           </p>
         </div>
         
         <button 
           onClick={startNew}
-          className="h-14 px-10 bg-slate-950 text-white rounded-[24px] font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl flex items-center gap-3 active:scale-95 transition-all"
+          className="h-11 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-sm flex items-center gap-2 shadow-sm transition-colors"
         >
-          <Plus size={18} className="text-sky-400" /> 
+          <Plus size={18} /> 
           New Node
         </button>
-      </header>
+      </div>
 
       {/* Tabs */}
-      <div className="flex bg-white p-1.5 rounded-[22px] border border-slate-100 shadow-sm w-fit">
-         <button onClick={() => setActiveTab('scripts')} className={clsx("px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'scripts' ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:text-slate-600")}>
+      <div className="flex bg-slate-100 p-1 rounded-lg w-fit">
+         <button onClick={() => setActiveTab('scripts')} className={clsx("px-6 py-2 rounded-md text-sm font-medium transition-all", activeTab === 'scripts' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700")}>
            External Scripts
          </button>
-         <button onClick={() => setActiveTab('popups')} className={clsx("px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'popups' ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:text-slate-600")}>
+         <button onClick={() => setActiveTab('popups')} className={clsx("px-6 py-2 rounded-md text-sm font-medium transition-all", activeTab === 'popups' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700")}>
            Popup Builder
          </button>
       </div>

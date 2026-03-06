@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  Search, Save, Loader2, CheckCircle2
+  Search, Save, Loader2, CheckCircle2, Globe
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useConfig } from '../../../context/ConfigContext';
@@ -31,32 +31,67 @@ const SEOManager = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in pb-24 px-1 md:px-0">
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 px-2">
+    <div className="space-y-8 animate-fade-in pb-20">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-slate-200 pb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">Search <span className="text-indigo-600">Visibility.</span></h1>
-          <p className="text-slate-400 font-bold uppercase tracking-widest text-[8px] mt-2">Control how Google sees your platform</p>
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">Search <span className="text-indigo-600">Visibility</span></h2>
+          <p className="text-sm text-slate-500 mt-2 flex items-center gap-2">
+             <Globe size={16} className="text-indigo-500" /> Control how Google sees your platform
+          </p>
         </div>
-        <button onClick={handleSave} disabled={loading} className="bg-slate-950 text-white h-11 px-8 rounded-2xl font-black text-[9px] uppercase tracking-widest flex items-center gap-2 shadow-xl disabled:opacity-50">
-          {loading ? <Loader2 className="size-4 animate-spin" /> : <Save size={14} />} Update Metadata
+        <button onClick={handleSave} disabled={loading} className="h-11 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-sm flex items-center gap-2 shadow-sm transition-colors disabled:opacity-50">
+          {loading ? <Loader2 className="size-4 animate-spin" /> : <Save size={18} />} Update Metadata
         </button>
-      </header>
+      </div>
 
-      <section className="bg-white p-6 md:p-10 rounded-[44px] border border-slate-100 shadow-sm space-y-8">
+      <section className="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-8">
         <div className="space-y-6">
-          <div className="space-y-1.5"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-3">Browser Title</label>
-          <input value={formData.siteTitle} onChange={e => setFormData({...formData, siteTitle: e.target.value})} className="w-full h-14 px-6 bg-slate-50 border border-slate-100 rounded-2xl font-black text-sm outline-none focus:bg-white" /></div>
-          <div className="space-y-1.5"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-3">App Description</label>
-          <textarea rows={4} value={formData.metaDescription} onChange={e => setFormData({...formData, metaDescription: e.target.value})} className="w-full p-6 bg-slate-50 border border-slate-100 rounded-[32px] font-bold text-[11px] text-slate-600 outline-none resize-none focus:bg-white" /></div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700 ml-1">Browser Title</label>
+            <input 
+              value={formData.siteTitle} 
+              onChange={e => setFormData({...formData, siteTitle: e.target.value})} 
+              className="w-full h-11 px-4 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all" 
+              placeholder="e.g., Noor Official - Premium Earning Platform"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700 ml-1">App Description</label>
+            <textarea 
+              rows={4} 
+              value={formData.metaDescription} 
+              onChange={e => setFormData({...formData, metaDescription: e.target.value})} 
+              className="w-full p-4 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 outline-none resize-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all" 
+              placeholder="A brief description of your platform for search engines..."
+            />
+          </div>
         </div>
-        <div className="p-6 bg-slate-50 rounded-[36px] border border-slate-100">
-           <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest mb-4 italic">Google Search Preview</p>
-           <h4 className="text-[#1a0dab] text-lg font-medium hover:underline cursor-pointer leading-tight mb-1">{formData.siteTitle || 'Noor Official'}</h4>
-           <p className="text-[#006621] text-xs mb-1 italic">https://noorofficial.pk</p>
-           <p className="text-[#545454] text-[10px] leading-relaxed line-clamp-2 font-medium">{formData.metaDescription || 'Noor Official is the trusted earning platform in Pakistan.'}</p>
+
+        <div className="p-6 bg-slate-50 rounded-xl border border-slate-200">
+           <div className="flex items-center gap-2 mb-4">
+             <Search size={16} className="text-indigo-500" />
+             <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">Google Search Preview</p>
+           </div>
+           <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+             <p className="text-[#006621] text-xs mb-1">https://noorofficial.pk</p>
+             <h4 className="text-[#1a0dab] text-lg font-medium hover:underline cursor-pointer leading-tight mb-1">{formData.siteTitle || 'Noor Official'}</h4>
+             <p className="text-[#545454] text-sm leading-relaxed line-clamp-2">{formData.metaDescription || 'Noor Official is the trusted earning platform in Pakistan.'}</p>
+           </div>
         </div>
       </section>
-      <AnimatePresence>{saveSuccess && <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-green-500 text-white px-10 py-4 rounded-full font-black text-[10px] uppercase tracking-widest shadow-2xl z-[200]"><CheckCircle2 size={16} className="inline mr-2" /> Settings Saved</motion.div>}</AnimatePresence>
+
+      <AnimatePresence>
+        {saveSuccess && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            exit={{ opacity: 0 }} 
+            className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-lg font-medium text-sm shadow-xl z-[200] flex items-center gap-3 border border-slate-700"
+          >
+            <CheckCircle2 size={18} className="text-emerald-400" /> Settings Saved
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
